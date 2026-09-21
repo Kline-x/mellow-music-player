@@ -20,7 +20,7 @@ function recordResult(testName, passed, details = '') {
 
 async function runE2ETests() {
   console.log('\n======================================================');
-  console.log('🚀 AlgerMusicPlayer Modern Soft UI E2E Automated Audit');
+  console.log('🚀 Mellow Music · 润音 (Modern Soft UI) E2E Automated Audit');
   console.log('======================================================\n');
 
   const browser = await puppeteer.launch({

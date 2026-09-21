@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Alger Music · Modern Soft UI 手机移动端 (Native App 体验)</title>
+  <title>Mellow Music · 润音 · 移动端沉浸体验 (Modern Soft UI)</title>
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -536,7 +536,7 @@
           <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80" class="w-14 h-14 rounded-full object-cover ring-2 ring-emerald-500/40">
           <div class="flex-1 min-w-0">
             <div class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-              <span>Alger</span>
+              <span>Mellow</span>
               <span class="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold border border-amber-500/20">VIP 8</span>
             </div>
             <div class="text-[10px] text-slate-400 mt-0.5">连续听歌 328 天 · 听歌排行 TOP 1%</div>
@@ -609,7 +609,7 @@
             <div id="mPlaylistDetailTitle" class="text-sm font-extrabold text-slate-900 dark:text-white truncate">落日微风 · 私人漫游</div>
             <div id="mPlaylistDetailCurator" class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
               <i class="ri-user-smile-line text-emerald-500"></i>
-              <span>Alger 推荐制作</span>
+              <span>Mellow 推荐制作</span>
             </div>
             <div class="flex items-center gap-2 pt-1">
               <button onclick="playTrack(0)" class="soft-btn-primary px-3 py-1 rounded-full text-[11px] font-bold flex items-center gap-1 shadow-sm">
@@ -2159,7 +2159,7 @@
 
       const pData = RELEASES[idx % RELEASES.length] || {
         title: "落日微风 · 私人漫游",
-        artist: "Alger 推荐制作",
+        artist: "Mellow 推荐制作",
         cover: SONGS[0].cover
       };
 
@@ -2271,7 +2271,7 @@
     // 2. Playlist Square View Logic
     // ==========================================================================
     const PLAYLIST_SQUARE_ITEMS = [
-      { id: 0, title: "流行热歌速递 · 华语榜首", curator: "Alger 精选", count: "38 首", cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&auto=format&fit=crop&q=80", tag: "流行" },
+      { id: 0, title: "流行热歌速递 · 华语榜首", curator: "Mellow 精选", count: "38 首", cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&auto=format&fit=crop&q=80", tag: "流行" },
       { id: 1, title: "午后咖啡馆 · 治愈Lo-Fi", curator: "Chillhop", count: "50 首", cover: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=400&auto=format&fit=crop&q=80", tag: "Lo-Fi" },
       { id: 2, title: "经典摇滚不朽传奇", curator: "Rock Live", count: "42 首", cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&auto=format&fit=crop&q=80", tag: "摇滚" },
       { id: 3, title: "未来合成器 · 电子声浪", curator: "Cyber Beats", count: "29 首", cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80", tag: "电子" },
@@ -2352,7 +2352,7 @@
           songs: [0, 4, 1]
         },
         {
-          name: "🔥 热歌榜 (Alger Hot 500)",
+          name: "🔥 热歌榜 (Mellow Hot 500)",
           tag: "全网播放 TOP",
           color: "from-rose-500/20 to-amber-500/5",
           songs: [4, 0, 5]
@@ -2419,7 +2419,7 @@
       const container = document.getElementById('mRadioEpisodesContainer');
       if (!container) return;
       const EPISODES = [
-        { title: "Vol.128 深夜爵士与威士忌的低语", author: "Alger Radio", duration: "42:15", plays: "48.2万", cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=150" },
+        { title: "Vol.128 深夜爵士与威士忌的低语", author: "Mellow Radio", duration: "42:15", plays: "48.2万", cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=150" },
         { title: "Vol.127 走进久石让的纯真动画宇宙", author: "宫崎骏配乐档案馆", duration: "56:30", plays: "92.6万", cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=150" },
         { title: "Vol.126 电子合成器与未来复古狂潮", author: "Cyber Synthesizer", duration: "38:40", plays: "33.1万", cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=150" },
         { title: "Vol.125 雨夜咖啡馆 Lo-Fi 冥想专注流", author: "Chill & Work Studio", duration: "60:00", plays: "120.4万", cover: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=150" }
@@ -2545,8 +2545,8 @@
         songs: [2]
       },
       { 
-        name: "Alger", 
-        en: "Alger Music Lab", 
+        name: "Mellow", 
+        en: "Mellow Music Lab", 
         followers: "120 万", 
         avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
         bio: "独立音乐制作人与设计先锋，探索物理质感与自然微风声学。",
@@ -2661,7 +2661,7 @@
       { id: 101, title: "晴天 (无损离线版).flac", artist: "周杰伦", size: "32.4 MB", time: "04:29", idx: 0 },
       { id: 102, title: "Midnight City (HQ).mp3", artist: "M83", size: "9.8 MB", time: "04:03", idx: 1 },
       { id: 103, title: "Aura Chill (Master).wav", artist: "ODEsza", size: "48.1 MB", time: "03:45", idx: 2 },
-      { id: 104, title: "落日微风 (录音室母带).flac", artist: "Alger", size: "28.6 MB", time: "03:12", idx: 3 },
+      { id: 104, title: "落日微风 (录音室母带).flac", artist: "Mellow", size: "28.6 MB", time: "03:12", idx: 3 },
       { id: 105, title: "爱在西元前 (离线缓存).flac", artist: "周杰伦", size: "26.7 MB", time: "03:54", idx: 4 },
       { id: 106, title: "Starboy (HQ).mp3", artist: "The Weeknd", size: "8.9 MB", time: "03:50", idx: 5 }
     ];

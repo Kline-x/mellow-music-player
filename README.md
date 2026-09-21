@@ -1,6 +1,6 @@
-# AlgerMusicPlayer · Modern Soft UI (现代柔和微质感版)
+# Mellow Music · 润音 (Modern Soft UI 现代柔和微质感版)
 
-> 针对开源音乐播放器 [AlgerMusicPlayer](https://github.com/algerkong/AlgerMusicPlayer) 深度定制的 **Modern Soft UI（现代柔和微质感 / Soft Depth & Tactility / Calm Tech）** 全套交互式 UI 系统与高保真原型。
+> 专为全平台高保真体验打造的 **Modern Soft UI（现代柔和微质感 / Soft Depth & Tactility / Calm Tech）** 原生双端音乐播放器交互系统与原型。
 
 [![E2E Tests](https://img.shields.io/badge/E2E%20Tests-83%2F83%20Passed%20(100%25)-emerald?style=flat-square&logo=puppeteer)](e2e_test.js)
 [![UI Style](https://img.shields.io/badge/Design%20System-Modern%20Soft%20UI-pink?style=flat-square)](design_tokens.css)
@@ -125,8 +125,8 @@ Prototype meets the full Deliverable Production Standard (交付标准).
 ### 快速启动
 ```bash
 # 1. 克隆代码库
-git clone https://github.com/Kline-x/AlgerMusicPlayer-ModernSoftUI.git
-cd AlgerMusicPlayer-ModernSoftUI
+git clone https://github.com/Kline-x/mellow-music-player.git
+cd mellow-music-player
 
 # 2. 安装测试依赖
 npm install
