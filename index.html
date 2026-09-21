@@ -1,0 +1,3260 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alger Music Player · Modern Soft UI 现代柔和质感版</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Remix Icon CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet">
+  <!-- Google Fonts: Plus Jakarta Sans / Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="design_tokens.css">
+
+  <script>
+    tailwind.config = {
+      darkMode: ['class', '[data-theme="dark"]'],
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', '"PingFang SC"', '"Hiragino Sans GB"', '"Microsoft YaHei"', 'sans-serif'],
+          },
+          colors: {
+            soft: {
+              canvas: 'var(--soft-bg-canvas)',
+              surface: 'var(--soft-bg-surface)',
+              subtle: 'var(--soft-bg-subtle)',
+              recessed: 'var(--soft-bg-recessed)',
+              accent: 'var(--soft-accent)',
+              'accent-hover': 'var(--soft-accent-hover)',
+              'accent-light': 'var(--soft-accent-light)',
+            }
+          },
+          borderRadius: {
+            'squircle': '22px',
+            'squircle-lg': '28px',
+            'squircle-sm': '16px',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* ==========================================================================
+       Modern Soft UI Custom Utility Styles & Micro-tactility
+       ========================================================================== */
+    body {
+      background-color: var(--soft-bg-canvas);
+      color: var(--soft-text-main);
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+      transition: background-color 0.4s ease, color 0.4s ease;
+      overflow: hidden;
+    }
+
+    /* Soft Depth Surfaces */
+    .soft-surface {
+      background: var(--soft-bg-surface);
+      box-shadow: var(--soft-shadow-flat);
+      border: 1px solid var(--soft-border-subtle);
+    }
+
+    .soft-card {
+      background: var(--soft-bg-surface);
+      box-shadow: var(--soft-shadow-flat);
+      border: 1px solid var(--soft-border-subtle);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .soft-card:hover {
+      box-shadow: var(--soft-shadow-raised);
+      transform: translateY(-2px);
+    }
+
+    .soft-card-raised {
+      background: var(--soft-bg-surface);
+      box-shadow: var(--soft-shadow-raised);
+      border: 1px solid var(--soft-border-highlight);
+    }
+
+    .soft-recessed {
+      background: var(--soft-bg-recessed);
+      box-shadow: var(--soft-shadow-recessed);
+    }
+
+    /* Tactile Buttons */
+    .soft-btn {
+      background: var(--soft-bg-surface);
+      box-shadow: var(--soft-shadow-btn-convex);
+      border: 1px solid var(--soft-border-highlight);
+      color: var(--soft-text-main);
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .soft-btn:hover {
+      filter: brightness(1.02);
+      transform: translateY(-1px);
+    }
+    .soft-btn:active {
+      box-shadow: var(--soft-shadow-btn-pressed);
+      transform: translateY(1px) scale(0.97);
+    }
+
+    .soft-btn-primary {
+      background: var(--soft-accent-gradient, linear-gradient(135deg, var(--soft-accent) 0%, var(--soft-accent-hover) 100%)) !important;
+      color: #FFFFFF !important;
+      box-shadow: 0 6px 18px -2px var(--soft-accent-glow, rgba(16, 185, 129, 0.4)), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+      border: none;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .soft-btn-primary:hover {
+      filter: brightness(1.08);
+      box-shadow: 0 8px 24px -2px var(--soft-accent-glow, rgba(16, 185, 129, 0.5)), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+      transform: translateY(-1px);
+    }
+    .soft-btn-primary:active {
+      transform: translateY(1px) scale(0.96);
+      box-shadow: 0 2px 8px var(--soft-accent-glow, rgba(16, 185, 129, 0.4)), inset 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+    }
+
+    /* Floating Dock PlayBar */
+    .soft-dock {
+      background: var(--soft-bg-surface-translucent);
+      backdrop-filter: var(--soft-blur-glass);
+      -webkit-backdrop-filter: var(--soft-blur-glass);
+      box-shadow: var(--soft-shadow-dock);
+      border: 1px solid var(--soft-border-glass);
+    }
+
+    /* Recessed Sliders */
+    .soft-track {
+      background: var(--soft-bg-recessed);
+      box-shadow: var(--soft-shadow-recessed);
+      border-radius: var(--radius-pill);
+      position: relative;
+      cursor: pointer;
+    }
+    .soft-track-fill {
+      background: linear-gradient(90deg, var(--soft-accent), var(--soft-accent-hover, var(--soft-accent))) !important;
+      border-radius: var(--radius-pill);
+      box-shadow: 0 0 12px var(--soft-accent-glow, rgba(16, 185, 129, 0.4)) !important;
+      height: 100%;
+      position: relative;
+    }
+    .soft-thumb {
+      width: 14px;
+      height: 14px;
+      background: #FFFFFF;
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), 0 0 0 3px var(--soft-accent-glow, rgba(16, 185, 129, 0.25)) !important;
+      position: absolute;
+      right: -7px;
+      top: 50%;
+      transform: translateY(-50%);
+      transition: transform 0.15s ease;
+    }
+    .soft-track:hover .soft-thumb {
+      transform: translateY(-50%) scale(1.25);
+    }
+
+    /* Custom Scrollbar */
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.25);
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.45);
+    }
+
+    /* Hide scrollbar completely in lyrics and mobile view */
+    #lyricsContainer,
+    .is-mobile-view * {
+      scrollbar-width: none !important;
+      -ms-overflow-style: none !important;
+    }
+    #lyricsContainer::-webkit-scrollbar,
+    .is-mobile-view *::-webkit-scrollbar {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+      background: transparent !important;
+    }
+
+    /* Ambient Mesh Dynamic Glow */
+    .mesh-glow-container {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+      transition: opacity 0.6s ease;
+    }
+    .mesh-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: var(--mesh-opacity, 0.45);
+      animation: floatAura 18s ease-in-out infinite alternate;
+      transition: background 1s ease, opacity 0.5s ease;
+    }
+    .mesh-blob-1 {
+      width: 500px;
+      height: 500px;
+      top: -100px;
+      right: -100px;
+      background: var(--glow-color-1);
+    }
+    .mesh-blob-2 {
+      width: 450px;
+      height: 450px;
+      bottom: -150px;
+      left: 10%;
+      background: var(--glow-color-2);
+      animation-delay: -5s;
+    }
+    .mesh-blob-3 {
+      width: 400px;
+      height: 400px;
+      top: 30%;
+      left: 35%;
+      background: var(--glow-color-3);
+      animation-delay: -9s;
+    }
+
+    @keyframes floatAura {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(40px, -30px) scale(1.08); }
+      100% { transform: translate(-30px, 40px) scale(0.95); }
+    }
+
+    /* Vinyl Turntable Animation */
+    @keyframes spinVinyl {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .vinyl-spinning {
+      animation: spinVinyl 16s linear infinite;
+    }
+    .vinyl-paused {
+      animation-play-state: paused;
+    }
+
+    /* Equalizer Wave Bars */
+    .eq-bar {
+      width: 3px;
+      border-radius: 3px;
+      background: var(--soft-accent);
+      transform-origin: bottom;
+      animation: eqBounce 1.2s ease-in-out infinite alternate;
+      transition: height 0.2s ease;
+    }
+    @keyframes eqBounce {
+      0% { height: 4px; }
+      100% { height: 20px; }
+    }
+    .eq-bar:nth-child(1) { animation-delay: 0.1s; }
+    .eq-bar:nth-child(2) { animation-delay: 0.35s; }
+    .eq-bar:nth-child(3) { animation-delay: 0.2s; }
+    .eq-bar:nth-child(4) { animation-delay: 0.45s; }
+
+    /* Freeze EQ bars when playback is paused */
+    .vinyl-paused .eq-bar,
+    .is-paused .eq-bar,
+    [data-playing="false"] .eq-bar,
+    .vinyl-paused .eq-mini-bar,
+    .is-paused .eq-mini-bar,
+    [data-playing="false"] .eq-mini-bar {
+      animation-play-state: paused !important;
+      height: 4px !important;
+    }
+
+    /* Kinetic Lyrics Transition */
+    .lyric-item {
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+    }
+    .lyric-active {
+      color: #FFFFFF;
+      font-size: 1.85rem;
+      font-weight: 700;
+      opacity: 1 !important;
+      filter: blur(0px) !important;
+      text-shadow: 0 4px 24px rgba(255, 255, 255, 0.4);
+      transform: scale(1.03) translateX(8px);
+    }
+    .lyric-inactive {
+      opacity: 0.32;
+      filter: blur(0.6px);
+      font-size: 1.35rem;
+      font-weight: 500;
+    }
+    .lyric-inactive:hover {
+      opacity: 0.65;
+      filter: blur(0px);
+    }
+
+    /* Perspective 3D Vinyl */
+    .vinyl-record {
+      box-shadow: 
+        0 15px 35px -5px rgba(0, 0, 0, 0.4),
+        0 0 0 10px #18181b,
+        0 0 0 11px rgba(255, 255, 255, 0.1),
+        0 0 0 24px #09090b,
+        0 0 0 25px rgba(255, 255, 255, 0.05),
+        0 0 0 42px #18181b;
+    }
+
+    /* ==========================================================================
+       Mobile Simulation View Scoped Overrides (.is-mobile-view)
+       ========================================================================== */
+    .is-mobile-view {
+      max-width: 412px !important;
+      margin: 12px auto !important;
+      padding: 0 !important;
+      height: calc(100vh - 24px) !important;
+      border-radius: 36px !important;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35) !important;
+    }
+
+    .is-mobile-view .traffic-lights {
+      display: none !important;
+    }
+
+    .is-mobile-view .header-brand-badge {
+      display: none !important;
+    }
+
+    .is-mobile-view .header-search-box {
+      width: auto !important;
+      flex: 1 !important;
+      margin: 0 6px !important;
+    }
+
+    .is-mobile-view .header-user-text {
+      display: none !important;
+    }
+
+    .is-mobile-view #sidebarMenu {
+      display: none !important;
+    }
+
+    /* Hero Banner Mobile Adjustment */
+    .is-mobile-view .hero-vinyl {
+      display: none !important;
+    }
+    .is-mobile-view .hero-banner {
+      padding: 20px 18px !important;
+      min-height: auto !important;
+    }
+    .is-mobile-view .hero-banner h1 {
+      font-size: 1.25rem !important;
+      line-height: 1.35 !important;
+    }
+    .is-mobile-view .hero-banner p {
+      font-size: 0.72rem !important;
+    }
+    .is-mobile-view .hero-actions {
+      flex-wrap: wrap !important;
+      gap: 8px !important;
+      margin-top: 14px !important;
+    }
+    .is-mobile-view .hero-actions button {
+      padding: 8px 14px !important;
+      font-size: 0.75rem !important;
+    }
+
+    /* Playlists Grid: 2 Columns Only */
+    .is-mobile-view #playlistGrid {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 12px !important;
+    }
+    .is-mobile-view #playlistGrid .soft-card {
+      padding: 10px !important;
+    }
+    .is-mobile-view #playlistGrid .soft-card .text-xs {
+      font-size: 0.75rem !important;
+      line-height: 1.2 !important;
+      white-space: normal !important;
+      display: -webkit-box !important;
+      -webkit-line-clamp: 1 !important;
+      -webkit-box-orient: vertical !important;
+    }
+
+    /* Artists List: Compact */
+    .is-mobile-view #artistList {
+      gap: 10px !important;
+    }
+    .is-mobile-view #artistList .soft-card {
+      min-width: 140px !important;
+      padding: 8px 10px !important;
+    }
+
+    /* New Songs Grid: 1 Column */
+    .is-mobile-view #newSongsGrid {
+      grid-template-columns: 1fr !important;
+      gap: 8px !important;
+    }
+
+    /* Main Scroll Area Padding */
+    .is-mobile-view main {
+      padding: 16px !important;
+      padding-bottom: 95px !important;
+    }
+
+    /* Bottom PlayBar Mobile Optimization */
+    .is-mobile-view #playBarDock {
+      bottom: 12px !important;
+      width: calc(100% - 20px) !important;
+      padding: 8px 12px !important;
+      border-radius: 20px !important;
+    }
+    .is-mobile-view .dock-left {
+      width: auto !important;
+      flex: 1 !important;
+      min-width: 0 !important;
+    }
+    .is-mobile-view .dock-cover {
+      width: 40px !important;
+      height: 40px !important;
+    }
+    .is-mobile-view .dock-song-info {
+      max-width: 110px !important;
+    }
+    .is-mobile-view .dock-center {
+      max-width: none !important;
+      flex: 0 0 auto !important;
+      padding: 0 !important;
+    }
+    .is-mobile-view .dock-timeline,
+    .is-mobile-view .dock-shuffle-btn,
+    .is-mobile-view .dock-loop-btn {
+      display: none !important;
+    }
+    .is-mobile-view .dock-prev-btn,
+    .is-mobile-view .dock-next-btn {
+      width: 28px !important;
+      height: 28px !important;
+    }
+    .is-mobile-view #playPauseBtn {
+      width: 36px !important;
+      height: 36px !important;
+    }
+    .is-mobile-view .dock-right {
+      width: auto !important;
+      gap: 6px !important;
+    }
+    .is-mobile-view .dock-volume,
+    .is-mobile-view .dock-eq-bars {
+      display: none !important;
+    }
+    .is-mobile-view #lyricsBtn {
+      width: 28px !important;
+      height: 28px !important;
+    }
+    .is-mobile-view #queueBtn {
+      height: 28px !important;
+      padding: 0 8px !important;
+    }
+
+    /* Mobile Progress Line at top of dock */
+    .is-mobile-view #playBarDock::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 14px;
+      right: 14px;
+      height: 2.5px;
+      background: rgba(16, 185, 129, 0.4);
+      border-radius: 2px;
+    }
+  </style>
+</head>
+
+<body class="h-screen w-screen flex flex-col font-sans relative">
+
+  <!-- Modern Soft Floating Toast Container -->
+  <div id="toastContainer" class="fixed top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex flex-col items-center gap-2"></div>
+
+  <!-- Dynamic Ambient Mesh Glow -->
+  <div class="mesh-glow-container">
+    <div class="mesh-blob mesh-blob-1" id="meshBlob1"></div>
+    <div class="mesh-blob mesh-blob-2" id="meshBlob2"></div>
+    <div class="mesh-blob mesh-blob-3" id="meshBlob3"></div>
+  </div>
+
+  <!-- Main Container -->
+  <div id="appContainer" class="flex-1 flex flex-col overflow-hidden relative z-10 p-3.5 transition-all duration-300">
+    
+    <!-- Outer Window Card (Simulating Frameless Electron Window in Modern Soft UI) -->
+    <div class="flex-1 flex flex-col soft-card-raised rounded-squircle-lg overflow-hidden relative backdrop-blur-md">
+      
+      <!-- ==========================================================================
+           1. Window TitleBar / Header
+           ========================================================================== -->
+      <header class="h-14 px-5 flex items-center justify-between border-b border-white/40 dark:border-white/5 z-20 shrink-0 select-none bg-white/40 dark:bg-black/20 backdrop-blur-md">
+        
+        <!-- Left: Traffic Lights & Branding -->
+        <div class="flex items-center gap-6">
+          <div class="flex items-center gap-2 traffic-lights">
+            <button class="w-3.5 h-3.5 rounded-full bg-rose-400 hover:bg-rose-500 shadow-sm transition-transform active:scale-90 flex items-center justify-center group" title="关闭">
+              <i class="ri-close-line text-[9px] text-rose-900 opacity-0 group-hover:opacity-100"></i>
+            </button>
+            <button class="w-3.5 h-3.5 rounded-full bg-amber-400 hover:bg-amber-500 shadow-sm transition-transform active:scale-90 flex items-center justify-center group" title="最小化">
+              <i class="ri-subtract-line text-[9px] text-amber-900 opacity-0 group-hover:opacity-100"></i>
+            </button>
+            <button class="w-3.5 h-3.5 rounded-full bg-emerald-400 hover:bg-emerald-500 shadow-sm transition-transform active:scale-90 flex items-center justify-center group" title="全屏">
+              <i class="ri-fullscreen-line text-[9px] text-emerald-900 opacity-0 group-hover:opacity-100"></i>
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2.5">
+            <div class="w-7 h-7 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-md shadow-emerald-500/20 text-white">
+              <i class="ri-disc-fill text-lg animate-spin" style="animation-duration: 8s;"></i>
+            </div>
+            <span class="font-bold text-[15px] tracking-tight text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+              Alger Music
+              <span class="header-brand-badge text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Soft UI 5.2</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Center: Recessed Pill Search Bar -->
+        <div class="relative w-80 md:w-96 header-search-box">
+          <div class="soft-recessed rounded-full px-3.5 py-1.5 flex items-center gap-2.5 text-slate-400 focus-within:ring-2 focus-within:ring-emerald-500/30 transition-all">
+            <i class="ri-search-2-line text-slate-400 text-sm"></i>
+            <input 
+              id="searchInput"
+              type="text" 
+              placeholder="搜索歌曲、歌手、专辑、播客..." 
+              autocomplete="off"
+              class="bg-transparent border-none outline-none text-xs text-slate-700 dark:text-slate-200 placeholder-slate-400 w-full font-medium"
+            >
+            <span class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-md bg-white/70 dark:bg-white/10 text-slate-400 shadow-xs">⌘ K</span>
+          </div>
+
+          <!-- Instant Search Dropdown -->
+          <div id="searchDropdown" class="hidden absolute top-full left-0 right-0 mt-2 p-3 soft-card rounded-2xl shadow-2xl z-50 max-h-80 overflow-y-auto space-y-2 backdrop-blur-xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-white/10 animate-fadeIn">
+            <!-- Search items rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Right: Actions & User Capsule -->
+        <div class="flex items-center gap-2.5">
+          
+          <!-- View Switcher (Desktop / Mobile Mode) -->
+          <button id="viewportToggleBtn" class="soft-btn px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5" title="切换手机/桌面端视口">
+            <i class="ri-smartphone-line text-emerald-500"></i>
+            <span id="viewportModeText" class="hidden sm:inline">宽屏模式</span>
+          </button>
+
+          <!-- Quick Link to Native Mobile Prototype -->
+          <a href="mobile.html" class="soft-btn px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 text-slate-700 dark:text-slate-300" title="打开独立手机端 App">
+            <i class="ri-external-link-line text-emerald-500"></i>
+            <span class="hidden md:inline">移动端 App</span>
+          </a>
+
+          <!-- Theme Toggle (Light / Dark) -->
+          <button id="themeToggleBtn" class="soft-btn w-9 h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300" title="切换暗黑/温润浅色主题">
+            <i id="themeIcon" class="ri-sun-line text-base text-amber-500"></i>
+          </button>
+
+          <!-- Settings Button -->
+          <button id="settingsBtn" class="soft-btn w-9 h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300" title="个性化设置">
+            <i class="ri-settings-4-line text-base"></i>
+          </button>
+
+          <!-- User Profile -->
+          <div class="flex items-center gap-2.5 pl-2 border-l border-slate-200 dark:border-slate-800">
+            <div class="relative cursor-pointer group">
+              <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Avatar" class="w-8 h-8 rounded-full object-cover ring-2 ring-emerald-500/40 shadow-sm">
+              <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full"></span>
+            </div>
+            <span class="header-user-text text-xs font-semibold text-slate-700 dark:text-slate-200 hidden lg:inline">Alger</span>
+          </div>
+
+        </div>
+      </header>
+
+      <!-- ==========================================================================
+           2. App Body: Left Sidebar + Central Router Views
+           ========================================================================== -->
+      <div class="flex-1 flex overflow-hidden relative">
+
+        <!-- Left Soft Dock Sidebar -->
+        <aside id="sidebarMenu" class="w-56 p-4 flex flex-col justify-between shrink-0 border-r border-slate-200/50 dark:border-white/5 select-none bg-white/20 dark:bg-black/10 backdrop-blur-sm transition-all duration-300">
+          
+          <div class="space-y-6">
+            
+            <!-- Group 1: 在线音乐 -->
+            <div>
+              <div class="px-3 text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase mb-2">在线音乐</div>
+              <nav class="space-y-1">
+                <button data-nav="discover" class="nav-item active w-full px-3.5 py-2.5 rounded-2xl flex items-center gap-3 text-xs font-semibold transition-all">
+                  <i class="ri-compass-3-fill text-base text-emerald-500"></i>
+                  <span>发现探索</span>
+                </button>
+                <button data-nav="playlists" class="nav-item w-full px-3.5 py-2.5 rounded-2xl flex items-center gap-3 text-xs font-semibold transition-all text-slate-600 dark:text-slate-400 hover:bg-slate-100/60 dark:hover:bg-white/5">
+                  <i class="ri-play-list-line text-base"></i>
+                  <span>歌单广场</span>
+                </button>
+                <button data-nav="toplist" class="nav-item w-full px-3.5 py-2.5 rounded-2xl flex items-center gap-3 text-xs font-semibold transition-all text-slate-600 dark:text-slate-400 hover:bg-slate-100/60 dark:hover:bg-white/5">
+                  <i class="ri-bar-chart-2-line text-base"></i>
+                  <span>巅峰排行榜</span>
+                </button>
+                <button data-nav="artists" class="nav-item w-full px-3.5 py-2.5 rounded-2xl flex items-center gap-3 text-xs font-semibold transition-all text-slate-600 dark:text-slate-400 hover:bg-slate-100/60 dark:hover:bg-white/5">
+                  <i class="ri-user-star-line text-base"></i>
+                  <span>热门歌手</span>
+                </button>
+                <button data-nav="podcast" class="nav-item w-full px-3.5 py-2.5 rounded-2xl flex items-center gap-3 text-xs font-semibold transition-all text-slate-600 dark:text-slate-400 hover:bg-slate-100/60 dark:hover:bg-white/5">
+                  <i class="ri-broadcast-line text-base"></i>
+                  <span>声音电台</span>
+                </button>
+              </nav>
+            </div>
+
+            <!-- Group 2: 我的音乐库 -->
+            <div>
+              <div class="px-3 text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase mb-2">我的音乐</div>
+              <nav class="space-y-1">
+                <button data-nav="favorite" class="nav-item w-full px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-xs font-semibold transition-all text-slate-600 dark:text-slate-400 hover:bg-slate-100/60 dark:hover:bg-white/5">
+                  <div class="flex items-center gap-3">
+                    <i class="ri-heart-3-line text-base text-rose-500"></i>
+                    <span>我喜欢的音乐</span>
+                  </div>
+                  <span id="favCountBadge" class="px-1.5 py-0.5 rounded-full text-[10px] bg-rose-500/10 text-rose-500 font-bold">3</span>
+                </button>
+                <button data-nav="history" class="nav-item w-full px-3.5 py-2.5 rounded-2xl flex items-center gap-3 text-xs font-semibold transition-all text-slate-600 dark:text-slate-400 hover:bg-slate-100/60 dark:hover:bg-white/5">
+                  <i class="ri-history-line text-base"></i>
+                  <span>最近播放</span>
+                </button>
+                <button data-nav="local" class="nav-item w-full px-3.5 py-2.5 rounded-2xl flex items-center gap-3 text-xs font-semibold transition-all text-slate-600 dark:text-slate-400 hover:bg-slate-100/60 dark:hover:bg-white/5">
+                  <i class="ri-folder-music-line text-base"></i>
+                  <span>本地与下载</span>
+                </button>
+              </nav>
+            </div>
+
+          </div>
+
+          <!-- Bottom Soft Mini Widget: Hi-Res Audio Badge -->
+          <div class="soft-card p-3 rounded-2xl flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-xs shrink-0">
+              Hi·Res
+            </div>
+            <div class="min-w-0">
+              <div class="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate">Alger VIP 音质</div>
+              <div class="text-[10px] text-slate-400 truncate">192kHz / 24bit 母带</div>
+            </div>
+          </div>
+
+        </aside>
+
+        <!-- Central Content Scroll View -->
+        <main class="flex-1 overflow-y-auto overflow-x-hidden relative p-6 pb-36">
+
+          <!-- ==========================================================================
+               VIEW 1: Discover / Home (发现主页 Bento 仪表板)
+               ========================================================================== -->
+          <div id="viewDiscover" class="space-y-8 animate-fadeIn">
+            
+            <!-- Hero Banner: 今日雷达 / 私人漫游 -->
+            <div class="soft-card-raised rounded-squircle p-6 md:p-8 relative overflow-hidden flex flex-col justify-between min-h-[220px] group hero-banner">
+              <!-- Soft Aura in Banner -->
+              <div class="absolute -right-16 -top-16 w-80 h-80 bg-gradient-to-br from-emerald-400/25 via-teal-300/20 to-sky-400/10 rounded-full blur-3xl pointer-events-none"></div>
+
+              <div class="relative z-10 max-w-xl space-y-3">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/80 dark:bg-black/40 backdrop-blur-md border border-white/60 dark:border-white/10 text-xs font-bold text-emerald-600 dark:text-emerald-400 shadow-xs">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  今日雷达 · 私人漫游专席
+                </div>
+                <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                  落日、汽水与微风：午后治愈私享集
+                </h1>
+                <p class="text-xs md:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                  基于你近期的 328 首收藏算法量身定制，融汇 Vaporwave、Lo-Fi 与温润爵士吉他。
+                </p>
+              </div>
+
+              <div class="relative z-10 mt-6 flex items-center gap-4 hero-actions">
+                <button onclick="playTrack(0)" class="soft-btn-primary px-6 py-2.5 rounded-full text-xs font-bold flex items-center gap-2">
+                  <i class="ri-play-fill text-base"></i>
+                  <span>立即启程播放</span>
+                </button>
+                <button onclick="openPlaylist(0)" class="soft-btn px-5 py-2.5 rounded-full text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  查看全部 24 首
+                </button>
+              </div>
+
+              <!-- Right Decorative Vinyl Graphic -->
+              <div class="absolute right-6 top-1/2 -translate-y-1/2 hidden md:flex items-center hero-vinyl">
+                <div class="relative w-36 h-36 rounded-full vinyl-record vinyl-spinning overflow-hidden flex items-center justify-center">
+                  <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&auto=format&fit=crop&q=80" alt="cover" class="w-14 h-14 rounded-full object-cover">
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 1: 推荐歌单 (Playlists Bento) -->
+            <section class="space-y-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h2 class="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>推荐歌单</span>
+                    <i class="ri-arrow-right-s-line text-slate-400"></i>
+                  </h2>
+                  <p class="text-xs text-slate-400">根据你的听歌品味个性化生成的宝藏精选</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button class="soft-btn w-8 h-8 rounded-full flex items-center justify-center text-slate-500"><i class="ri-arrow-left-s-line"></i></button>
+                  <button class="soft-btn w-8 h-8 rounded-full flex items-center justify-center text-slate-500"><i class="ri-arrow-right-s-line"></i></button>
+                </div>
+              </div>
+
+              <!-- Grid -->
+              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4" id="playlistGrid">
+                <!-- Playlist cards populated dynamically -->
+              </div>
+            </section>
+
+            <!-- Section 2: 热门歌手 (Artists Horizontal Pills) -->
+            <section class="space-y-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h2 class="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>热门歌手</span>
+                    <i class="ri-arrow-right-s-line text-slate-400"></i>
+                  </h2>
+                  <p class="text-xs text-slate-400">你可能喜欢的当季热榜音乐人</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-4 overflow-x-auto pb-2" id="artistList">
+                <!-- Artists populated dynamically -->
+              </div>
+            </section>
+
+            <!-- Section 3: 新歌速递 (New Tracks Compact Bento) -->
+            <section class="space-y-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h2 class="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>新歌速递</span>
+                    <i class="ri-arrow-right-s-line text-slate-400"></i>
+                  </h2>
+                  <p class="text-xs text-slate-400">全网今日热播与全球新专发售</p>
+                </div>
+                <button onclick="playTrack(1)" class="soft-btn px-4 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5">
+                  <i class="ri-play-circle-line text-emerald-500"></i>
+                  播放全部
+                </button>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" id="newSongsGrid">
+                <!-- Songs populated dynamically -->
+              </div>
+            </section>
+
+          </div>
+
+          <!-- ==========================================================================
+               VIEW 2: Playlist Detail (歌单详情页)
+               ========================================================================== -->
+          <div id="viewPlaylist" class="space-y-6 hidden animate-fadeIn">
+            
+            <!-- Return Back Button -->
+            <button onclick="backToDiscover()" class="soft-btn px-4 py-2 rounded-full text-xs font-semibold inline-flex items-center gap-2">
+              <i class="ri-arrow-left-line"></i>
+              <span>返回发现页</span>
+            </button>
+
+            <!-- Playlist Header Card -->
+            <div class="soft-card-raised rounded-squircle p-6 md:p-8 flex flex-col md:flex-row items-center md:items-start gap-7">
+              <img id="detailCover" src="" alt="Cover" class="w-48 h-48 rounded-2xl object-cover shadow-2xl ring-1 ring-white/50 dark:ring-white/10 shrink-0">
+              
+              <div class="space-y-3.5 flex-1 min-w-0 text-center md:text-left">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
+                  官方精选专辑
+                </div>
+                <h1 id="detailTitle" class="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white"></h1>
+                <p id="detailDesc" class="text-xs md:text-sm text-slate-500 dark:text-slate-400 leading-relaxed"></p>
+                
+                <div class="flex items-center justify-center md:justify-start gap-4 text-xs text-slate-400 pt-1">
+                  <span id="detailCreator" class="flex items-center gap-1.5 font-medium text-slate-600 dark:text-slate-300">
+                    <i class="ri-user-3-line"></i> Alger Music
+                  </span>
+                  <span>·</span>
+                  <span id="detailPlays"></span>
+                </div>
+
+                <!-- Action Bar -->
+                <div class="flex items-center justify-center md:justify-start gap-3 pt-3">
+                  <button onclick="playCurrentPlaylistAll()" class="soft-btn-primary px-6 py-2.5 rounded-full text-xs font-bold flex items-center gap-2">
+                    <i class="ri-play-fill text-base"></i>
+                    <span>播放全部</span>
+                  </button>
+                  <button class="soft-btn px-4 py-2.5 rounded-full text-xs font-semibold flex items-center gap-1.5">
+                    <i class="ri-heart-3-line text-rose-500"></i>
+                    <span>收藏</span>
+                  </button>
+                  <button class="soft-btn px-4 py-2.5 rounded-full text-xs font-semibold flex items-center gap-1.5">
+                    <i class="ri-download-2-line"></i>
+                    <span>下载</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Song List Table -->
+            <div class="soft-card rounded-squircle p-4">
+              <div class="px-4 py-2 flex items-center text-xs font-bold text-slate-400 border-b border-slate-200/60 dark:border-white/5">
+                <div class="w-12 text-center">#</div>
+                <div class="flex-1">歌曲标题</div>
+                <div class="w-44 hidden md:block">歌手</div>
+                <div class="w-44 hidden lg:block">专辑</div>
+                <div class="w-20 text-right">时长</div>
+              </div>
+
+              <div id="playlistTracksBody" class="divide-y divide-slate-100 dark:divide-white/5">
+                <!-- Tracks rendered here -->
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ==========================================================================
+               VIEW 3: Settings Modal / View (个性化设置)
+               ========================================================================== -->
+          <div id="viewSettings" class="space-y-6 hidden animate-fadeIn max-w-2xl mx-auto">
+            <div class="flex items-center justify-between">
+              <h2 class="text-xl font-extrabold text-slate-900 dark:text-white">个性化设置 · Modern Soft UI</h2>
+              <button onclick="backToDiscover()" class="soft-btn w-8 h-8 rounded-full flex items-center justify-center">
+                <i class="ri-close-line"></i>
+              </button>
+            </div>
+
+            <!-- Theme Card -->
+            <div class="soft-card rounded-squircle p-5 space-y-4">
+              <div class="text-sm font-bold text-slate-900 dark:text-white">主题外观与质感模式</div>
+              <div class="grid grid-cols-2 gap-3">
+                <button onclick="setTheme('light')" id="settingThemeLight" class="soft-btn p-3.5 rounded-2xl flex items-center gap-3 border-emerald-500/50">
+                  <i class="ri-sun-fill text-amber-500 text-xl"></i>
+                  <div class="text-left">
+                    <div class="text-xs font-bold">温润白瓷 (Light)</div>
+                    <div class="text-[10px] text-slate-400">高质感柔灰与纯白漫反射</div>
+                  </div>
+                </button>
+                <button onclick="setTheme('dark')" id="settingThemeDark" class="soft-btn p-3.5 rounded-2xl flex items-center gap-3">
+                  <i class="ri-moon-fill text-indigo-400 text-xl"></i>
+                  <div class="text-left">
+                    <div class="text-xs font-bold">深石墨夜间 (Dark)</div>
+                    <div class="text-[10px] text-slate-400">深色微浮雕，无刺眼高光</div>
+                  </div>
+                </button>
+              </div>
+
+              <!-- Accent Color -->
+              <div class="pt-3 border-t border-slate-200/60 dark:border-white/5 flex items-center justify-between">
+                <span class="text-xs font-medium text-slate-600 dark:text-slate-300">主题强调色 (Accent Color)</span>
+                <div class="flex items-center gap-2.5" id="accentPickerGroup">
+                  <button onclick="setAccent('#10B981')" data-accent="#10B981" class="accent-dot w-6 h-6 rounded-full bg-[#10B981] ring-2 ring-white dark:ring-black shadow-xs flex items-center justify-center transition-all cursor-pointer" title="翡翠绿 (Emerald)"></button>
+                  <button onclick="setAccent('#3B82F6')" data-accent="#3B82F6" class="accent-dot w-6 h-6 rounded-full bg-[#3B82F6] ring-2 ring-white dark:ring-black shadow-xs flex items-center justify-center transition-all cursor-pointer" title="海洋蓝 (Ocean Blue)"></button>
+                  <button onclick="setAccent('#EC4899')" data-accent="#EC4899" class="accent-dot w-6 h-6 rounded-full bg-[#EC4899] ring-2 ring-white dark:ring-black shadow-xs flex items-center justify-center transition-all cursor-pointer" title="蔷薇粉 (Rose Pink)"></button>
+                  <button onclick="setAccent('#8B5CF6')" data-accent="#8B5CF6" class="accent-dot w-6 h-6 rounded-full bg-[#8B5CF6] ring-2 ring-white dark:ring-black shadow-xs flex items-center justify-center transition-all cursor-pointer" title="极光紫 (Aurora Purple)"></button>
+                </div>
+              </div>
+
+              <!-- Glow Intensity -->
+              <div class="pt-3 border-t border-slate-200/60 dark:border-white/5 space-y-2">
+                <div class="flex justify-between text-xs font-medium">
+                  <span class="text-slate-600 dark:text-slate-300">动态声学弥散光晕浓度</span>
+                  <span id="glowValText" class="text-emerald-500 font-bold">45%</span>
+                </div>
+                <input id="glowRange" type="range" min="0" max="100" value="45" class="w-full accent-emerald-500 cursor-pointer">
+              </div>
+            </div>
+
+            <!-- Audio Settings -->
+            <div class="soft-card rounded-squircle p-5 space-y-3">
+              <div class="text-sm font-bold text-slate-900 dark:text-white">在线试听与输出品质</div>
+              <div class="space-y-2">
+                <label class="flex items-center justify-between p-3 rounded-2xl soft-recessed cursor-pointer">
+                  <div>
+                    <div class="text-xs font-bold text-slate-800 dark:text-slate-200">Hi-Res 无损母带音频 (192kHz / 24bit)</div>
+                    <div class="text-[10px] text-slate-400">保留录音棚全部声场动态与呼吸感细节</div>
+                  </div>
+                  <input type="radio" name="audioQuality" checked class="accent-emerald-500 w-4 h-4">
+                </label>
+                <label class="flex items-center justify-between p-3 rounded-2xl hover:bg-slate-100/50 dark:hover:bg-white/5 cursor-pointer">
+                  <div>
+                    <div class="text-xs font-bold text-slate-800 dark:text-slate-200">SQ 超高清无损 (FLAC)</div>
+                    <div class="text-[10px] text-slate-400">平衡流量与CD级纯净音质</div>
+                  </div>
+                  <input type="radio" name="audioQuality" class="accent-emerald-500 w-4 h-4">
+                </label>
+              </div>
+            </div>
+
+            <!-- About Card -->
+            <div class="soft-card rounded-squircle p-5 space-y-2">
+              <div class="text-xs font-bold text-slate-900 dark:text-white">关于 AlgerMusicPlayer · Modern Soft UI</div>
+              <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                本套 UI 依据 Modern Soft UI / Calm Tech 规范为 AlgerMusicPlayer 深度重构定制，支持连续曲率圆角、双层漫散射景深微阴影、触感按压与声色联动的动态流动氛围光。
+              </p>
+            </div>
+          </div>
+
+          <!-- ==========================================================================
+               VIEW 4: Playlists Square (歌单广场)
+               ========================================================================== -->
+          <div id="viewPlaylists" class="space-y-6 hidden animate-fadeIn">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white">歌单广场 · 分类精选</h1>
+                <p class="text-xs text-slate-400 mt-1">汇聚全网优质策展歌单，寻找契合你此刻心境的专属旋律</p>
+              </div>
+              <div class="flex items-center gap-2 overflow-x-auto pb-1">
+                <button class="soft-btn-primary px-3.5 py-1.5 rounded-full text-xs font-bold">全部精选</button>
+                <button class="soft-btn px-3 py-1.5 rounded-full text-xs font-semibold text-slate-600 dark:text-slate-300">治愈松弛</button>
+                <button class="soft-btn px-3 py-1.5 rounded-full text-xs font-semibold text-slate-600 dark:text-slate-300">流行热榜</button>
+                <button class="soft-btn px-3 py-1.5 rounded-full text-xs font-semibold text-slate-600 dark:text-slate-300">欧美经典</button>
+                <button class="soft-btn px-3 py-1.5 rounded-full text-xs font-semibold text-slate-600 dark:text-slate-300">电子氛围</button>
+              </div>
+            </div>
+
+            <!-- Playlists Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5" id="playlistsSquareGrid">
+              <!-- Populated dynamically via renderPlaylistsSquare() -->
+            </div>
+          </div>
+
+          <!-- ==========================================================================
+               VIEW 5: Toplist Charts (巅峰排行榜)
+               ========================================================================== -->
+          <div id="viewToplist" class="space-y-6 hidden animate-fadeIn">
+            <div>
+              <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white">巅峰排行榜 · 官方榜单</h1>
+              <p class="text-xs text-slate-400 mt-1">根据全网播放、分享及收藏热度实时计算权威趋势</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="toplistCardsContainer">
+              <!-- Rendered dynamically via renderToplistView() -->
+            </div>
+          </div>
+
+          <!-- ==========================================================================
+               VIEW 6: Artists (热门歌手)
+               ========================================================================== -->
+          <div id="viewArtists" class="space-y-6 hidden animate-fadeIn">
+            <div class="flex items-center justify-between">
+              <div>
+                <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white">热门歌手 · 音乐人专区</h1>
+                <p class="text-xs text-slate-400 mt-1">收录华语流行、欧美殿堂、独立音乐人热门专辑</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4" id="artistsFullGrid">
+              <!-- Rendered dynamically via renderArtistsView() -->
+            </div>
+          </div>
+
+          <!-- ==========================================================================
+               VIEW 7: Podcast / Radio (声音电台)
+               ========================================================================== -->
+          <div id="viewPodcast" class="space-y-6 hidden animate-fadeIn">
+            <div>
+              <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white">声音电台 · 沉浸声景</h1>
+              <p class="text-xs text-slate-400 mt-1">24小时不间断的白噪音、情感共鸣与晚安私语</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5" id="podcastGrid">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- ==========================================================================
+               VIEW 8: Favorites (我喜欢的音乐)
+               ========================================================================== -->
+          <div id="viewFavorite" class="space-y-6 hidden animate-fadeIn">
+            <!-- Favorite Header Banner -->
+            <div class="soft-card-raised rounded-squircle p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 relative overflow-hidden">
+              <div class="w-36 h-36 rounded-2xl bg-gradient-to-tr from-rose-500 to-pink-400 flex items-center justify-center text-white text-6xl shadow-xl shadow-rose-500/25 shrink-0">
+                <i class="ri-heart-3-fill"></i>
+              </div>
+              <div class="flex-1 text-center md:text-left space-y-2">
+                <span class="px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-500 text-xs font-bold">我的音乐收藏</span>
+                <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white">我喜欢的音乐</h1>
+                <p class="text-xs text-slate-400" id="favStatsText">收录你轻触红心保存的全部动听歌曲</p>
+                <div class="flex items-center justify-center md:justify-start gap-3 pt-3">
+                  <button onclick="playAllFavorites()" class="soft-btn-primary px-6 py-2.5 rounded-full text-xs font-bold flex items-center gap-2">
+                    <i class="ri-play-fill text-base"></i>
+                    <span>播放全部</span>
+                  </button>
+                  <button onclick="clearFavorites()" class="soft-btn px-4 py-2.5 rounded-full text-xs font-semibold text-rose-500">
+                    清空全部收藏
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Favorite Song List -->
+            <div class="soft-card rounded-squircle p-4">
+              <div class="px-4 py-2 flex items-center text-xs font-bold text-slate-400 border-b border-slate-200/60 dark:border-white/5">
+                <div class="w-12 text-center">#</div>
+                <div class="flex-1">歌曲标题</div>
+                <div class="w-44 hidden md:block">歌手</div>
+                <div class="w-44 hidden lg:block">专辑</div>
+                <div class="w-20 text-right">时长</div>
+                <div class="w-16 text-center">操作</div>
+              </div>
+              <div id="favoriteTracksBody" class="divide-y divide-slate-100 dark:divide-white/5">
+                <!-- Tracks dynamically rendered -->
+              </div>
+            </div>
+          </div>
+
+          <!-- ==========================================================================
+               VIEW 9: History (最近播放历史)
+               ========================================================================== -->
+          <div id="viewHistory" class="space-y-6 hidden animate-fadeIn">
+            <div class="flex items-center justify-between">
+              <div>
+                <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white">最近播放 · 历史足迹</h1>
+                <p class="text-xs text-slate-400 mt-1">记录你近期聆听的歌曲与灵感旅程</p>
+              </div>
+              <button onclick="clearHistory()" class="soft-btn px-4 py-2 rounded-full text-xs font-semibold text-rose-500">
+                <i class="ri-delete-bin-line mr-1"></i>清空历史
+              </button>
+            </div>
+
+            <div class="soft-card rounded-squircle p-4">
+              <div id="historyTracksBody" class="divide-y divide-slate-100 dark:divide-white/5">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+          </div>
+
+          <!-- ==========================================================================
+               VIEW 10: Local & Downloads (本地与下载 - 支持真实文件选择与拖拽播放)
+               ========================================================================== -->
+          <div id="viewLocal" class="space-y-6 hidden animate-fadeIn">
+            <div class="flex items-center justify-between">
+              <div>
+                <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white">本地音乐与已下载</h1>
+                <p class="text-xs text-slate-400 mt-1">管理你的本地音频文件与高解析无损离线缓存，支持拖拽即播</p>
+              </div>
+              <div class="flex items-center gap-3">
+                <input type="file" id="localAudioFileInput" accept="audio/*" multiple onchange="handleLocalFiles(this.files)" class="hidden">
+                <button onclick="document.getElementById('localAudioFileInput').click()" class="soft-btn px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 text-slate-700 dark:text-slate-200">
+                  <i class="ri-file-music-line text-emerald-500"></i>导入本地音频
+                </button>
+                <button onclick="scanLocalDemoFiles()" class="soft-btn-primary px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1">
+                  <i class="ri-refresh-line"></i>扫描本地曲库
+                </button>
+              </div>
+            </div>
+
+            <!-- Drag & Drop Soft Recessed Zone -->
+            <div id="localDropzone" class="border-2 border-dashed border-emerald-500/30 hover:border-emerald-500/60 rounded-squircle p-8 text-center space-y-3 soft-recessed transition-all cursor-pointer">
+              <div class="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto text-3xl">
+                <i class="ri-upload-cloud-2-line"></i>
+              </div>
+              <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">拖拽本地音乐文件到此处，或点击按钮快速导入</h3>
+              <p class="text-xs text-slate-400 max-w-md mx-auto">支持 FLAC、APE、WAV、DSD、OGG 与 MP3 格式，即刻由 Web Audio 纯净声学引擎解析回放</p>
+            </div>
+
+            <!-- Local Tracks List -->
+            <div class="soft-card rounded-squircle p-4 space-y-2">
+              <div class="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-white/5">
+                <div class="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <span>已导入本地曲目</span>
+                  <span id="localCountBadge" class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/10 text-emerald-500 font-bold">6 首</span>
+                </div>
+                <button onclick="playAllLocalSongs()" class="soft-btn px-3 py-1 rounded-full text-[11px] font-bold text-emerald-500 flex items-center gap-1">
+                  <i class="ri-play-fill"></i>播放全部
+                </button>
+              </div>
+              <div class="px-4 py-2 flex items-center text-xs font-bold text-slate-400 border-b border-slate-200/40 dark:border-white/5">
+                <div class="w-12 text-center">#</div>
+                <div class="flex-1">歌曲标题</div>
+                <div class="w-44 hidden md:block">艺术家</div>
+                <div class="w-24 text-right">格式/时长</div>
+                <div class="w-16 text-center">操作</div>
+              </div>
+              <div id="localTracksBody" class="divide-y divide-slate-100 dark:divide-white/5">
+                <!-- Local songs populated dynamically -->
+              </div>
+            </div>
+          </div>
+
+          <!-- ==========================================================================
+               VIEW 11: Artist Detail Page (歌手专页 · 音乐人深度档案)
+               ========================================================================== -->
+          <div id="viewArtistDetail" class="space-y-6 hidden animate-fadeIn">
+            <!-- Back button -->
+            <div class="flex items-center justify-between">
+              <button onclick="backToArtists()" class="soft-btn px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                <i class="ri-arrow-left-s-line text-base"></i>
+                <span>返回歌手专区</span>
+              </button>
+            </div>
+
+            <!-- Hero Artist Banner -->
+            <div class="soft-card-raised rounded-squircle p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 relative overflow-hidden">
+              <div class="relative w-36 h-36 rounded-full overflow-hidden ring-4 ring-emerald-500/30 shadow-2xl shrink-0">
+                <img id="artistDetailImg" src="" alt="Artist" class="w-full h-full object-cover">
+              </div>
+              <div class="flex-1 text-center md:text-left space-y-3">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-500/20">
+                  <i class="ri-verified-badge-fill text-amber-500"></i>
+                  <span>Alger 认证官方音乐人</span>
+                </div>
+                <h1 id="artistDetailName" class="text-3xl font-extrabold text-slate-900 dark:text-white">歌手名</h1>
+                <p id="artistDetailStats" class="text-xs text-slate-400">1,290万 粉丝 · 5,420,100 月度听众</p>
+                <div class="flex items-center justify-center md:justify-start gap-3 pt-2">
+                  <button onclick="playAllArtistSongs()" class="soft-btn-primary px-6 py-2.5 rounded-full text-xs font-bold flex items-center gap-2">
+                    <i class="ri-play-fill text-base"></i>
+                    <span>播放热门单曲</span>
+                  </button>
+                  <button id="artistFollowBtn" onclick="toggleFollowArtist()" class="soft-btn px-5 py-2.5 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200">
+                    <i class="ri-add-line mr-1"></i>关注歌手
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Artist Tracks Table -->
+            <div class="soft-card rounded-squircle p-4 space-y-2">
+              <div class="px-4 py-2 flex items-center justify-between border-b border-slate-200/60 dark:border-white/5">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white">歌手代表作与热门单曲</h3>
+                <span id="artistTrackCountText" class="text-xs text-slate-400">共收录 6 首</span>
+              </div>
+              <div class="px-4 py-2 flex items-center text-xs font-bold text-slate-400 border-b border-slate-200/40 dark:border-white/5">
+                <div class="w-12 text-center">#</div>
+                <div class="flex-1">歌曲标题</div>
+                <div class="w-44 hidden md:block">专辑</div>
+                <div class="w-20 text-right">时长</div>
+                <div class="w-24 text-center">操作</div>
+              </div>
+              <div id="artistTracksBody" class="divide-y divide-slate-100 dark:divide-white/5">
+                <!-- Dynamically populated via renderArtistDetail -->
+              </div>
+            </div>
+          </div>
+
+        </main>
+
+      </div>
+
+      <!-- ==========================================================================
+           3. Modern Soft Signature Floating Dock PlayBar (悬浮胶囊播放器底栏)
+           ========================================================================== -->
+      <div id="playBarDock" class="absolute bottom-5 left-1/2 -translate-x-1/2 w-[95%] max-w-4xl soft-dock rounded-full px-5 py-3 flex items-center justify-between z-30 transition-all duration-300">
+        
+        <!-- Left: Current Song Info & Cover (Click cover opens Fullscreen Lyrics) -->
+        <div class="dock-left flex items-center gap-3.5 min-w-0 w-1/4">
+          <div onclick="toggleLyricsScreen()" class="relative group cursor-pointer shrink-0">
+            <img id="dockCover" src="" alt="Album" class="dock-cover w-12 h-12 rounded-xl object-cover shadow-md transition-transform group-hover:scale-105">
+            <div class="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <i class="ri-arrow-up-s-line text-white text-xl"></i>
+            </div>
+          </div>
+          <div class="dock-song-info min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span id="dockTitle" class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate"></span>
+              <span class="text-[9px] px-1.5 py-0.2 rounded font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">SQ</span>
+            </div>
+            <p id="dockArtist" class="text-[11px] text-slate-400 truncate mt-0.5"></p>
+          </div>
+          <!-- Like button -->
+          <button id="dockLikeBtn" onclick="toggleLikeCurrent()" class="text-slate-400 hover:text-rose-500 transition-colors shrink-0 ml-1">
+            <i id="dockLikeIcon" class="ri-heart-3-line text-base"></i>
+          </button>
+        </div>
+
+        <!-- Center: Playback Controls & Seekbar -->
+        <div class="dock-center flex-1 max-w-md px-4 flex flex-col items-center gap-1.5">
+          
+          <!-- Control Buttons -->
+          <div class="flex items-center gap-5">
+            <button onclick="toggleShuffle()" id="shuffleBtn" class="dock-shuffle-btn text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors" title="随机播放">
+              <i class="ri-shuffle-line text-sm"></i>
+            </button>
+            <button onclick="prevTrack()" class="dock-prev-btn soft-btn w-8 h-8 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-200" title="上一首">
+              <i class="ri-skip-back-fill text-xs"></i>
+            </button>
+            <button onclick="togglePlayPause()" id="playPauseBtn" class="soft-btn-primary w-11 h-11 rounded-full flex items-center justify-center text-white" title="播放/暂停">
+              <i id="playPauseIcon" class="ri-play-fill text-lg ml-0.5"></i>
+            </button>
+            <button onclick="nextTrack()" class="dock-next-btn soft-btn w-8 h-8 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-200" title="下一首">
+              <i class="ri-skip-forward-fill text-xs"></i>
+            </button>
+            <button onclick="toggleLoop()" id="loopBtn" class="dock-loop-btn text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors" title="列表循环">
+              <i class="ri-repeat-2-line text-sm"></i>
+            </button>
+          </div>
+
+          <!-- Timeline Slider -->
+          <div class="dock-timeline w-full flex items-center gap-3">
+            <span id="currentTimeText" class="text-[10px] font-mono text-slate-400 w-8 text-right">00:00</span>
+            <div id="seekTrack" onclick="handleSeek(event)" onmousemove="handleSeekHover(event)" onmouseleave="handleSeekLeave()" class="soft-track h-2 flex-1 relative cursor-pointer group">
+              <!-- Hover timestamp tooltip -->
+              <div id="seekTooltip" class="opacity-0 pointer-events-none absolute -top-8 px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold bg-slate-900/90 text-white shadow-lg transform -translate-x-1/2 transition-opacity z-20 whitespace-nowrap border border-white/10">00:00</div>
+              <div id="seekFill" class="soft-track-fill w-0">
+                <div class="soft-thumb"></div>
+              </div>
+            </div>
+            <span id="durationText" class="text-[10px] font-mono text-slate-400 w-8">03:40</span>
+          </div>
+
+        </div>
+
+        <!-- Right: Volume, EQ, Sleep Timer, Lyrics Toggle, Queue Toggle -->
+        <div class="dock-right flex items-center justify-end gap-2.5 w-1/4">
+          
+          <!-- Volume slider -->
+          <div class="dock-volume hidden sm:flex items-center gap-2">
+            <button id="volumeBtn" onclick="toggleMute()" class="text-slate-500 dark:text-slate-400 hover:text-emerald-500 transition-colors">
+              <i id="volumeIcon" class="ri-volume-up-line text-base"></i>
+            </button>
+            <div id="volumeTrack" onclick="handleVolume(event)" class="soft-track w-16 h-1.5 relative">
+              <div id="volumeFill" class="soft-track-fill w-[70%]">
+                <div class="soft-thumb" style="width: 10px; height: 10px; right: -5px;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Soundwave EQ Preview Button (Clickable to open Equalizer Modal) -->
+          <div onclick="openEqModal()" class="dock-eq-bars flex items-end gap-0.5 h-4 px-1.5 py-0.5 rounded-lg hover:bg-slate-100/50 dark:hover:bg-white/10 cursor-pointer transition-all" title="打开音效与均衡器设置">
+            <div class="eq-bar"></div>
+            <div class="eq-bar"></div>
+            <div class="eq-bar"></div>
+            <div class="eq-bar"></div>
+          </div>
+
+          <!-- Sleep Timer Button -->
+          <button onclick="openSleepTimerModal()" id="sleepTimerBtn" class="soft-btn w-8 h-8 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 relative" title="睡眠定时器">
+            <i class="ri-timer-line text-sm"></i>
+            <span id="sleepTimerDot" class="hidden absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          </button>
+
+          <!-- Lyrics Button -->
+          <button onclick="toggleLyricsScreen()" id="lyricsBtn" class="soft-btn w-8 h-8 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300" title="沉浸式歌词 (点击封面亦可进入)">
+            <i class="ri-netease-cloud-music-line text-sm"></i>
+          </button>
+
+          <!-- Playing Queue Drawer Toggle -->
+          <button onclick="toggleQueueDrawer()" id="queueBtn" class="soft-btn px-2.5 h-8 rounded-full flex items-center gap-1 text-slate-600 dark:text-slate-300" title="播放队列">
+            <i class="ri-play-list-2-line text-sm"></i>
+            <span id="queueBadge" class="text-[10px] font-bold text-emerald-500">6</span>
+          </button>
+
+        </div>
+
+      </div>
+
+      <!-- ==========================================================================
+           4. Fullscreen Immersive Lyrics View (沉浸式动效歌词页 - MusicFull)
+           ========================================================================== -->
+      <div id="lyricsScreen" class="absolute inset-0 z-40 bg-slate-900/90 backdrop-blur-3xl flex flex-col p-8 text-white opacity-0 pointer-events-none translate-y-6 transition-all duration-300 ease-out">
+        
+        <!-- Header Bar -->
+        <div class="flex items-center justify-between shrink-0 mb-6">
+          <button onclick="toggleLyricsScreen()" class="soft-btn px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2 bg-white/10 text-white border-white/20">
+            <i class="ri-arrow-down-s-line text-lg"></i>
+            <span>收起详情</span>
+          </button>
+
+          <div class="text-center">
+            <div id="fullTrackName" class="text-base font-bold tracking-tight"></div>
+            <div id="fullArtistName" class="text-xs text-white/60"></div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button class="soft-btn px-3 py-1.5 rounded-full text-xs font-semibold bg-white/10 text-white border-white/20">
+              Hi-Res 192kHz
+            </button>
+          </div>
+        </div>
+
+        <!-- Body: Left Vinyl Turntable + Right Apple-Music Kinetic Lyrics -->
+        <div class="flex-1 flex flex-col md:flex-row items-center justify-center gap-12 overflow-hidden max-w-6xl mx-auto w-full">
+          
+          <!-- Left: Rotating Neumorphic Vinyl Record -->
+          <div class="w-full md:w-1/2 flex flex-col items-center justify-center relative">
+            <div id="turntableDisc" class="relative w-64 h-64 md:w-80 md:h-80 rounded-full vinyl-record vinyl-spinning overflow-hidden flex items-center justify-center shadow-2xl transition-all">
+              <img id="fullAlbumCover" src="" alt="Album Art" class="w-28 h-28 md:w-36 md:h-36 rounded-full object-cover shadow-inner ring-4 ring-black/40">
+              <!-- Center Spindle Hole -->
+              <div class="absolute w-6 h-6 rounded-full bg-black/80 ring-2 ring-white/30"></div>
+            </div>
+
+            <!-- Soft Acoustic Shadow under Vinyl -->
+            <div class="w-60 h-6 bg-black/50 rounded-full blur-xl mt-8"></div>
+          </div>
+
+          <!-- Right: Apple Music Style Kinetic Scrolling Lyrics -->
+          <div class="w-full md:w-1/2 h-[380px] md:h-[480px] overflow-y-auto relative pr-4 flex flex-col justify-center select-none" id="lyricsContainer">
+            <!-- Lyrics Lines rendered dynamically -->
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ==========================================================================
+           5. Right Slide-out Playing Queue Drawer
+           ========================================================================== -->
+      <div id="queueDrawer" class="absolute top-0 right-0 bottom-0 w-80 soft-dock border-l border-white/20 dark:border-white/5 z-40 p-5 flex flex-col translate-x-full transition-transform duration-300 shadow-2xl">
+        <div class="flex items-center justify-between pb-4 border-b border-white/10">
+          <div class="flex items-center gap-2 font-bold text-sm">
+            <i class="ri-play-list-2-line text-emerald-500"></i>
+            <span>播放队列 (<span id="drawerCount">0</span>)</span>
+          </div>
+          <button onclick="toggleQueueDrawer()" class="soft-btn w-7 h-7 rounded-full flex items-center justify-center">
+            <i class="ri-close-line text-xs"></i>
+          </button>
+        </div>
+
+        <!-- Track list in drawer -->
+        <div id="drawerTrackList" class="flex-1 overflow-y-auto divide-y divide-white/5 py-2 space-y-1">
+          <!-- Populated dynamically -->
+        </div>
+
+        <div class="pt-3 border-t border-white/10 flex justify-between items-center text-xs">
+          <span class="text-slate-400">Alger 智能无缝切歌</span>
+          <button onclick="clearQueue()" class="text-rose-400 hover:text-rose-500 font-semibold">清空列表</button>
+        </div>
+      </div>
+
+      <!-- ==========================================================================
+           6. Audio Equalizer & Sound Effects Modal (#eqModal)
+           ========================================================================== -->
+      <div id="eqModal" class="hidden absolute inset-0 z-50 bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+        <div class="soft-card-raised rounded-squircle p-6 max-w-md w-full space-y-5 bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-white/10 shadow-2xl">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-200/60 dark:border-white/5">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center font-bold">
+                <i class="ri-equalizer-line text-lg"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white">专业声学均衡器与音效</h3>
+                <p class="text-[10px] text-slate-400">Web Audio 硬件级声学校准算法</p>
+              </div>
+            </div>
+            <button onclick="closeEqModal()" class="soft-btn w-8 h-8 rounded-full flex items-center justify-center text-slate-500">
+              <i class="ri-close-line"></i>
+            </button>
+          </div>
+
+          <!-- Dynamic Visual EQ Display -->
+          <div class="soft-recessed p-4 rounded-2xl flex items-end justify-around h-24 gap-2">
+            <div class="flex flex-col items-center gap-1.5 flex-1">
+              <div id="eqBand1" class="w-full bg-emerald-500/80 rounded-full transition-all duration-300 h-10"></div>
+              <span class="text-[9px] font-mono text-slate-400">60Hz</span>
+            </div>
+            <div class="flex flex-col items-center gap-1.5 flex-1">
+              <div id="eqBand2" class="w-full bg-emerald-500/80 rounded-full transition-all duration-300 h-14"></div>
+              <span class="text-[9px] font-mono text-slate-400">250Hz</span>
+            </div>
+            <div class="flex flex-col items-center gap-1.5 flex-1">
+              <div id="eqBand3" class="w-full bg-emerald-500/80 rounded-full transition-all duration-300 h-12"></div>
+              <span class="text-[9px] font-mono text-slate-400">1kHz</span>
+            </div>
+            <div class="flex flex-col items-center gap-1.5 flex-1">
+              <div id="eqBand4" class="w-full bg-emerald-500/80 rounded-full transition-all duration-300 h-16"></div>
+              <span class="text-[9px] font-mono text-slate-400">4kHz</span>
+            </div>
+            <div class="flex flex-col items-center gap-1.5 flex-1">
+              <div id="eqBand5" class="w-full bg-emerald-500/80 rounded-full transition-all duration-300 h-11"></div>
+              <span class="text-[9px] font-mono text-slate-400">16kHz</span>
+            </div>
+          </div>
+
+          <!-- Preset Selector Buttons -->
+          <div class="space-y-2">
+            <div class="text-xs font-bold text-slate-700 dark:text-slate-300">声学校准预设 (Acoustic Presets)</div>
+            <div class="grid grid-cols-2 gap-2" id="eqPresetButtons">
+              <button onclick="setEqPreset('flat')" data-eq="flat" class="eq-preset-btn soft-btn active p-2.5 rounded-xl text-left border-emerald-500/50 bg-emerald-500/10">
+                <div class="text-xs font-bold text-emerald-600 dark:text-emerald-400">原声直通 (Flat)</div>
+                <div class="text-[10px] text-slate-400">录音棚未渲染纯真本色</div>
+              </button>
+              <button onclick="setEqPreset('bass')" data-eq="bass" class="eq-preset-btn soft-btn p-2.5 rounded-xl text-left">
+                <div class="text-xs font-bold text-slate-800 dark:text-slate-200">超重低音 (Bass Boost)</div>
+                <div class="text-[10px] text-slate-400">低频下潜与澎湃量感</div>
+              </button>
+              <button onclick="setEqPreset('vocal')" data-eq="vocal" class="eq-preset-btn soft-btn p-2.5 rounded-xl text-left">
+                <div class="text-xs font-bold text-slate-800 dark:text-slate-200">清澈人声 (Clear Vocal)</div>
+                <div class="text-[10px] text-slate-400">突出歌者唇齿呼吸与情感</div>
+              </button>
+              <button onclick="setEqPreset('jazz')" data-eq="jazz" class="eq-preset-btn soft-btn p-2.5 rounded-xl text-left">
+                <div class="text-xs font-bold text-slate-800 dark:text-slate-200">温润爵士 (Warm Jazz)</div>
+                <div class="text-[10px] text-slate-400">复古黑胶与模拟磁带质感</div>
+              </button>
+              <button onclick="setEqPreset('surround')" data-eq="surround" class="eq-preset-btn soft-btn p-2.5 rounded-xl text-left col-span-2">
+                <div class="text-xs font-bold text-slate-800 dark:text-slate-200">3D 全景空间环绕 (Holographic Spatial)</div>
+                <div class="text-[10px] text-slate-400">拓展耳机声场边界，仿佛置身音乐厅中央</div>
+              </button>
+            </div>
+          </div>
+
+          <div class="pt-2 flex justify-end">
+            <button onclick="closeEqModal()" class="soft-btn-primary px-5 py-2 rounded-full text-xs font-bold">
+              保存并应用声效
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================================================
+           7. Sleep Timer Modal (#sleepTimerModal)
+           ========================================================================== -->
+      <div id="sleepTimerModal" class="hidden absolute inset-0 z-50 bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+        <div class="soft-card-raised rounded-squircle p-6 max-w-sm w-full space-y-4 bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-white/10 shadow-2xl">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-white/5">
+            <div class="flex items-center gap-2">
+              <i class="ri-timer-line text-lg text-emerald-500"></i>
+              <h3 class="text-sm font-bold text-slate-900 dark:text-white">睡眠定时关闭</h3>
+            </div>
+            <button onclick="closeSleepTimerModal()" class="soft-btn w-8 h-8 rounded-full flex items-center justify-center text-slate-500">
+              <i class="ri-close-line"></i>
+            </button>
+          </div>
+
+          <div id="sleepTimerActiveStatus" class="p-3 rounded-xl soft-recessed text-center hidden">
+            <div class="text-xs text-slate-400">正在倒计时</div>
+            <div id="sleepCountdownText" class="text-xl font-mono font-bold text-emerald-500">15:00</div>
+          </div>
+
+          <div class="space-y-1.5" id="sleepTimerOptions">
+            <button onclick="setSleepTimer(0)" class="w-full text-left p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 text-xs font-bold text-rose-500 flex items-center justify-between">
+              <span>关闭定时器</span>
+              <i class="ri-forbid-line"></i>
+            </button>
+            <button onclick="setSleepTimer(15)" class="w-full text-left p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 text-xs text-slate-700 dark:text-slate-300 flex items-center justify-between">
+              <span>15 分钟后</span>
+              <span class="text-[10px] text-slate-400 font-mono">15m</span>
+            </button>
+            <button onclick="setSleepTimer(30)" class="w-full text-left p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 text-xs text-slate-700 dark:text-slate-300 flex items-center justify-between">
+              <span>30 分钟后</span>
+              <span class="text-[10px] text-slate-400 font-mono">30m</span>
+            </button>
+            <button onclick="setSleepTimer(45)" class="w-full text-left p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 text-xs text-slate-700 dark:text-slate-300 flex items-center justify-between">
+              <span>45 分钟后</span>
+              <span class="text-[10px] text-slate-400 font-mono">45m</span>
+            </button>
+            <button onclick="setSleepTimer(60)" class="w-full text-left p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 text-xs text-slate-700 dark:text-slate-300 flex items-center justify-between">
+              <span>60 分钟后</span>
+              <span class="text-[10px] text-slate-400 font-mono">60m</span>
+            </button>
+            <button onclick="setSleepTimer('song')" class="w-full text-left p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 text-xs text-slate-700 dark:text-slate-300 flex items-center justify-between">
+              <span>播完当前曲目后停止</span>
+              <i class="ri-disc-line text-emerald-500"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ==========================================================================
+       Client-side Interactive Logic & Audio Simulation
+       ========================================================================== -->
+  <script>
+    // Mock Song Catalog (Reflecting AlgerMusicPlayer Real Playlists)
+    const SONGS = [
+      {
+        id: 1,
+        title: "晴天 (Sunny Day)",
+        artist: "周杰伦",
+        album: "叶惠美",
+        duration: "04:29",
+        durationSec: 269,
+        cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80",
+        glow: { c1: "rgba(16, 185, 129, 0.4)", c2: "rgba(59, 130, 246, 0.3)", c3: "rgba(245, 158, 11, 0.25)" },
+        lyrics: [
+          { time: 0, text: "故事的小黄花 从出生那年就飘着" },
+          { time: 5, text: "童年的荡秋千 随记忆一直晃到现在" },
+          { time: 12, text: "Re So So Si Do Si La So La Si Si Si Si La Si La So" },
+          { time: 19, text: "吹着前奏望着天空 我想起花瓣试着掉落" },
+          { time: 27, text: "为你翘课的那一天 花落的那一天" },
+          { time: 35, text: "教室的那一间 我怎么看不见" },
+          { time: 42, text: "消失的下雨天 我好想再淋一遍" },
+          { time: 49, text: "没想到失去的勇气我还留着" },
+          { time: 56, text: "好想再问一遍 你会等待还是离开" },
+          { time: 65, text: "刮风这天 我试过握着你手" },
+          { time: 73, text: "但偏偏 雨渐渐 大到我看你不见" },
+          { time: 82, text: "还要多久 我才能在你身边" },
+          { time: 90, text: "等到放晴的那天 也许我会比较好一点" }
+        ]
+      },
+      {
+        id: 2,
+        title: "Midnight City (午夜霓虹)",
+        artist: "M83",
+        album: "Hurry Up, We're Dreaming",
+        duration: "04:03",
+        durationSec: 243,
+        cover: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80",
+        glow: { c1: "rgba(139, 92, 246, 0.45)", c2: "rgba(236, 72, 153, 0.35)", c3: "rgba(59, 130, 246, 0.25)" },
+        lyrics: [
+          { time: 0, text: "Waiting in a car" },
+          { time: 6, text: "Waiting for a ride in the dark" },
+          { time: 14, text: "The night city grows" },
+          { time: 21, text: "Look and see her eyes, they glow" },
+          { time: 28, text: "Waiting in a car" },
+          { time: 35, text: "Waiting for a ride in the dark" },
+          { time: 43, text: "The city is my church" },
+          { time: 50, text: "It wraps me in the blinding twilight" },
+          { time: 58, text: "The night is on my side" },
+          { time: 66, text: "Look and see her eyes, they glow" }
+        ]
+      },
+      {
+        id: 3,
+        title: "慢冷 (Slow Cooling)",
+        artist: "梁静茹",
+        album: "我好吗？- 太阳如常升起",
+        duration: "05:18",
+        durationSec: 318,
+        cover: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&auto=format&fit=crop&q=80",
+        glow: { c1: "rgba(244, 63, 94, 0.4)", c2: "rgba(245, 158, 11, 0.3)", c3: "rgba(168, 85, 247, 0.2)" },
+        lyrics: [
+          { time: 0, text: "怎么先炽热的却先变冷了" },
+          { time: 6, text: "慢热的却停不了还在沸腾着" },
+          { time: 14, text: "看每一次日落 怎么越走越远" },
+          { time: 22, text: "痛过的人才懂" },
+          { time: 30, text: "冲动的人向来听不见挽留" },
+          { time: 38, text: "这世界有多大 就会有多孤独" },
+          { time: 46, text: "浪漫如果变成牵绊 谁还在意承诺" },
+          { time: 55, text: "慢冷的人 最怕突然的余温" }
+        ]
+      },
+      {
+        id: 4,
+        title: "Golden Hour",
+        artist: "JVKE",
+        album: "this is what ____ feels like",
+        duration: "03:29",
+        durationSec: 209,
+        cover: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80",
+        glow: { c1: "rgba(245, 158, 11, 0.45)", c2: "rgba(234, 88, 12, 0.35)", c3: "rgba(253, 224, 71, 0.25)" },
+        lyrics: [
+          { time: 0, text: "It was just two lovers" },
+          { time: 4, text: "Sittin' in the car, listening to Blonde" },
+          { time: 8, text: "Fallin' for each other" },
+          { time: 12, text: "Pink and orange skies, feelin' super childish" },
+          { time: 18, text: "No Donald Glover, missin' my call" },
+          { time: 24, text: "She's got the golden hour shine" },
+          { time: 30, text: "I don't need no camera to see you" }
+        ]
+      },
+      {
+        id: 5,
+        title: "爱在西元前",
+        artist: "周杰伦",
+        album: "范特西",
+        duration: "03:54",
+        durationSec: 234,
+        cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80",
+        glow: { c1: "rgba(16, 185, 129, 0.4)", c2: "rgba(20, 184, 166, 0.35)", c3: "rgba(59, 130, 246, 0.2)" },
+        lyrics: [
+          { time: 0, text: "古巴比伦王颁布了汉谟拉比法典" },
+          { time: 6, text: "刻在黑色的玄武岩 距今已经三千七百多年" },
+          { time: 13, text: "你在橱窗前 凝视碑文的字眼" },
+          { time: 20, text: "我却在旁静静欣赏你那张我深爱的脸" },
+          { time: 27, text: "祭司 神殿 征战 弓箭 是谁的从前" },
+          { time: 34, text: "喜欢在人潮中你只属于我的那画面" },
+          { time: 42, text: "经过苏美女神身边 凝视泥板上的字迹" }
+        ]
+      },
+      {
+        id: 6,
+        title: "Starboy",
+        artist: "The Weeknd ft. Daft Punk",
+        album: "Starboy",
+        duration: "03:50",
+        durationSec: 230,
+        cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80",
+        glow: { c1: "rgba(239, 68, 68, 0.4)", c2: "rgba(59, 130, 246, 0.35)", c3: "rgba(147, 51, 234, 0.25)" },
+        lyrics: [
+          { time: 0, text: "I'm tryna put you in the worst mood, ah" },
+          { time: 4, text: "P1 cleaner than your church shoes, ah" },
+          { time: 9, text: "Milli point two just to hurt you, ah" },
+          { time: 14, text: "All red Lamb' just to tease you, ah" },
+          { time: 20, text: "Look what you've done" },
+          { time: 24, text: "I'm a motherfuckin' starboy" }
+        ]
+      }
+    ];
+
+    const PLAYLISTS = [
+      {
+        id: 1,
+        title: "Alger 每日私享雷达",
+        desc: "依据听歌习惯智能生成的专属每日精选",
+        cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80",
+        plays: "2,410,920",
+        songs: [0, 1, 2, 3, 4, 5]
+      },
+      {
+        id: 2,
+        title: "极简专注：代码与深度思考",
+        desc: "助你迅速进入 Flow 状态的柔和电子律动",
+        cover: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80",
+        plays: "892,100",
+        songs: [1, 3, 5]
+      },
+      {
+        id: 3,
+        title: "华语经典：千禧年回忆录",
+        desc: "周杰伦、陈奕迅、梁静茹那些触动心底的旋律",
+        cover: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&auto=format&fit=crop&q=80",
+        plays: "5,302,400",
+        songs: [0, 2, 4]
+      },
+      {
+        id: 4,
+        title: "落日飞车 · 慢摇海岸线",
+        desc: "微风沉醉的黄昏，享受属于假日的放空",
+        cover: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80",
+        plays: "643,800",
+        songs: [3, 0, 1]
+      },
+      {
+        id: 5,
+        title: "深夜灵感调色盘",
+        desc: "合成器浪潮与未来放克带来的超现实夜景",
+        cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80",
+        plays: "312,500",
+        songs: [1, 5, 2]
+      },
+      {
+        id: 6,
+        title: "欧美热单与公告牌精选",
+        desc: "全球流媒体风向标，本周最受瞩目的格莱美宠儿",
+        cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80",
+        plays: "4,120,000",
+        songs: [5, 3, 1]
+      }
+    ];
+
+    const ARTISTS = [
+      { name: "周杰伦", fans: "1,290万 粉丝", img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80" },
+      { name: "Taylor Swift", fans: "3,890万 粉丝", img: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&auto=format&fit=crop&q=80" },
+      { name: "告五人", fans: "450万 粉丝", img: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&auto=format&fit=crop&q=80" },
+      { name: "The Weeknd", fans: "2,400万 粉丝", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80" },
+      { name: "梁静茹", fans: "820万 粉丝", img: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&auto=format&fit=crop&q=80" },
+      { name: "M83", fans: "320万 粉丝", img: "https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?w=200&auto=format&fit=crop&q=80" }
+    ];
+
+    // ==========================================================================
+    // Modern Soft Acoustic Synthesizer (Procedural Ambient Chord Engine)
+    // ==========================================================================
+    class ModernSoftAudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.masterGain = null;
+        this.isPlaying = false;
+        this.currentChordTimer = null;
+        this.chordIndex = 0;
+        this.volume = 0.7;
+        this.eqFilter = null;
+        this.currentPreset = 'flat';
+        // Warm jazz / lo-fi chord progressions (Hz)
+        this.chords = [
+          [261.63, 329.63, 392.00, 493.88], // CMaj7
+          [220.00, 261.63, 329.63, 392.00], // Am7
+          [293.66, 349.23, 440.00, 523.25], // Dm7
+          [196.00, 246.94, 293.66, 349.23], // G7
+          [349.23, 440.00, 523.25, 659.25], // FMaj7
+          [164.81, 246.94, 329.63, 392.00]  // Em7
+        ];
+      }
+
+      init() {
+        if (this.ctx) return;
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+          this.masterGain = this.ctx.createGain();
+          this.masterGain.gain.setValueAtTime(this.volume, this.ctx.currentTime);
+          
+          // Connect through dynamic Biquad EQ Filter to destination
+          this.eqFilter = this.ctx.createBiquadFilter();
+          this.eqFilter.type = 'peaking';
+          this.eqFilter.frequency.setValueAtTime(1000, this.ctx.currentTime);
+          this.eqFilter.gain.setValueAtTime(0, this.ctx.currentTime);
+
+          this.masterGain.connect(this.eqFilter);
+          this.eqFilter.connect(this.ctx.destination);
+        } catch(e) {
+          console.log("AudioContext not supported or blocked:", e);
+        }
+      }
+
+      setPreset(name) {
+        this.currentPreset = name;
+        if (!this.ctx) this.init();
+        if (!this.ctx || !this.eqFilter) return;
+        const now = this.ctx.currentTime;
+        if (name === 'bass') {
+          this.eqFilter.type = 'lowshelf';
+          this.eqFilter.frequency.setValueAtTime(120, now);
+          this.eqFilter.gain.setValueAtTime(9, now);
+        } else if (name === 'vocal') {
+          this.eqFilter.type = 'peaking';
+          this.eqFilter.frequency.setValueAtTime(2500, now);
+          this.eqFilter.gain.setValueAtTime(7, now);
+          this.eqFilter.Q.setValueAtTime(1.2, now);
+        } else if (name === 'jazz') {
+          this.eqFilter.type = 'peaking';
+          this.eqFilter.frequency.setValueAtTime(600, now);
+          this.eqFilter.gain.setValueAtTime(5, now);
+          this.eqFilter.Q.setValueAtTime(0.8, now);
+        } else if (name === 'surround') {
+          this.eqFilter.type = 'highshelf';
+          this.eqFilter.frequency.setValueAtTime(5000, now);
+          this.eqFilter.gain.setValueAtTime(6, now);
+        } else { // flat
+          this.eqFilter.type = 'peaking';
+          this.eqFilter.gain.setValueAtTime(0, now);
+        }
+      }
+
+      play() {
+        this.init();
+        if (!this.ctx) return;
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+        this.isPlaying = true;
+        this.masterGain.gain.cancelScheduledValues(this.ctx.currentTime);
+        this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, this.ctx.currentTime);
+        this.masterGain.gain.linearRampToValueAtTime(this.volume, this.ctx.currentTime + 0.1);
+        this.triggerChord();
+        this.scheduleNextChord();
+      }
+
+      pause() {
+        this.isPlaying = false;
+        if (this.currentChordTimer) clearTimeout(this.currentChordTimer);
+        if (this.ctx && this.masterGain) {
+          this.masterGain.gain.cancelScheduledValues(this.ctx.currentTime);
+          this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, this.ctx.currentTime);
+          this.masterGain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.15);
+        }
+      }
+
+      setVolume(v) {
+        this.volume = Math.max(0, Math.min(1, v));
+        if (this.ctx && this.masterGain && this.isPlaying) {
+          this.masterGain.gain.setTargetAtTime(this.volume, this.ctx.currentTime, 0.05);
+        }
+      }
+
+      setMute(isMuted) {
+        if (this.ctx && this.masterGain) {
+          const target = isMuted ? 0 : this.volume;
+          this.masterGain.gain.setTargetAtTime(target, this.ctx.currentTime, 0.05);
+        }
+      }
+
+      triggerChime() {
+        this.init();
+        if (!this.ctx) return;
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        const now = this.ctx.currentTime;
+        [523.25, 659.25, 783.99].forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + i * 0.06);
+          gain.gain.setValueAtTime(0.06 * this.volume, now + i * 0.06);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.06 + 0.35);
+          osc.connect(gain);
+          gain.connect(this.masterGain);
+          osc.start(now + i * 0.06);
+          osc.stop(now + i * 0.06 + 0.38);
+        });
+      }
+
+      triggerChord() {
+        if (!this.isPlaying || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const chord = this.chords[this.chordIndex % this.chords.length];
+        this.chordIndex++;
+
+        // Warm analog low-pass filter
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(850, now);
+        filter.frequency.exponentialRampToValueAtTime(450, now + 2.0);
+        filter.connect(this.masterGain);
+
+        chord.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = idx % 2 === 0 ? 'triangle' : 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+
+          const noteStart = now + idx * 0.04;
+          const notePeak = noteStart + 0.08;
+          const noteDuration = 2.3;
+
+          gain.gain.setValueAtTime(0.0001, noteStart);
+          gain.gain.linearRampToValueAtTime(0.05, notePeak);
+          gain.gain.exponentialRampToValueAtTime(0.0001, noteStart + noteDuration);
+
+          osc.connect(gain);
+          gain.connect(filter);
+          osc.start(noteStart);
+          osc.stop(noteStart + noteDuration + 0.1);
+        });
+      }
+
+      scheduleNextChord() {
+        if (!this.isPlaying) return;
+        this.currentChordTimer = setTimeout(() => {
+          if (this.isPlaying) {
+            this.triggerChord();
+            this.scheduleNextChord();
+          }
+        }, 2500);
+      }
+    }
+
+    const audioEngine = new ModernSoftAudioEngine();
+
+    // ==========================================================================
+    // State Variables & Storage Persistence
+    // ==========================================================================
+    let currentTrackIndex = 0;
+    let isPlaying = false;
+    let playbackSeconds = 0;
+    let timerInterval = null;
+    let isMuted = false;
+    let currentVolume = parseFloat(localStorage.getItem('alger_volume') || '0.7');
+    let currentPlaylistObj = null;
+    let playMode = 'repeat-all'; // 'repeat-all' | 'repeat-one' | 'shuffle'
+    let playQueue = [...SONGS];
+    let localSongs = [];
+    let currentArtistObj = null;
+    let sleepTimerId = null;
+    let sleepTimerRemaining = 0;
+    let sleepTimerMode = null; // null | 'time' | 'song'
+    let currentEqPreset = 'flat';
+
+    // Liked Songs Management
+    let likedSongIds = [];
+    try {
+      likedSongIds = JSON.parse(localStorage.getItem('alger_liked_songs') || '[0, 2, 4]');
+    } catch(e) {
+      likedSongIds = [0, 2, 4];
+    }
+
+    // Play History Management
+    let playHistory = [];
+    try {
+      playHistory = JSON.parse(localStorage.getItem('alger_history') || '[{"songId":0,"time":"刚刚"}]');
+    } catch(e) {
+      playHistory = [{ songId: 0, time: "刚刚" }];
+    }
+
+    function saveLikedSongs() {
+      localStorage.setItem('alger_liked_songs', JSON.stringify(likedSongIds));
+      updateFavoriteCountBadge();
+    }
+
+    function savePlayHistory() {
+      localStorage.setItem('alger_history', JSON.stringify(playHistory));
+    }
+
+    function recordHistory(songId) {
+      playHistory = playHistory.filter(h => h.songId !== songId);
+      playHistory.unshift({ songId: songId, time: "刚刚" });
+      if (playHistory.length > 20) playHistory.pop();
+      savePlayHistory();
+    }
+
+    function updateFavoriteCountBadge() {
+      const badge = document.getElementById('favCountBadge');
+      if (badge) badge.textContent = likedSongIds.length;
+      const stats = document.getElementById('favStatsText');
+      if (stats) stats.textContent = `收录了你在 Alger 发现保存的 ${likedSongIds.length} 首心动歌曲`;
+    }
+
+    // ==========================================================================
+    // Modern Soft UI Toast Notifications
+    // ==========================================================================
+    function showToast(message, icon = 'ri-check-line text-emerald-400') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+      container.innerHTML = '';
+      const toast = document.createElement('div');
+      toast.className = 'soft-card-raised px-4 py-2 rounded-full flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-100 shadow-2xl border border-white/60 dark:border-white/10 backdrop-blur-md bg-white/95 dark:bg-slate-900/95 transform -translate-y-2 opacity-0 transition-all duration-300 pointer-events-auto';
+      toast.innerHTML = `<i class="${icon} text-sm"></i><span>${message}</span>`;
+      container.appendChild(toast);
+      requestAnimationFrame(() => {
+        toast.classList.remove('-translate-y-2', 'opacity-0');
+      });
+      setTimeout(() => {
+        toast.classList.add('-translate-y-2', 'opacity-0');
+        setTimeout(() => toast.remove(), 350);
+      }, 2200);
+    }
+
+    // ==========================================================================
+    // App Initialization
+    // ==========================================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      // Restore theme and accent
+      const savedTheme = localStorage.getItem('alger_theme') || 'light';
+      setTheme(savedTheme, false);
+      const savedAccent = localStorage.getItem('alger_accent') || '#10B981';
+      setAccent(savedAccent, false);
+
+      // Restore volume
+      document.getElementById('volumeFill').style.width = (currentVolume * 100) + '%';
+      audioEngine.setVolume(currentVolume);
+
+      // Render all views
+      renderPlaylists();
+      renderArtists();
+      renderNewSongs();
+      renderPlaylistsSquare();
+      renderToplistView();
+      renderArtistsView();
+      renderPodcastView();
+      updateFavoriteCountBadge();
+
+      loadTrack(0);
+      setupEventListeners();
+      setupInstantSearch();
+    });
+
+    // Populate Discover View Components
+    function renderPlaylists() {
+      const grid = document.getElementById('playlistGrid');
+      grid.innerHTML = PLAYLISTS.map((pl, idx) => `
+        <div onclick="openPlaylist(${idx})" class="soft-card p-3 rounded-2xl flex flex-col group cursor-pointer">
+          <div class="relative w-full aspect-square rounded-xl overflow-hidden mb-2.5">
+            <img src="${pl.cover}" alt="${pl.title}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+            <div class="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-md text-[10px] text-white font-medium flex items-center gap-1">
+              <i class="ri-headphone-line text-[9px]"></i>
+              ${pl.plays}
+            </div>
+            <button onclick="event.stopPropagation(); playPlaylistDirect(${idx})" class="absolute bottom-2.5 right-2.5 soft-btn-primary w-9 h-9 rounded-full flex items-center justify-center text-white shadow-lg opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+              <i class="ri-play-fill text-base ml-0.5"></i>
+            </button>
+          </div>
+          <div class="text-xs font-bold text-slate-800 dark:text-slate-100 line-clamp-1 group-hover:text-emerald-500 transition-colors">${pl.title}</div>
+          <div class="text-[10px] text-slate-400 line-clamp-1 mt-0.5">${pl.desc}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderArtists() {
+      const container = document.getElementById('artistList');
+      container.innerHTML = ARTISTS.map(art => `
+        <div class="soft-card p-3 rounded-2xl flex items-center gap-3 shrink-0 cursor-pointer group min-w-[170px]" onclick="openArtistDetail('${art.name}')">
+          <img src="${art.img}" alt="${art.name}" class="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-500/20 group-hover:scale-105 transition-transform">
+          <div class="min-w-0">
+            <div class="text-xs font-bold text-slate-800 dark:text-slate-200 truncate group-hover:text-emerald-500 transition-colors">${art.name}</div>
+            <div class="text-[10px] text-slate-400 truncate">${art.fans}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderNewSongs() {
+      const grid = document.getElementById('newSongsGrid');
+      grid.innerHTML = SONGS.slice(0, 6).map((s, idx) => `
+        <div onclick="playTrack(${idx})" class="soft-card p-2.5 rounded-2xl flex items-center justify-between group cursor-pointer">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="relative w-11 h-11 rounded-xl overflow-hidden shrink-0">
+              <img src="${s.cover}" alt="${s.title}" class="w-full h-full object-cover">
+              <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <i class="ri-play-fill text-white text-base"></i>
+              </div>
+            </div>
+            <div class="min-w-0">
+              <div class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">${s.title}</div>
+              <div class="text-[11px] text-slate-400 truncate mt-0.5">${s.artist} · ${s.album}</div>
+            </div>
+          </div>
+          <div class="text-right shrink-0 pl-2">
+            <span class="text-[10px] font-mono text-slate-400">${s.duration}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ==========================================================================
+    // Additional Views Renderers (Playlists Square, Toplist, Artists, Podcasts)
+    // ==========================================================================
+    function renderPlaylistsSquare() {
+      const grid = document.getElementById('playlistsSquareGrid');
+      if (!grid) return;
+      grid.innerHTML = PLAYLISTS.map((pl, idx) => `
+        <div onclick="openPlaylist(${idx})" class="soft-card p-3 rounded-2xl flex flex-col group cursor-pointer">
+          <div class="relative w-full aspect-square rounded-xl overflow-hidden mb-2.5 shadow-sm">
+            <img src="${pl.cover}" alt="${pl.title}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+            <div class="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-md text-[10px] text-white font-medium flex items-center gap-1">
+              <i class="ri-headphone-line text-[9px]"></i>
+              ${pl.plays}
+            </div>
+            <button onclick="event.stopPropagation(); playPlaylistDirect(${idx})" class="absolute bottom-2.5 right-2.5 soft-btn-primary w-9 h-9 rounded-full flex items-center justify-center text-white shadow-lg opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+              <i class="ri-play-fill text-base ml-0.5"></i>
+            </button>
+          </div>
+          <div class="text-xs font-bold text-slate-800 dark:text-slate-100 line-clamp-1 group-hover:text-emerald-500 transition-colors">${pl.title}</div>
+          <div class="text-[10px] text-slate-400 line-clamp-1 mt-0.5">${pl.desc}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderToplistView() {
+      const container = document.getElementById('toplistCardsContainer');
+      if (!container) return;
+      const CHARTS = [
+        {
+          name: "🚀 飙升排行榜 (Daily Surge)",
+          tag: "每日 10:00 更新",
+          gradient: "from-emerald-500/20 to-teal-500/5",
+          songs: [0, 4, 1, 2, 3]
+        },
+        {
+          name: "🔥 热歌榜 (Alger Hot 500)",
+          tag: "全网播放 TOP",
+          gradient: "from-rose-500/20 to-amber-500/5",
+          songs: [4, 0, 5, 2, 1]
+        },
+        {
+          name: "✨ 全球新歌榜 (Fresh Hits)",
+          tag: "最新发售抢先听",
+          gradient: "from-blue-500/20 to-indigo-500/5",
+          songs: [1, 5, 3, 0, 4]
+        },
+        {
+          name: "🎨 原创独立音乐榜 (Indie Vibes)",
+          tag: "每周独立策展",
+          gradient: "from-purple-500/20 to-pink-500/5",
+          songs: [2, 3, 0, 1, 5]
+        }
+      ];
+
+      container.innerHTML = CHARTS.map(chart => `
+        <div class="soft-card-raised rounded-squircle p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm font-extrabold text-slate-900 dark:text-white">${chart.name}</div>
+              <div class="text-[10px] text-slate-400">${chart.tag}</div>
+            </div>
+            <button onclick="playTrack(${chart.songs[0]})" class="soft-btn-primary px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1">
+              <i class="ri-play-fill text-xs"></i> 播放此榜
+            </button>
+          </div>
+
+          <div class="divide-y divide-slate-100 dark:divide-white/5">
+            ${chart.songs.map((songId, i) => {
+              const s = SONGS[songId];
+              const rankColor = i === 0 ? 'text-amber-500 font-extrabold text-sm' : i === 1 ? 'text-slate-400 font-bold' : i === 2 ? 'text-amber-700 dark:text-amber-300 font-bold' : 'text-slate-400';
+              return `
+                <div onclick="playTrack(${songId})" class="py-2 flex items-center gap-3 cursor-pointer group hover:bg-slate-100/50 dark:hover:bg-white/5 px-2 rounded-xl transition-colors">
+                  <div class="w-6 text-center ${rankColor}">${i + 1}</div>
+                  <img src="${s.cover}" class="w-9 h-9 rounded-lg object-cover">
+                  <div class="flex-1 min-w-0">
+                    <div class="text-xs font-bold truncate group-hover:text-emerald-500 transition-colors">${s.title}</div>
+                    <div class="text-[10px] text-slate-400 truncate">${s.artist}</div>
+                  </div>
+                  <span class="text-[10px] font-mono text-slate-400">${s.duration}</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderArtistsView() {
+      const grid = document.getElementById('artistsFullGrid');
+      if (!grid) return;
+      grid.innerHTML = ARTISTS.map(art => `
+        <div onclick="openArtistDetail('${art.name}')" class="soft-card p-4 rounded-2xl flex flex-col items-center text-center group cursor-pointer hover:border-emerald-500/40 transition-all">
+          <div class="relative w-20 h-20 rounded-full overflow-hidden mb-3 ring-4 ring-emerald-500/15 group-hover:scale-105 transition-transform shadow-md">
+            <img src="${art.img}" alt="${art.name}" class="w-full h-full object-cover">
+          </div>
+          <div class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate w-full group-hover:text-emerald-500 transition-colors">${art.name}</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">${art.fans}</div>
+          <button onclick="event.stopPropagation(); showToast('已关注音乐人: ${art.name}', 'ri-check-line text-emerald-400')" class="soft-btn mt-3 px-3 py-1 rounded-full text-[10px] font-bold text-slate-600 dark:text-slate-300 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+            关注
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function renderPodcastView() {
+      const grid = document.getElementById('podcastGrid');
+      if (!grid) return;
+      const PODCASTS = [
+        { title: "深夜治愈所 · 晚安白噪音", tag: "助眠", plays: "98.2万", cover: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80" },
+        { title: "爵士咖啡馆 · 慢调手冲时光", tag: "工作专注", plays: "142万", cover: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=500&auto=format&fit=crop&q=80" },
+        { title: "雨夜公路 · 温暖民谣现场", tag: "旅行漫游", plays: "64.5万", cover: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&auto=format&fit=crop&q=80" },
+        { title: "极简代码 · Lo-Fi 沉浸编程", tag: "Flow 状态", plays: "210万", cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop&q=80" },
+        { title: "赛博霓虹 · 合成器未来浪潮", tag: "电子", plays: "43.1万", cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop&q=80" },
+        { title: "电影原声专栏 · 银幕回响", tag: "OST", plays: "88.9万", cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80" }
+      ];
+
+      grid.innerHTML = PODCASTS.map((p, i) => `
+        <div onclick="playTrack(${i % SONGS.length})" class="soft-card p-3 rounded-2xl flex items-center gap-3.5 cursor-pointer group">
+          <img src="${p.cover}" class="w-16 h-16 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform shrink-0">
+          <div class="min-w-0 flex-1">
+            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">${p.tag}</span>
+            <div class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate mt-1 group-hover:text-emerald-500 transition-colors">${p.title}</div>
+            <div class="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
+              <i class="ri-broadcast-line"></i> ${p.plays} 听众
+            </div>
+          </div>
+          <button class="soft-btn w-8 h-8 rounded-full flex items-center justify-center text-slate-500 group-hover:text-emerald-500 shrink-0">
+            <i class="ri-play-fill text-sm"></i>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function renderFavoriteView() {
+      const container = document.getElementById('favoriteTracksBody');
+      if (!container) return;
+      if (likedSongIds.length === 0) {
+        container.innerHTML = `
+          <div class="py-12 text-center text-slate-400 space-y-2">
+            <i class="ri-heart-line text-3xl"></i>
+            <div class="text-xs font-bold">暂无收藏的歌曲</div>
+            <div class="text-[10px]">在歌曲播放或列表中点击红心即可加入此列表</div>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = likedSongIds.map((songId, i) => {
+        const s = SONGS[songId];
+        return `
+          <div onclick="playTrack(${songId})" class="px-4 py-3 flex items-center text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-white/5 transition-colors cursor-pointer group rounded-xl">
+            <div class="w-12 text-center text-slate-400 font-mono group-hover:text-emerald-500">${i + 1}</div>
+            <div class="flex-1 flex items-center gap-3 min-w-0">
+              <img src="${s.cover}" class="w-8 h-8 rounded-lg object-cover">
+              <div class="truncate font-semibold group-hover:text-emerald-500">${s.title}</div>
+            </div>
+            <div class="w-44 hidden md:block text-slate-400 truncate">${s.artist}</div>
+            <div class="w-44 hidden lg:block text-slate-400 truncate">${s.album}</div>
+            <div class="w-20 text-right font-mono text-slate-400">${s.duration}</div>
+            <div class="w-16 text-center" onclick="event.stopPropagation()">
+              <button onclick="toggleLikeSong(${songId})" class="text-rose-500 hover:scale-110 transition-transform">
+                <i class="ri-heart-3-fill text-base"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderHistoryView() {
+      const container = document.getElementById('historyTracksBody');
+      if (!container) return;
+      if (playHistory.length === 0) {
+        container.innerHTML = `
+          <div class="py-12 text-center text-slate-400 space-y-2">
+            <i class="ri-history-line text-3xl"></i>
+            <div class="text-xs font-bold">暂无播放历史</div>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = playHistory.map((item, i) => {
+        const s = SONGS[item.songId];
+        return `
+          <div onclick="playTrack(${item.songId})" class="px-4 py-3 flex items-center justify-between hover:bg-slate-100/60 dark:hover:bg-white/5 transition-colors cursor-pointer group rounded-xl">
+            <div class="flex items-center gap-3 min-w-0">
+              <img src="${s.cover}" class="w-9 h-9 rounded-lg object-cover">
+              <div class="min-w-0">
+                <div class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate group-hover:text-emerald-500 transition-colors">${s.title}</div>
+                <div class="text-[10px] text-slate-400 truncate">${s.artist} · ${s.album}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="text-[10px] text-slate-400">${item.time}</span>
+              <span class="text-[10px] font-mono text-slate-400">${s.duration}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function playAllFavorites() {
+      if (likedSongIds.length > 0) {
+        playTrack(likedSongIds[0]);
+        showToast('开始连播我喜欢的音乐全部曲目', 'ri-play-list-line text-emerald-400');
+      } else {
+        showToast('暂无收藏曲目', 'ri-information-line text-amber-400');
+      }
+    }
+
+    function clearFavorites() {
+      likedSongIds = [];
+      saveLikedSongs();
+      renderFavoriteView();
+      updateLikeDockIcon();
+      showToast('已清空全部收藏曲目', 'ri-delete-bin-line text-rose-400');
+    }
+
+    function clearHistory() {
+      playHistory = [];
+      savePlayHistory();
+      renderHistoryView();
+      showToast('已清空全部播放历史', 'ri-delete-bin-line text-rose-400');
+    }
+
+    function toggleLikeSong(idx) {
+      const pos = likedSongIds.indexOf(idx);
+      if (pos > -1) {
+        likedSongIds.splice(pos, 1);
+        showToast(`已从收藏中移除: ${SONGS[idx].title}`, 'ri-heart-dislike-line text-slate-400');
+      } else {
+        likedSongIds.push(idx);
+        showToast(`已添加到我喜欢的音乐: ${SONGS[idx].title}`, 'ri-heart-3-fill text-rose-500');
+      }
+      saveLikedSongs();
+      updateLikeDockIcon();
+      const currentActiveNav = document.querySelector('.nav-item.active');
+      if (currentActiveNav && currentActiveNav.getAttribute('data-nav') === 'favorite') {
+        renderFavoriteView();
+      }
+    }
+
+    function updateLikeDockIcon() {
+      const isLiked = likedSongIds.includes(currentTrackIndex);
+      const icon = document.getElementById('dockLikeIcon');
+      if (icon) {
+        if (isLiked) {
+          icon.className = 'ri-heart-3-fill text-base text-rose-500 animate-bounce';
+        } else {
+          icon.className = 'ri-heart-3-line text-base text-slate-400';
+        }
+      }
+    }
+
+    // ==========================================================================
+    // Instant Search Logic (⌘ K / Live Filter Dropdown)
+    // ==========================================================================
+    function setupInstantSearch() {
+      const input = document.getElementById('searchInput');
+      const dropdown = document.getElementById('searchDropdown');
+      if (!input || !dropdown) return;
+
+      input.addEventListener('input', (e) => {
+        const query = e.target.value.trim().toLowerCase();
+        if (!query) {
+          dropdown.classList.add('hidden');
+          return;
+        }
+
+        const matchedSongs = SONGS.filter(s => 
+          s.title.toLowerCase().includes(query) || 
+          s.artist.toLowerCase().includes(query) || 
+          s.album.toLowerCase().includes(query)
+        );
+
+        const matchedArtists = ARTISTS.filter(a => a.name.toLowerCase().includes(query));
+        const matchedPlaylists = PLAYLISTS.filter(p => p.title.toLowerCase().includes(query));
+
+        if (matchedSongs.length === 0 && matchedArtists.length === 0 && matchedPlaylists.length === 0) {
+          dropdown.innerHTML = `<div class="p-3 text-center text-xs text-slate-400">未找到与 "${query}" 匹配的内容</div>`;
+          dropdown.classList.remove('hidden');
+          return;
+        }
+
+        let html = '';
+        if (matchedSongs.length > 0) {
+          html += `<div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 pt-1">歌曲 (${matchedSongs.length})</div>`;
+          html += matchedSongs.map(s => {
+            const idx = SONGS.indexOf(s);
+            return `
+              <div onclick="playTrack(${idx}); hideSearchDropdown();" class="p-2 rounded-xl flex items-center justify-between hover:bg-slate-100/60 dark:hover:bg-white/10 cursor-pointer group">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <img src="${s.cover}" class="w-8 h-8 rounded-lg object-cover">
+                  <div class="min-w-0">
+                    <div class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate group-hover:text-emerald-500">${highlightMatch(s.title, query)}</div>
+                    <div class="text-[10px] text-slate-400 truncate">${highlightMatch(s.artist, query)} · ${s.album}</div>
+                  </div>
+                </div>
+                <i class="ri-play-circle-line text-slate-400 group-hover:text-emerald-500 text-base"></i>
+              </div>
+            `;
+          }).join('');
+        }
+
+        if (matchedPlaylists.length > 0) {
+          html += `<div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 pt-2 border-t border-slate-100 dark:border-white/5">歌单 (${matchedPlaylists.length})</div>`;
+          html += matchedPlaylists.map(p => {
+            const idx = PLAYLISTS.indexOf(p);
+            return `
+              <div onclick="openPlaylist(${idx}); hideSearchDropdown();" class="p-2 rounded-xl flex items-center gap-2.5 hover:bg-slate-100/60 dark:hover:bg-white/10 cursor-pointer group">
+                <img src="${p.cover}" class="w-7 h-7 rounded-lg object-cover">
+                <div class="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate group-hover:text-emerald-500">${highlightMatch(p.title, query)}</div>
+              </div>
+            `;
+          }).join('');
+        }
+
+        dropdown.innerHTML = html;
+        dropdown.classList.remove('hidden');
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const firstSong = dropdown.querySelector('[onclick*="playTrack"]');
+          if (firstSong) {
+            firstSong.click();
+          }
+        } else if (e.key === 'Escape') {
+          hideSearchDropdown();
+        }
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+          hideSearchDropdown();
+        }
+      });
+    }
+
+    function highlightMatch(text, query) {
+      if (!query) return text;
+      const regex = new RegExp(`(${query})`, 'gi');
+      return text.replace(regex, '<span class="text-emerald-500 font-bold">$1</span>');
+    }
+
+    function hideSearchDropdown() {
+      const dropdown = document.getElementById('searchDropdown');
+      if (dropdown) dropdown.classList.add('hidden');
+    }
+
+    // ==========================================================================
+    // Playback Engine Implementation
+    // ==========================================================================
+    function loadTrack(index) {
+      currentTrackIndex = index;
+      currentTrackIndex = index;
+      const song = playQueue[index] || SONGS[index] || SONGS[0];
+      playbackSeconds = 0;
+      const origIdx = SONGS.findIndex(s => s.id === song.id);
+      recordHistory(origIdx >= 0 ? origIdx : 0);
+
+      // Update Dock Player
+      document.getElementById('dockCover').src = song.cover;
+      document.getElementById('dockTitle').textContent = song.title;
+      document.getElementById('dockArtist').textContent = song.artist;
+      document.getElementById('durationText').textContent = song.duration;
+      document.getElementById('currentTimeText').textContent = "00:00";
+      document.getElementById('seekFill').style.width = "0%";
+
+      // Update Fullscreen Screen
+      document.getElementById('fullAlbumCover').src = song.cover;
+      document.getElementById('fullTrackName').textContent = song.title;
+      document.getElementById('fullArtistName').textContent = song.artist + ' - ' + song.album;
+
+      // Update Dynamic Mesh Glow
+      updateMeshGlow(song.glow);
+
+      // Render Lyrics
+      renderLyrics(song.lyrics);
+      updateQueueDrawer();
+      updateLikeDockIcon();
+    }
+
+    function updateMeshGlow(glow) {
+      if (!glow) return;
+      document.documentElement.style.setProperty('--glow-color-1', glow.c1);
+      document.documentElement.style.setProperty('--glow-color-2', glow.c2);
+      document.documentElement.style.setProperty('--glow-color-3', glow.c3);
+    }
+
+    function togglePlayPause() {
+      if (isPlaying) {
+        pauseTrack();
+      } else {
+        startPlay();
+      }
+    }
+
+    function startPlay() {
+      isPlaying = true;
+      document.getElementById('playPauseIcon').className = 'ri-pause-fill text-lg';
+      document.getElementById('turntableDisc').classList.remove('vinyl-paused');
+      const dock = document.getElementById('playBarDock');
+      if (dock) dock.setAttribute('data-playing', 'true');
+      
+      // Start Procedural Audio Engine
+      audioEngine.play();
+
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        playbackSeconds++;
+        const song = playQueue[currentTrackIndex] || SONGS[currentTrackIndex] || SONGS[0];
+        if (playbackSeconds >= song.durationSec) {
+          if (sleepTimerMode === 'song') {
+            pauseTrack();
+            sleepTimerMode = null;
+            const dot = document.getElementById('sleepTimerDot');
+            if (dot) dot.classList.add('hidden');
+            showToast('已按定时要求在单曲播完后停止', 'ri-moon-line text-indigo-400');
+            return;
+          }
+          nextTrack();
+          return;
+        }
+        updatePlaybackProgress();
+      }, 1000);
+    }
+
+    function pauseTrack() {
+      isPlaying = false;
+      document.getElementById('playPauseIcon').className = 'ri-play-fill text-lg ml-0.5';
+      document.getElementById('turntableDisc').classList.add('vinyl-paused');
+      const dock = document.getElementById('playBarDock');
+      if (dock) dock.setAttribute('data-playing', 'false');
+
+      // Stop Audio Engine
+      audioEngine.pause();
+
+      if (timerInterval) clearInterval(timerInterval);
+    }
+
+    function playTrack(index) {
+      if (index < 0 || index >= playQueue.length) index = 0;
+      loadTrack(index);
+      startPlay();
+      audioEngine.triggerChime();
+      const s = playQueue[index] || SONGS[index];
+      showToast(`正在播放: ${s ? s.title : ''}`, 'ri-music-2-line text-emerald-400');
+    }
+
+    function nextTrack() {
+      if (playMode === 'repeat-one') {
+        playbackSeconds = 0;
+        updatePlaybackProgress();
+        if (!isPlaying) startPlay();
+        showToast('单曲循环', 'ri-repeat-one-line text-emerald-400');
+        return;
+      }
+      if (playMode === 'shuffle') {
+        if (playQueue.length > 1) {
+          let rand = Math.floor(Math.random() * playQueue.length);
+          if (rand === currentTrackIndex) rand = (rand + 1) % playQueue.length;
+          playTrack(rand);
+          return;
+        }
+      }
+      const nextIndex = (currentTrackIndex + 1) % playQueue.length;
+      playTrack(nextIndex);
+    }
+
+    function prevTrack() {
+      if (playbackSeconds > 3) {
+        playbackSeconds = 0;
+        updatePlaybackProgress();
+        return;
+      }
+      const prevIndex = (currentTrackIndex - 1 + playQueue.length) % playQueue.length;
+      playTrack(prevIndex);
+    }
+
+    // Play Mode Toggles (Shuffle & Repeat)
+    function toggleShuffle() {
+      if (playMode === 'shuffle') {
+        playMode = 'repeat-all';
+        showToast('已恢复列表循环', 'ri-repeat-2-line text-slate-400');
+      } else {
+        playMode = 'shuffle';
+        showToast('已开启随机播放', 'ri-shuffle-line text-emerald-400');
+      }
+      updatePlayModeUI();
+    }
+
+    function toggleLoop() {
+      if (playMode === 'repeat-all') {
+        playMode = 'repeat-one';
+        showToast('已切换至单曲循环', 'ri-repeat-one-line text-emerald-400');
+      } else {
+        playMode = 'repeat-all';
+        showToast('已恢复列表循环', 'ri-repeat-2-line text-emerald-400');
+      }
+      updatePlayModeUI();
+    }
+
+    function updatePlayModeUI() {
+      const shuffleBtn = document.getElementById('shuffleBtn');
+      const loopBtn = document.getElementById('loopBtn');
+      if (!shuffleBtn || !loopBtn) return;
+      if (playMode === 'shuffle') {
+        shuffleBtn.className = 'dock-shuffle-btn text-emerald-500 font-bold transition-colors';
+        shuffleBtn.title = '随机播放 (已激活)';
+        loopBtn.className = 'dock-loop-btn text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors';
+        loopBtn.innerHTML = '<i class="ri-repeat-2-line text-sm"></i>';
+        loopBtn.title = '列表循环';
+      } else if (playMode === 'repeat-one') {
+        shuffleBtn.className = 'dock-shuffle-btn text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors';
+        shuffleBtn.title = '随机播放';
+        loopBtn.className = 'dock-loop-btn text-emerald-500 font-bold transition-colors';
+        loopBtn.innerHTML = '<i class="ri-repeat-one-line text-sm"></i>';
+        loopBtn.title = '单曲循环 (已激活)';
+      } else {
+        shuffleBtn.className = 'dock-shuffle-btn text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors';
+        shuffleBtn.title = '随机播放';
+        loopBtn.className = 'dock-loop-btn text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors';
+        loopBtn.innerHTML = '<i class="ri-repeat-2-line text-sm"></i>';
+        loopBtn.title = '列表循环 (当前)';
+      }
+    }
+
+    function formatTime(secs) {
+      const m = Math.floor(secs / 60).toString().padStart(2, '0');
+      const s = Math.floor(secs % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function updatePlaybackProgress() {
+      const song = playQueue[currentTrackIndex] || SONGS[currentTrackIndex] || SONGS[0];
+      const pct = (playbackSeconds / song.durationSec) * 100;
+      document.getElementById('seekFill').style.width = Math.min(100, pct) + '%';
+      document.getElementById('currentTimeText').textContent = formatTime(playbackSeconds);
+
+      // Sync Lyrics Highlight and Smooth Center Scroll
+      updateLyricsScroll(playbackSeconds);
+    }
+
+    function handleSeek(e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const pct = Math.max(0, Math.min(1, clickX / rect.width));
+      const song = playQueue[currentTrackIndex] || SONGS[currentTrackIndex] || SONGS[0];
+      playbackSeconds = Math.floor(pct * song.durationSec);
+      updatePlaybackProgress();
+      audioEngine.triggerChime();
+    }
+
+    function handleSeekHover(e) {
+      const track = document.getElementById('seekTrack');
+      const tooltip = document.getElementById('seekTooltip');
+      if (!track || !tooltip) return;
+      const rect = track.getBoundingClientRect();
+      const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+      const pct = x / rect.width;
+      const song = playQueue[currentTrackIndex] || SONGS[currentTrackIndex] || SONGS[0];
+      const hoverSecs = Math.floor(pct * (song ? song.durationSec : 200));
+      tooltip.textContent = formatTime(hoverSecs);
+      tooltip.style.left = `${x}px`;
+      tooltip.classList.remove('opacity-0');
+    }
+
+    function handleSeekLeave() {
+      const tooltip = document.getElementById('seekTooltip');
+      if (tooltip) tooltip.classList.add('opacity-0');
+    }
+
+    function handleVolume(e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const pct = Math.max(0, Math.min(1, clickX / rect.width));
+      currentVolume = pct;
+      document.getElementById('volumeFill').style.width = (pct * 100) + '%';
+      isMuted = false;
+      document.getElementById('volumeIcon').className = 'ri-volume-up-line text-base';
+      audioEngine.setVolume(currentVolume);
+      localStorage.setItem('alger_volume', currentVolume.toString());
+    }
+
+    function toggleMute() {
+      isMuted = !isMuted;
+      if (isMuted) {
+        document.getElementById('volumeFill').style.width = '0%';
+        document.getElementById('volumeIcon').className = 'ri-volume-mute-line text-base text-rose-400';
+        audioEngine.setMute(true);
+      } else {
+        document.getElementById('volumeFill').style.width = (currentVolume * 100) + '%';
+        document.getElementById('volumeIcon').className = 'ri-volume-up-line text-base';
+        audioEngine.setMute(false);
+      }
+    }
+
+    function toggleLikeCurrent() {
+      toggleLikeSong(currentTrackIndex);
+    }
+
+    // Lyrics Render & Smooth Kinetic Scroll
+    function renderLyrics(lyrics) {
+      const container = document.getElementById('lyricsContainer');
+      container.innerHTML = lyrics.map((l, idx) => `
+        <div id="lyric-${idx}" onclick="jumpToLyric(${l.time})" class="lyric-item lyric-inactive py-3 transition-all select-none">
+          ${l.text}
+        </div>
+      `).join('');
+    }
+
+    function updateLyricsScroll(currSec) {
+      const song = SONGS[currentTrackIndex];
+      const lyrics = song.lyrics;
+      let activeIndex = 0;
+      for (let i = 0; i < lyrics.length; i++) {
+        if (currSec >= lyrics[i].time) {
+          activeIndex = i;
+        } else {
+          break;
+        }
+      }
+
+      lyrics.forEach((_, idx) => {
+        const el = document.getElementById(`lyric-${idx}`);
+        if (!el) return;
+        if (idx === activeIndex) {
+          el.className = 'lyric-item lyric-active py-3';
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          el.className = 'lyric-item lyric-inactive py-3';
+        }
+      });
+    }
+
+    function jumpToLyric(timeSec) {
+      playbackSeconds = timeSec;
+      updatePlaybackProgress();
+      audioEngine.triggerChime();
+    }
+
+    // ==========================================================================
+    // Multi-View Navigation & Routing System
+    // ==========================================================================
+    const ALL_VIEWS = [
+      'viewDiscover', 
+      'viewPlaylist', 
+      'viewSettings', 
+      'viewPlaylists', 
+      'viewToplist', 
+      'viewArtists', 
+      'viewPodcast', 
+      'viewFavorite', 
+      'viewHistory', 
+      'viewLocal',
+      'viewArtistDetail'
+    ];
+
+    function switchView(viewName) {
+      ALL_VIEWS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
+
+      const viewMap = {
+        discover: 'viewDiscover',
+        playlist: 'viewPlaylist',
+        settings: 'viewSettings',
+        playlists: 'viewPlaylists',
+        toplist: 'viewToplist',
+        artists: 'viewArtists',
+        podcast: 'viewPodcast',
+        favorite: 'viewFavorite',
+        history: 'viewHistory',
+        local: 'viewLocal',
+        artistDetail: 'viewArtistDetail'
+      };
+
+      const targetId = viewMap[viewName] || 'viewDiscover';
+      const targetEl = document.getElementById(targetId);
+      if (targetEl) targetEl.classList.remove('hidden');
+
+      // Update active nav button
+      document.querySelectorAll('.nav-item').forEach(b => {
+        if (b.getAttribute('data-nav') === viewName) {
+          b.classList.add('active', 'bg-emerald-500/10', 'text-emerald-600', 'dark:text-emerald-400');
+        } else {
+          b.classList.remove('active', 'bg-emerald-500/10', 'text-emerald-600', 'dark:text-emerald-400');
+        }
+      });
+
+      // Lazy re-render active view
+      if (viewName === 'favorite') renderFavoriteView();
+      if (viewName === 'history') renderHistoryView();
+      if (viewName === 'playlists') renderPlaylistsSquare();
+      if (viewName === 'toplist') renderToplistView();
+      if (viewName === 'artists') renderArtistsView();
+      if (viewName === 'podcast') renderPodcastView();
+      if (viewName === 'local') renderLocalSongs();
+    }
+
+    function openPlaylist(idx) {
+      const pl = PLAYLISTS[idx];
+      currentPlaylistObj = pl;
+      document.getElementById('detailCover').src = pl.cover;
+      document.getElementById('detailTitle').textContent = pl.title;
+      document.getElementById('detailDesc').textContent = pl.desc;
+      document.getElementById('detailPlays').textContent = pl.plays + ' 次播放 · 官方精选';
+
+      const tracksBody = document.getElementById('playlistTracksBody');
+      tracksBody.innerHTML = pl.songs.map((songId, i) => {
+        const s = SONGS[songId];
+        return `
+          <div onclick="playTrack(${songId})" class="px-4 py-3 flex items-center text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-white/5 transition-colors cursor-pointer group rounded-xl">
+            <div class="w-12 text-center text-slate-400 font-mono group-hover:text-emerald-500">${i + 1}</div>
+            <div class="flex-1 flex items-center gap-3 min-w-0">
+              <img src="${s.cover}" class="w-8 h-8 rounded-lg object-cover">
+              <div class="truncate font-semibold group-hover:text-emerald-500">${s.title}</div>
+            </div>
+            <div class="w-44 hidden md:block text-slate-400 truncate">${s.artist}</div>
+            <div class="w-44 hidden lg:block text-slate-400 truncate">${s.album}</div>
+            <div class="w-20 text-right font-mono text-slate-400">${s.duration}</div>
+          </div>
+        `;
+      }).join('');
+
+      switchView('playlist');
+    }
+
+    function playCurrentPlaylistAll() {
+      if (currentPlaylistObj && currentPlaylistObj.songs.length > 0) {
+        playTrack(currentPlaylistObj.songs[0]);
+      }
+    }
+
+    function playPlaylistDirect(idx) {
+      openPlaylist(idx);
+      playCurrentPlaylistAll();
+    }
+
+    function backToDiscover() {
+      switchView('discover');
+    }
+
+    // Artist Detail Page View Controller
+    function openArtistDetail(artName) {
+      let art = ARTISTS.find(a => a.name === artName);
+      if (!art) {
+        art = { name: artName, fans: "360万 粉丝", img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80" };
+      }
+      currentArtistObj = art;
+      document.getElementById('artistDetailImg').src = art.img;
+      document.getElementById('artistDetailName').textContent = art.name;
+      document.getElementById('artistDetailStats').textContent = `${art.fans} · 官方认证音乐人`;
+
+      const matchedSongs = SONGS.filter(s => s.artist.includes(art.name));
+      const tracksToRender = matchedSongs.length > 0 ? matchedSongs : SONGS.slice(0, 4);
+      document.getElementById('artistTrackCountText').textContent = `共收录 ${tracksToRender.length} 首热门单曲`;
+
+      const body = document.getElementById('artistTracksBody');
+      body.innerHTML = tracksToRender.map((s, idx) => {
+        const originalIdx = SONGS.findIndex(item => item.id === s.id);
+        return `
+          <div onclick="playTrack(${originalIdx >= 0 ? originalIdx : 0})" class="px-4 py-3 flex items-center text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-white/5 transition-colors cursor-pointer group rounded-xl">
+            <div class="w-12 text-center text-slate-400 font-mono group-hover:text-emerald-500">${idx + 1}</div>
+            <div class="flex-1 flex items-center gap-3 min-w-0">
+              <img src="${s.cover}" class="w-8 h-8 rounded-lg object-cover">
+              <div class="truncate font-semibold group-hover:text-emerald-500">${s.title}</div>
+            </div>
+            <div class="w-44 hidden md:block text-slate-400 truncate">${s.album}</div>
+            <div class="w-20 text-right font-mono text-slate-400">${s.duration}</div>
+            <div class="w-24 flex items-center justify-center gap-2">
+              <button onclick="addToQueueNext(${originalIdx >= 0 ? originalIdx : 0}); event.stopPropagation();" class="p-1 text-slate-400 hover:text-emerald-500" title="下一首播放">
+                <i class="ri-play-list-add-line text-sm"></i>
+              </button>
+              <button onclick="toggleLikeSong(${originalIdx >= 0 ? originalIdx : 0}); event.stopPropagation();" class="p-1 text-slate-400 hover:text-rose-500" title="收藏">
+                <i class="ri-heart-3-line text-sm"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      switchView('artistDetail');
+    }
+
+    function backToArtists() {
+      switchView('artists');
+    }
+
+    function toggleFollowArtist() {
+      const btn = document.getElementById('artistFollowBtn');
+      if (!btn) return;
+      const isFollowed = btn.getAttribute('data-followed') === 'true';
+      if (isFollowed) {
+        btn.setAttribute('data-followed', 'false');
+        btn.innerHTML = '<i class="ri-add-line mr-1"></i>关注歌手';
+        btn.className = 'soft-btn px-5 py-2.5 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200';
+        showToast(`已取消关注 ${currentArtistObj ? currentArtistObj.name : ''}`, 'ri-user-unfollow-line');
+      } else {
+        btn.setAttribute('data-followed', 'true');
+        btn.innerHTML = '<i class="ri-check-line mr-1 text-emerald-400"></i>已关注';
+        btn.className = 'soft-btn-primary px-5 py-2.5 rounded-full text-xs font-bold text-white';
+        showToast(`已成功关注官方认证歌手: ${currentArtistObj ? currentArtistObj.name : ''}`, 'ri-user-star-line text-amber-400');
+      }
+    }
+
+    function playAllArtistSongs() {
+      if (!currentArtistObj) return;
+      const matchedIdx = SONGS.findIndex(s => s.artist.includes(currentArtistObj.name));
+      playTrack(matchedIdx >= 0 ? matchedIdx : 0);
+    }
+
+    // Drawer & Fullscreen Toggles
+    function toggleLyricsScreen() {
+      const screen = document.getElementById('lyricsScreen');
+      const isClosed = screen.classList.contains('opacity-0');
+      if (isClosed) {
+        screen.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-6');
+      } else {
+        screen.classList.add('opacity-0', 'pointer-events-none', 'translate-y-6');
+      }
+    }
+
+    function toggleQueueDrawer() {
+      const drawer = document.getElementById('queueDrawer');
+      drawer.classList.toggle('translate-x-full');
+    }
+
+    function updateQueueDrawer() {
+      const total = playQueue.length;
+      document.getElementById('drawerCount').textContent = total;
+      document.getElementById('queueBadge').textContent = total;
+      const list = document.getElementById('drawerTrackList');
+      if (!list) return;
+      list.innerHTML = playQueue.map((s, idx) => `
+        <div onclick="playTrack(${idx})" class="p-2 rounded-xl flex items-center justify-between hover:bg-white/10 cursor-pointer text-xs group ${idx === currentTrackIndex ? 'text-emerald-400 font-bold bg-white/10' : 'text-slate-300'}">
+          <div class="truncate flex-1 mr-2">
+            <div class="truncate flex items-center gap-1.5">
+              ${idx === currentTrackIndex ? '<i class="ri-volume-up-fill text-emerald-400"></i>' : ''}
+              <span>${s.title}</span>
+            </div>
+            <div class="text-[10px] text-slate-400 truncate">${s.artist}</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-mono">${s.duration}</span>
+            <button onclick="removeFromQueue(${idx}); event.stopPropagation();" class="text-slate-400 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity p-0.5" title="移出队列">
+              <i class="ri-close-line text-sm"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function addToQueueNext(songIdx) {
+      const song = SONGS[songIdx] || playQueue[songIdx];
+      if (!song) return;
+      playQueue.splice(currentTrackIndex + 1, 0, song);
+      updateQueueDrawer();
+      showToast(`已设为下一首播放: ${song.title}`, 'ri-play-list-add-line text-emerald-400');
+    }
+
+    function removeFromQueue(idx) {
+      if (playQueue.length <= 1) {
+        showToast('队列中至少保留一首曲目', 'ri-information-line text-amber-400');
+        return;
+      }
+      const removed = playQueue.splice(idx, 1)[0];
+      if (idx < currentTrackIndex) {
+        currentTrackIndex--;
+      } else if (idx === currentTrackIndex) {
+        currentTrackIndex = Math.min(currentTrackIndex, playQueue.length - 1);
+        loadTrack(currentTrackIndex);
+        if (isPlaying) startPlay();
+      }
+      updateQueueDrawer();
+      showToast(`已移出待播队列: ${removed.title}`, 'ri-delete-bin-line text-rose-400');
+    }
+
+    function clearQueue() {
+      if (playQueue.length <= 1) {
+        showToast('当前已处于最简队列', 'ri-information-line');
+        return;
+      }
+      const cur = playQueue[currentTrackIndex] || SONGS[0];
+      playQueue = [cur];
+      currentTrackIndex = 0;
+      updateQueueDrawer();
+      showToast("已清空待播列表，保留当前曲目", "ri-refresh-line text-emerald-400");
+    }
+
+    // Audio Equalizer Modal
+    function openEqModal() {
+      const modal = document.getElementById('eqModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeEqModal() {
+      const modal = document.getElementById('eqModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function setEqPreset(preset) {
+      currentEqPreset = preset;
+      audioEngine.setPreset(preset);
+      const buttons = document.querySelectorAll('.eq-preset-btn');
+      buttons.forEach(btn => {
+        const p = btn.getAttribute('data-eq');
+        if (p === preset) {
+          btn.classList.add('border-emerald-500/50', 'bg-emerald-500/10');
+          const title = btn.querySelector('.text-xs');
+          if (title) title.className = 'text-xs font-bold text-emerald-600 dark:text-emerald-400';
+        } else {
+          btn.classList.remove('border-emerald-500/50', 'bg-emerald-500/10');
+          const title = btn.querySelector('.text-xs');
+          if (title) title.className = 'text-xs font-bold text-slate-800 dark:text-slate-200';
+        }
+      });
+      const heights = {
+        flat: ['35%', '45%', '40%', '50%', '35%'],
+        bass: ['85%', '70%', '40%', '30%', '25%'],
+        vocal: ['25%', '45%', '90%', '75%', '35%'],
+        jazz: ['65%', '55%', '50%', '45%', '35%'],
+        surround: ['50%', '60%', '70%', '85%', '95%']
+      }[preset] || ['40%', '40%', '40%', '40%', '40%'];
+      for (let i = 1; i <= 5; i++) {
+        const band = document.getElementById(`eqBand${i}`);
+        if (band) band.style.height = heights[i - 1];
+      }
+      showToast(`已应用声学均衡预设: ${preset.toUpperCase()}`, 'ri-equalizer-line text-emerald-400');
+    }
+
+    // Sleep Timer Modal
+    function openSleepTimerModal() {
+      const modal = document.getElementById('sleepTimerModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeSleepTimerModal() {
+      const modal = document.getElementById('sleepTimerModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function setSleepTimer(val) {
+      const dot = document.getElementById('sleepTimerDot');
+      const statusBox = document.getElementById('sleepTimerActiveStatus');
+      const countdownText = document.getElementById('sleepCountdownText');
+      if (sleepTimerId) {
+        clearInterval(sleepTimerId);
+        sleepTimerId = null;
+      }
+      if (val === 0) {
+        sleepTimerMode = null;
+        if (dot) dot.classList.add('hidden');
+        if (statusBox) statusBox.classList.add('hidden');
+        showToast('睡眠定时器已关闭', 'ri-timer-line');
+        closeSleepTimerModal();
+        return;
+      }
+      if (val === 'song') {
+        sleepTimerMode = 'song';
+        if (dot) dot.classList.remove('hidden');
+        if (statusBox) statusBox.classList.remove('hidden');
+        if (countdownText) countdownText.textContent = "当前曲目播完后";
+        showToast('将在当前歌曲播放完毕后停止', 'ri-disc-line text-emerald-400');
+        closeSleepTimerModal();
+        return;
+      }
+      sleepTimerMode = 'time';
+      sleepTimerRemaining = val * 60;
+      if (dot) dot.classList.remove('hidden');
+      if (statusBox) statusBox.classList.remove('hidden');
+      if (countdownText) countdownText.textContent = formatTime(sleepTimerRemaining);
+      sleepTimerId = setInterval(() => {
+        sleepTimerRemaining--;
+        if (sleepTimerRemaining <= 0) {
+          clearInterval(sleepTimerId);
+          sleepTimerId = null;
+          sleepTimerMode = null;
+          pauseTrack();
+          if (dot) dot.classList.add('hidden');
+          if (statusBox) statusBox.classList.add('hidden');
+          showToast('定时已到达，已自动为您暂停音乐', 'ri-moon-line text-indigo-400');
+        } else {
+          if (countdownText) countdownText.textContent = formatTime(sleepTimerRemaining);
+        }
+      }, 1000);
+      showToast(`已设置 ${val} 分钟睡眠定时`, 'ri-timer-line text-emerald-400');
+      closeSleepTimerModal();
+    }
+
+    // Local Audio Management
+    function handleLocalFiles(files) {
+      if (!files || files.length === 0) return;
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const name = file.name.replace(/\.[^/.]+$/, "");
+        const url = URL.createObjectURL(file);
+        const newTrack = {
+          id: Date.now() + i,
+          title: name,
+          artist: "本地音频",
+          album: "我的离线曲库",
+          cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80",
+          duration: "03:30",
+          durationSec: 210,
+          glow: { c1: "rgba(16, 185, 129, 0.4)", c2: "rgba(59, 130, 246, 0.3)", c3: "rgba(245, 158, 11, 0.25)" },
+          fileUrl: url,
+          lyrics: [
+            { time: 0, text: `本地音频文件: ${file.name}` },
+            { time: 5, text: "正在通过 Web Audio 高解析引擎纯净回放" }
+          ]
+        };
+        SONGS.unshift(newTrack);
+        playQueue.unshift(newTrack);
+        localSongs.unshift(newTrack);
+      }
+      renderLocalSongs();
+      updateQueueDrawer();
+      playTrack(0);
+      showToast(`已成功解析并加载 ${files.length} 首本地音频文件`, 'ri-file-music-line text-emerald-400');
+    }
+
+    function renderLocalSongs() {
+      const body = document.getElementById('localTracksBody');
+      const badge = document.getElementById('localCountBadge');
+      const displayList = localSongs.length > 0 ? localSongs : SONGS.slice(0, 6);
+      if (badge) badge.textContent = `${displayList.length} 首`;
+      if (!body) return;
+      body.innerHTML = displayList.map((s, idx) => `
+        <div onclick="playTrack(${idx})" class="px-4 py-3 flex items-center text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-white/5 transition-colors cursor-pointer group rounded-xl">
+          <div class="w-12 text-center text-slate-400 font-mono group-hover:text-emerald-500">${idx + 1}</div>
+          <div class="flex-1 flex items-center gap-3 min-w-0">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-500 flex items-center justify-center font-bold shrink-0">
+              <i class="ri-music-fill text-sm"></i>
+            </div>
+            <div class="truncate font-semibold group-hover:text-emerald-500">${s.title}</div>
+          </div>
+          <div class="w-44 hidden md:block text-slate-400 truncate">${s.artist}</div>
+          <div class="w-24 text-right font-mono text-slate-400">${s.duration}</div>
+          <div class="w-16 flex items-center justify-center">
+            <button onclick="addToQueueNext(${idx}); event.stopPropagation();" class="p-1 text-slate-400 hover:text-emerald-500" title="加入待播">
+              <i class="ri-play-list-add-line text-sm"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function scanLocalDemoFiles() {
+      showToast('本地磁盘扫描完成，已同步 6 首无损曲目', 'ri-checkbox-circle-line text-emerald-400');
+      renderLocalSongs();
+    }
+
+    function playAllLocalSongs() {
+      playTrack(0);
+      showToast('正在按序回放本地曲库全部曲目', 'ri-play-fill text-emerald-400');
+    }
+
+    // Theme Switcher & Storage
+    function setTheme(theme, save = true) {
+      document.documentElement.setAttribute('data-theme', theme);
+      const icon = document.getElementById('themeIcon');
+      if (theme === 'dark') {
+        icon.className = 'ri-moon-line text-base text-indigo-400';
+      } else {
+        icon.className = 'ri-sun-line text-base text-amber-500';
+      }
+      if (save) {
+        localStorage.setItem('alger_theme', theme);
+        showToast(theme === 'dark' ? '已切换至深石墨夜间模式' : '已切换至温润白瓷浅色模式', 'ri-contrast-2-line text-indigo-400');
+      }
+    }
+
+    const ACCENT_PALETTES = {
+      '#10B981': { name: '翡翠绿', hover: '#059669', light: 'rgba(16, 185, 129, 0.15)', glow: 'rgba(16, 185, 129, 0.38)', gradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' },
+      '#3B82F6': { name: '海洋蓝', hover: '#2563EB', light: 'rgba(59, 130, 246, 0.15)', glow: 'rgba(59, 130, 246, 0.38)', gradient: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)' },
+      '#EC4899': { name: '蔷薇粉', hover: '#DB2777', light: 'rgba(236, 72, 153, 0.15)', glow: 'rgba(236, 72, 153, 0.38)', gradient: 'linear-gradient(135deg, #EC4899 0%, #BE185D 100%)' },
+      '#8B5CF6': { name: '极光紫', hover: '#7C3AED', light: 'rgba(139, 92, 246, 0.15)', glow: 'rgba(139, 92, 246, 0.38)', gradient: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)' }
+    };
+
+    function setAccent(color, save = true) {
+      const p = ACCENT_PALETTES[color] || {
+        name: '个性强调色',
+        hover: color,
+        light: 'rgba(16, 185, 129, 0.15)',
+        glow: 'rgba(16, 185, 129, 0.38)',
+        gradient: `linear-gradient(135deg, ${color} 0%, ${color} 100%)`
+      };
+      const root = document.documentElement;
+      root.style.setProperty('--soft-accent', color);
+      root.style.setProperty('--soft-accent-hover', p.hover);
+      root.style.setProperty('--soft-accent-light', p.light);
+      root.style.setProperty('--soft-accent-glow', p.glow);
+      root.style.setProperty('--soft-accent-gradient', p.gradient);
+
+      // Update Swatch Active Ring & Checkmarks
+      document.querySelectorAll('#accentPickerGroup .accent-dot').forEach(btn => {
+        const dotColor = btn.getAttribute('data-accent');
+        if (dotColor === color) {
+          btn.innerHTML = '<i class="ri-check-line text-white text-xs font-bold pointer-events-none"></i>';
+          btn.classList.add('ring-4', 'ring-offset-2', 'ring-slate-400', 'dark:ring-offset-slate-900', 'scale-110');
+        } else {
+          btn.innerHTML = '';
+          btn.classList.remove('ring-4', 'ring-offset-2', 'ring-slate-400', 'dark:ring-offset-slate-900', 'scale-110');
+        }
+      });
+
+      if (save) {
+        localStorage.setItem('alger_accent', color);
+        showToast(`已切换主题强调色：${p.name}`, 'ri-palette-line');
+      }
+    }
+
+    // Setup Global Event Listeners
+    function setupEventListeners() {
+      // Theme Button
+      document.getElementById('themeToggleBtn').addEventListener('click', () => {
+        const curr = document.documentElement.getAttribute('data-theme') || 'light';
+        setTheme(curr === 'light' ? 'dark' : 'light');
+      });
+
+      // Settings Button
+      document.getElementById('settingsBtn').addEventListener('click', () => {
+        switchView('settings');
+      });
+
+      // Viewport Phone Simulator Toggle
+      let isPhoneView = false;
+      document.getElementById('viewportToggleBtn').addEventListener('click', () => {
+        isPhoneView = !isPhoneView;
+        const app = document.getElementById('appContainer');
+        const text = document.getElementById('viewportModeText');
+        if (isPhoneView) {
+          app.classList.add('is-mobile-view');
+          text.textContent = '手机模式';
+          showToast('已切换至移动端模拟视口', 'ri-smartphone-line text-emerald-400');
+        } else {
+          app.classList.remove('is-mobile-view');
+          text.textContent = '宽屏模式';
+          showToast('已恢复桌面宽屏视口', 'ri-macbook-line text-emerald-400');
+        }
+      });
+
+      // Glow Intensity Slider
+      const range = document.getElementById('glowRange');
+      range.addEventListener('input', (e) => {
+        const val = e.target.value;
+        document.getElementById('glowValText').textContent = val + '%';
+        document.documentElement.style.setProperty('--mesh-opacity', (val / 100));
+      });
+
+      // Sidebar Nav item clicks (Full multi-view routing)
+      document.querySelectorAll('.nav-item').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const nav = e.currentTarget.getAttribute('data-nav');
+          switchView(nav);
+        });
+      });
+
+      // Drag and Drop Local Audio Files
+      const dropzone = document.getElementById('localDropzone');
+      if (dropzone) {
+        dropzone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          dropzone.classList.add('border-emerald-500', 'bg-emerald-500/10');
+        });
+        dropzone.addEventListener('dragleave', (e) => {
+          e.preventDefault();
+          dropzone.classList.remove('border-emerald-500', 'bg-emerald-500/10');
+        });
+        dropzone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dropzone.classList.remove('border-emerald-500', 'bg-emerald-500/10');
+          if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+            handleLocalFiles(e.dataTransfer.files);
+          }
+        });
+        dropzone.addEventListener('click', () => {
+          const fileInput = document.getElementById('localAudioFileInput');
+          if (fileInput) fileInput.click();
+        });
+      }
+
+      // Keyboard Shortcuts Expansion
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+          if (e.code === 'Escape') hideSearchDropdown();
+          return;
+        }
+
+        if (e.code === 'Space') {
+          e.preventDefault();
+          togglePlayPause();
+        } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+          e.preventDefault();
+          const searchInput = document.getElementById('searchInput');
+          if (searchInput) {
+            searchInput.focus();
+            searchInput.select();
+          }
+        } else if (e.code === 'ArrowLeft') {
+          e.preventDefault();
+          playbackSeconds = Math.max(0, playbackSeconds - 5);
+          updatePlaybackProgress();
+          audioEngine.triggerChime();
+        } else if (e.code === 'ArrowRight') {
+          e.preventDefault();
+          const song = playQueue[currentTrackIndex] || SONGS[currentTrackIndex];
+          playbackSeconds = Math.min(song ? song.durationSec : 200, playbackSeconds + 5);
+          updatePlaybackProgress();
+          audioEngine.triggerChime();
+        } else if (e.code === 'ArrowUp') {
+          e.preventDefault();
+          currentVolume = Math.min(1, currentVolume + 0.08);
+          document.getElementById('volumeFill').style.width = (currentVolume * 100) + '%';
+          audioEngine.setVolume(currentVolume);
+        } else if (e.code === 'ArrowDown') {
+          e.preventDefault();
+          currentVolume = Math.max(0, currentVolume - 0.08);
+          document.getElementById('volumeFill').style.width = (currentVolume * 100) + '%';
+          audioEngine.setVolume(currentVolume);
+        } else if (e.code === 'KeyM') {
+          e.preventDefault();
+          toggleMute();
+        } else if (e.code === 'KeyL') {
+          e.preventDefault();
+          toggleLyricsScreen();
+        } else if (e.code === 'KeyQ') {
+          e.preventDefault();
+          toggleQueueDrawer();
+        } else if (e.code === 'Escape') {
+          hideSearchDropdown();
+          const screen = document.getElementById('lyricsScreen');
+          if (screen && !screen.classList.contains('opacity-0')) {
+            toggleLyricsScreen();
+          }
+          const drawer = document.getElementById('queueDrawer');
+          if (drawer && !drawer.classList.contains('translate-x-full')) {
+            toggleQueueDrawer();
+          }
+          closeEqModal();
+          closeSleepTimerModal();
+        }
+      });
+    }
+
+    // Call initializations on load
+    document.addEventListener('DOMContentLoaded', () => {
+      updatePlayModeUI();
+      updateQueueDrawer();
+    });
+  </script>
+</body>
+</html>

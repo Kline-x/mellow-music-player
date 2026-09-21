@@ -1,0 +1,2927 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Alger Music · Modern Soft UI 手机移动端 (Native App 体验)</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Remix Icon -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet">
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="design_tokens.css">
+
+  <script>
+    tailwind.config = {
+      darkMode: ['class', '[data-theme="dark"]'],
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', '"PingFang SC"', 'sans-serif'],
+          },
+          borderRadius: {
+            'squircle': '22px',
+            'squircle-lg': '28px',
+            'squircle-sm': '14px',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Reset & Base Canvas */
+    body {
+      background-color: #E2E8F0; /* Soft outer desk canvas */
+      color: var(--soft-text-main);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    [data-theme="dark"] body {
+      background-color: #05070A;
+    }
+
+    /* Phone Shell Simulator (Auto expands on actual mobile screen) */
+    .phone-simulator-frame {
+      width: 100%;
+      max-width: 416px;
+      height: 860px;
+      background: var(--soft-bg-canvas);
+      border-radius: 46px;
+      box-shadow: 
+        0 25px 70px -15px rgba(0, 0, 0, 0.28),
+        0 0 0 10px #FFFFFF,
+        0 0 0 12px #E2E8F0;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.4s ease;
+    }
+
+    [data-theme="dark"] .phone-simulator-frame {
+      box-shadow: 
+        0 30px 80px -15px rgba(0, 0, 0, 0.7),
+        0 0 0 10px #1C2128,
+        0 0 0 12px #2D333B;
+    }
+
+    /* On real mobile screens, take 100% full screen */
+    @media (max-width: 640px) {
+      body {
+        background: var(--soft-bg-canvas);
+      }
+      .phone-simulator-frame {
+        max-width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+        border-radius: 0;
+        box-shadow: none;
+        border: none;
+      }
+    }
+
+    /* Soft Depth & Micro-tactility */
+    .soft-card {
+      background: var(--soft-bg-surface);
+      box-shadow: var(--soft-shadow-flat);
+      border: 1px solid var(--soft-border-subtle);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .soft-card:active {
+      transform: scale(0.96);
+      box-shadow: var(--soft-shadow-recessed);
+    }
+
+    .soft-card-raised {
+      background: var(--soft-bg-surface);
+      box-shadow: var(--soft-shadow-raised);
+      border: 1px solid var(--soft-border-highlight);
+    }
+
+    .soft-btn {
+      background: var(--soft-bg-surface);
+      box-shadow: var(--soft-shadow-btn-convex);
+      border: 1px solid var(--soft-border-highlight);
+      transition: all 0.15s ease;
+    }
+    .soft-btn:active {
+      box-shadow: var(--soft-shadow-btn-pressed);
+      transform: scale(0.94);
+    }
+
+    .soft-dock {
+      background: var(--soft-bg-surface-translucent);
+      backdrop-filter: blur(28px) saturate(190%);
+      -webkit-backdrop-filter: blur(28px) saturate(190%);
+      box-shadow: var(--soft-shadow-dock);
+      border: 1px solid var(--soft-border-glass);
+    }
+
+    .soft-recessed {
+      background: var(--soft-bg-recessed);
+      box-shadow: var(--soft-shadow-recessed);
+    }
+
+    /* Dynamic Island */
+    .dynamic-island {
+      background: #000000;
+      color: #FFFFFF;
+      height: 32px;
+      border-radius: 20px;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+    }
+    .dynamic-island:active {
+      transform: scale(0.97);
+    }
+
+    /* Equalizer Soundwave */
+    .eq-mini-bar {
+      width: 2px;
+      background: #10B981;
+      border-radius: 2px;
+      animation: eqBounce 1s infinite alternate;
+      transition: height 0.2s ease;
+    }
+    @keyframes eqBounce {
+      0% { height: 3px; }
+      100% { height: 12px; }
+    }
+    .eq-mini-bar:nth-child(1) { animation-delay: 0.1s; }
+    .eq-mini-bar:nth-child(2) { animation-delay: 0.3s; }
+    .eq-mini-bar:nth-child(3) { animation-delay: 0.2s; }
+
+    /* Equalizer pause animation sync */
+    .vinyl-paused .eq-mini-bar,
+    .is-paused .eq-mini-bar,
+    [data-playing="false"] .eq-mini-bar {
+      animation-play-state: paused !important;
+      height: 3px !important;
+    }
+
+    /* ==========================================================================
+       Completely Hide ALL Scrollbars (Ensures zero ugly desktop scrollbars on Windows)
+       ========================================================================== */
+    * {
+      scrollbar-width: none !important;
+      -ms-overflow-style: none !important;
+    }
+    *::-webkit-scrollbar {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+      background: transparent !important;
+    }
+
+    /* Vinyl Turntable */
+    @keyframes spinVinyl {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .vinyl-spinning {
+      animation: spinVinyl 16s linear infinite;
+    }
+    .vinyl-paused {
+      animation-play-state: paused;
+    }
+
+    /* Kinetic Lyrics Transition */
+    .mobile-lyric-active {
+      color: #FFFFFF !important;
+      font-size: 1.65rem;
+      font-weight: 700;
+      opacity: 1 !important;
+      filter: blur(0px) !important;
+      transform: scale(1.02);
+      text-shadow: 0 4px 20px rgba(255, 255, 255, 0.4);
+    }
+    .mobile-lyric-inactive {
+      color: rgba(255, 255, 255, 0.45) !important;
+      opacity: 0.8;
+      filter: blur(0.5px);
+      font-size: 1.25rem;
+      font-weight: 500;
+    }
+
+    /* Fluid Ambient Mesh */
+    .mesh-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(75px);
+      opacity: 0.35;
+      pointer-events: none;
+      transition: background 1s ease;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ==========================================================================
+       Native Phone Frame Container
+       ========================================================================== -->
+  <div class="phone-simulator-frame">
+    
+    <!-- Fluid Mesh Glow -->
+    <div id="mBlob1" class="mesh-blob w-72 h-72 -top-10 -right-10" style="background: var(--glow-color-1);"></div>
+    <div id="mBlob2" class="mesh-blob w-64 h-64 top-1/2 -left-16" style="background: var(--glow-color-2);"></div>
+
+    <!-- ==========================================================================
+         1. iOS Status Bar & Dynamic Island
+         ========================================================================== -->
+    <div class="px-7 pt-3 pb-1 flex items-center justify-between shrink-0 select-none z-30">
+      <span class="text-[13px] font-bold tracking-tight text-slate-800 dark:text-slate-200">10:09</span>
+
+      <!-- Dynamic Island Pill -->
+      <div class="dynamic-island" onclick="openFullscreenLyrics()">
+        <div class="flex items-end gap-0.5 h-3">
+          <div class="eq-mini-bar"></div>
+          <div class="eq-mini-bar"></div>
+          <div class="eq-mini-bar"></div>
+        </div>
+        <span class="truncate max-w-[90px] text-[10px] text-white/90" id="islandTrackName">晴天</span>
+        <i class="ri-play-fill text-emerald-400 text-xs"></i>
+      </div>
+
+      <div class="flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+        <i class="ri-signal-tower-fill text-xs"></i>
+        <i class="ri-wifi-line text-xs"></i>
+        <div class="w-5 h-2.5 rounded-sm border border-current flex items-center p-0.5">
+          <div class="w-full h-full bg-emerald-500 rounded-2xs"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top App Header -->
+    <header class="px-4 py-2 flex items-center justify-between z-20 shrink-0">
+      <div class="flex items-center gap-2">
+        <a href="index.html" class="soft-btn px-2.5 py-1 rounded-full text-[10px] font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1 shadow-xs" title="返回桌面端宽屏">
+          <i class="ri-macbook-line text-emerald-500"></i>
+          <span>桌面端</span>
+        </a>
+        <h1 id="mHeaderTitle" class="text-base font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5">
+          <span>发现音乐</span>
+          <span class="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">Mobile</span>
+        </h1>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button onclick="toggleTheme()" class="soft-btn w-8 h-8 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300" title="切换主题">
+          <i id="themeIcon" class="ri-sun-line text-amber-500 text-sm"></i>
+        </button>
+        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Avatar" class="w-8 h-8 rounded-full object-cover ring-2 ring-emerald-500/30">
+      </div>
+    </header>
+
+    <!-- Modern Soft Toast Container -->
+    <div id="mToastContainer" class="absolute top-14 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex flex-col items-center gap-2 w-11/12"></div>
+
+    <!-- Scrollable Content Area: 4 Native App Tabs -->
+    <main class="flex-1 overflow-y-auto px-4 pt-2 pb-36 select-none relative z-10" id="mMainContent">
+
+      <!-- ==========================================================================
+           TAB 1: Discover (发现)
+           ========================================================================== -->
+      <div id="mViewDiscover" class="space-y-6">
+        <!-- Mobile Recessed Search Pill -->
+        <div onclick="switchMobileTab('explore')" class="soft-recessed rounded-full px-4 py-2.5 flex items-center gap-2.5 text-slate-400 cursor-pointer">
+          <i class="ri-search-2-line text-sm"></i>
+          <span class="text-xs text-slate-400 font-medium">搜索歌曲、歌手、专辑、播客...</span>
+          <i class="ri-mic-line text-slate-400 text-sm ml-auto"></i>
+        </div>
+
+        <!-- 5 Quick Action Tactile Pills -->
+        <div class="flex items-center justify-between px-1">
+          <div onclick="openMobileDailyRecommend()" class="flex flex-col items-center gap-1.5 cursor-pointer group">
+            <div class="w-12 h-12 rounded-2xl soft-btn bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl group-active:scale-90">
+              <i class="ri-calendar-todo-fill"></i>
+            </div>
+            <span class="text-[10px] font-bold text-slate-700 dark:text-slate-300">每日推荐</span>
+          </div>
+
+          <div onclick="openMobilePlaylistSquare()" class="flex flex-col items-center gap-1.5 cursor-pointer group">
+            <div class="w-12 h-12 rounded-2xl soft-btn bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl group-active:scale-90">
+              <i class="ri-play-list-fill"></i>
+            </div>
+            <span class="text-[10px] font-bold text-slate-700 dark:text-slate-300">歌单广场</span>
+          </div>
+
+          <div onclick="openMobileToplist()" class="flex flex-col items-center gap-1.5 cursor-pointer group">
+            <div class="w-12 h-12 rounded-2xl soft-btn bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl group-active:scale-90">
+              <i class="ri-bar-chart-2-fill"></i>
+            </div>
+            <span class="text-[10px] font-bold text-slate-700 dark:text-slate-300">排行榜</span>
+          </div>
+
+          <div onclick="openMobileRadio()" class="flex flex-col items-center gap-1.5 cursor-pointer group">
+            <div class="w-12 h-12 rounded-2xl soft-btn bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xl group-active:scale-90">
+              <i class="ri-broadcast-fill"></i>
+            </div>
+            <span class="text-[10px] font-bold text-slate-700 dark:text-slate-300">声音电台</span>
+          </div>
+
+          <div onclick="openMobilePersonalFM()" class="flex flex-col items-center gap-1.5 cursor-pointer group">
+            <div class="w-12 h-12 rounded-2xl soft-btn bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xl group-active:scale-90">
+              <i class="ri-radio-2-fill"></i>
+            </div>
+            <span class="text-[10px] font-bold text-slate-700 dark:text-slate-300">私人FM</span>
+          </div>
+        </div>
+
+        <!-- Section: Your Daily Mixes -->
+        <section class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-extrabold text-slate-900 dark:text-white">专属雷达 · Daily Mixes</h2>
+            <span class="text-[11px] text-slate-400">更新于 06:00</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <!-- Left Hero Card -->
+            <div onclick="openMobilePlaylist(0)" class="soft-card p-3 rounded-squircle flex flex-col justify-between cursor-pointer group relative overflow-hidden">
+              <div class="relative w-full aspect-square rounded-2xl overflow-hidden mb-2 shadow-sm">
+                <img src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop&q=80" alt="Cover" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                <div class="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-white/90 dark:bg-black/80 backdrop-blur-md flex items-center justify-center text-emerald-500 shadow-md">
+                  <i class="ri-play-fill text-sm ml-0.5"></i>
+                </div>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-900 dark:text-white truncate">落日微风 · 私人漫游</div>
+                <div class="text-[10px] text-slate-400 truncate mt-0.5">周杰伦 / 告五人 / M83</div>
+              </div>
+            </div>
+
+            <!-- Right 4 Compact Cards -->
+            <div class="grid grid-cols-2 gap-2">
+              <div onclick="playTrack(1)" class="soft-card p-2 rounded-2xl flex flex-col items-center text-center cursor-pointer group">
+                <div class="relative w-full aspect-square rounded-xl overflow-hidden mb-1.5">
+                  <img src="https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=300&auto=format&fit=crop&q=80" class="w-full h-full object-cover">
+                  <span class="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center text-white text-[10px]"><i class="ri-play-fill ml-0.5"></i></span>
+                </div>
+                <div class="text-[10px] font-bold truncate w-full">午夜霓虹</div>
+                <div class="text-[8px] text-slate-400 truncate w-full">M83</div>
+              </div>
+
+              <div onclick="playTrack(2)" class="soft-card p-2 rounded-2xl flex flex-col items-center text-center cursor-pointer group">
+                <div class="relative w-full aspect-square rounded-xl overflow-hidden mb-1.5">
+                  <img src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&auto=format&fit=crop&q=80" class="w-full h-full object-cover">
+                  <span class="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center text-white text-[10px]"><i class="ri-play-fill ml-0.5"></i></span>
+                </div>
+                <div class="text-[10px] font-bold truncate w-full">慢冷治愈</div>
+                <div class="text-[8px] text-slate-400 truncate w-full">梁静茹</div>
+              </div>
+
+              <div onclick="playTrack(3)" class="soft-card p-2 rounded-2xl flex flex-col items-center text-center cursor-pointer group">
+                <div class="relative w-full aspect-square rounded-xl overflow-hidden mb-1.5">
+                  <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=300&auto=format&fit=crop&q=80" class="w-full h-full object-cover">
+                  <span class="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center text-white text-[10px]"><i class="ri-play-fill ml-0.5"></i></span>
+                </div>
+                <div class="text-[10px] font-bold truncate w-full">Golden Hour</div>
+                <div class="text-[8px] text-slate-400 truncate w-full">JVKE</div>
+              </div>
+
+              <div onclick="playTrack(4)" class="soft-card p-2 rounded-2xl flex flex-col items-center text-center cursor-pointer group">
+                <div class="relative w-full aspect-square rounded-xl overflow-hidden mb-1.5">
+                  <img src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&auto=format&fit=crop&q=80" class="w-full h-full object-cover">
+                  <span class="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center text-white text-[10px]"><i class="ri-play-fill ml-0.5"></i></span>
+                </div>
+                <div class="text-[10px] font-bold truncate w-full">爱在西元前</div>
+                <div class="text-[8px] text-slate-400 truncate w-full">周杰伦</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section: New Releases -->
+        <section class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-extrabold text-slate-900 dark:text-white">新碟与精选专栏</h2>
+            <span class="text-[11px] text-emerald-500 font-bold">全部 48 专</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3" id="mobileNewReleases">
+            <!-- Injected dynamically -->
+          </div>
+        </section>
+      </div>
+
+      <!-- ==========================================================================
+           TAB 2: Explore & Search (探索)
+           ========================================================================== -->
+      <div id="mViewExplore" class="space-y-5 hidden">
+        <!-- Interactive Search Input -->
+        <div class="soft-recessed rounded-full px-4 py-2.5 flex items-center gap-2.5 text-slate-400">
+          <i class="ri-search-2-line text-sm"></i>
+          <input id="mSearchInput" type="text" placeholder="实时过滤歌曲、歌手、流派..." class="bg-transparent border-none outline-none text-xs w-full text-slate-700 dark:text-slate-200 placeholder-slate-400">
+          <button onclick="document.getElementById('mSearchInput').value=''; filterMobileSearch('');" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+            <i class="ri-close-circle-fill text-sm"></i>
+          </button>
+        </div>
+
+        <!-- Hot Tags Cloud -->
+        <div class="space-y-2">
+          <div class="text-[11px] font-bold text-slate-400">热门搜索趋势</div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="setMobileSearchQuery('周杰伦')" class="soft-btn px-3 py-1 rounded-full text-[11px] font-medium text-slate-700 dark:text-slate-300">🔥 周杰伦</button>
+            <button onclick="setMobileSearchQuery('晴天')" class="soft-btn px-3 py-1 rounded-full text-[11px] font-medium text-slate-700 dark:text-slate-300">晴天</button>
+            <button onclick="setMobileSearchQuery('Lo-Fi')" class="soft-btn px-3 py-1 rounded-full text-[11px] font-medium text-slate-700 dark:text-slate-300">Lo-Fi 治愈</button>
+            <button onclick="setMobileSearchQuery('梁静茹')" class="soft-btn px-3 py-1 rounded-full text-[11px] font-medium text-slate-700 dark:text-slate-300">慢冷</button>
+            <button onclick="setMobileSearchQuery('Golden Hour')" class="soft-btn px-3 py-1 rounded-full text-[11px] font-medium text-slate-700 dark:text-slate-300">Golden Hour</button>
+            <button onclick="setMobileSearchQuery('M83')" class="soft-btn px-3 py-1 rounded-full text-[11px] font-medium text-slate-700 dark:text-slate-300">午夜霓虹</button>
+          </div>
+        </div>
+
+        <!-- Matching Search Results List -->
+        <div class="space-y-2">
+          <div class="text-[11px] font-bold text-slate-400" id="mSearchResultTitle">全部曲库清单</div>
+          <div id="mSearchResultsContainer" class="space-y-2">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================================================
+           TAB 3: Library (资料库)
+           ========================================================================== -->
+      <div id="mViewLibrary" class="space-y-5 hidden">
+        <!-- Liked Card Banner -->
+        <div class="soft-card-raised p-4 rounded-squircle flex items-center justify-between">
+          <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-500 to-pink-400 text-white flex items-center justify-center text-2xl shadow-md shadow-rose-500/30">
+              <i class="ri-heart-3-fill"></i>
+            </div>
+            <div>
+              <div class="text-xs font-bold text-slate-900 dark:text-white">我喜欢的音乐</div>
+              <div class="text-[10px] text-slate-400 mt-0.5" id="mLibFavCount">共 3 首收藏</div>
+            </div>
+          </div>
+          <button onclick="playTrack(0)" class="soft-btn-primary px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1">
+            <i class="ri-play-fill"></i> 播放
+          </button>
+        </div>
+
+        <!-- Offline Cache Status Widget -->
+        <div class="soft-card p-3 rounded-2xl flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-sm">
+              <i class="ri-download-cloud-line"></i>
+            </div>
+            <div>
+              <div class="text-[11px] font-bold text-slate-800 dark:text-slate-200">无损母带离线缓存</div>
+              <div class="text-[9px] text-slate-400">本地已就绪 · Hi-Res 24bit</div>
+            </div>
+          </div>
+          <span class="text-[10px] font-mono font-bold text-emerald-500">2.4 GB</span>
+        </div>
+
+        <!-- Library Quick Entry: Local Music & Artists -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <div onclick="openMobileLocal()" class="soft-card p-3 rounded-2xl flex items-center gap-3 cursor-pointer group hover:border-emerald-500/40">
+            <div class="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center text-lg group-active:scale-90">
+              <i class="ri-hard-drive-2-line"></i>
+            </div>
+            <div>
+              <div class="text-xs font-bold text-slate-800 dark:text-slate-100">本地与下载</div>
+              <div class="text-[9px] text-slate-400" id="mLibLocalCount">6 首本地音频</div>
+            </div>
+          </div>
+          <div onclick="openMobileArtists()" class="soft-card p-3 rounded-2xl flex items-center gap-3 cursor-pointer group hover:border-emerald-500/40">
+            <div class="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-500 flex items-center justify-center text-lg group-active:scale-90">
+              <i class="ri-mic-line"></i>
+            </div>
+            <div>
+              <div class="text-xs font-bold text-slate-800 dark:text-slate-100">热门歌手</div>
+              <div class="text-[9px] text-slate-400">6 位艺人</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Liked Songs Interactive List -->
+        <div class="space-y-2">
+          <div class="text-[11px] font-bold text-slate-400">已收藏歌曲明细</div>
+          <div id="mLibraryListContainer" class="space-y-1 divide-y divide-slate-100 dark:divide-white/5">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================================================
+           TAB 4: Profile & Settings (我的)
+           ========================================================================== -->
+      <div id="mViewProfile" class="space-y-5 hidden">
+        <!-- User Info Card -->
+        <div class="soft-card-raised p-4 rounded-squircle flex items-center gap-3.5">
+          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80" class="w-14 h-14 rounded-full object-cover ring-2 ring-emerald-500/40">
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+              <span>Alger</span>
+              <span class="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold border border-amber-500/20">VIP 8</span>
+            </div>
+            <div class="text-[10px] text-slate-400 mt-0.5">连续听歌 328 天 · 听歌排行 TOP 1%</div>
+          </div>
+        </div>
+
+        <!-- Appearance & Theme Switch -->
+        <div class="soft-card p-4 rounded-squircle space-y-3">
+          <div class="text-xs font-bold text-slate-900 dark:text-white">主题与质感设置</div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-600 dark:text-slate-300 font-medium">深石墨夜间模式</span>
+            <button onclick="toggleTheme()" class="soft-btn px-3 py-1 rounded-full text-xs font-bold text-emerald-500 flex items-center gap-1">
+              <i class="ri-contrast-2-line"></i> 切换
+            </button>
+          </div>
+          <div class="pt-2 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
+            <span class="text-xs text-slate-600 dark:text-slate-300 font-medium">强调色</span>
+            <div class="flex items-center gap-2.5" id="mAccentPickerGroup">
+              <button onclick="setMobileAccent('#10B981')" data-accent="#10B981" class="m-accent-dot w-6 h-6 rounded-full bg-[#10B981] ring-2 ring-white dark:ring-black flex items-center justify-center transition-all cursor-pointer" title="翡翠绿"></button>
+              <button onclick="setMobileAccent('#3B82F6')" data-accent="#3B82F6" class="m-accent-dot w-6 h-6 rounded-full bg-[#3B82F6] ring-2 ring-white dark:ring-black flex items-center justify-center transition-all cursor-pointer" title="海洋蓝"></button>
+              <button onclick="setMobileAccent('#EC4899')" data-accent="#EC4899" class="m-accent-dot w-6 h-6 rounded-full bg-[#EC4899] ring-2 ring-white dark:ring-black flex items-center justify-center transition-all cursor-pointer" title="蔷薇粉"></button>
+              <button onclick="setMobileAccent('#8B5CF6')" data-accent="#8B5CF6" class="m-accent-dot w-6 h-6 rounded-full bg-[#8B5CF6] ring-2 ring-white dark:ring-black flex items-center justify-center transition-all cursor-pointer" title="极光紫"></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Audio Output Quality -->
+        <div class="soft-card p-4 rounded-squircle space-y-2">
+          <div class="text-xs font-bold text-slate-900 dark:text-white">流媒体音频品质</div>
+          <label class="flex items-center justify-between p-2 rounded-xl soft-recessed cursor-pointer">
+            <div class="text-[11px] font-bold text-slate-800 dark:text-slate-200">Hi-Res 母带级无损 (192kHz)</div>
+            <input type="radio" name="mQuality" checked class="accent-emerald-500 w-3.5 h-3.5">
+          </label>
+          <label class="flex items-center justify-between p-2 rounded-xl cursor-pointer">
+            <div class="text-[11px] font-bold text-slate-800 dark:text-slate-200">SQ 标准高清无损 (FLAC)</div>
+            <input type="radio" name="mQuality" class="accent-emerald-500 w-3.5 h-3.5">
+          </label>
+        </div>
+
+        <!-- Storage & Cache -->
+        <div class="soft-card p-4 rounded-squircle space-y-2">
+          <div class="flex items-center justify-between">
+            <div class="text-xs font-bold text-slate-900 dark:text-white">离线存储缓存</div>
+            <button onclick="clearMobileCache()" class="text-[11px] text-rose-500 font-bold hover:underline">清空缓存</button>
+          </div>
+          <div class="text-[10px] text-slate-400">占用空间：2.4 GB 歌曲缓存，14 MB 歌词与专辑封面</div>
+        </div>
+      </div>
+
+      <!-- ==========================================================================
+           TAB 5: Mobile Playlist Detail View (歌单详情页)
+           ========================================================================== -->
+      <div id="mViewPlaylistDetail" class="space-y-4 hidden">
+        <!-- Back Navigation Bar -->
+        <div class="flex items-center justify-between py-1">
+          <button onclick="closeMobilePlaylist()" class="soft-btn px-3 py-1.5 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
+            <i class="ri-arrow-left-s-line text-base"></i>
+            <span>返回</span>
+          </button>
+          <span class="text-xs font-bold text-slate-800 dark:text-slate-100">歌单详情</span>
+          <button onclick="showMobileToast('歌单链接已复制到剪贴板', 'ri-share-line text-emerald-400')" class="soft-btn w-8 h-8 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300">
+            <i class="ri-share-forward-line text-sm"></i>
+          </button>
+        </div>
+
+        <!-- Hero Card -->
+        <div class="soft-card-raised p-4 rounded-squircle flex gap-3.5 items-center">
+          <img id="mPlaylistDetailCover" src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&auto=format&fit=crop&q=80" alt="Cover" class="w-20 h-20 rounded-2xl object-cover shadow-md shrink-0">
+          <div class="min-w-0 flex-1 space-y-1">
+            <div id="mPlaylistDetailTitle" class="text-sm font-extrabold text-slate-900 dark:text-white truncate">落日微风 · 私人漫游</div>
+            <div id="mPlaylistDetailCurator" class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <i class="ri-user-smile-line text-emerald-500"></i>
+              <span>Alger 推荐制作</span>
+            </div>
+            <div class="flex items-center gap-2 pt-1">
+              <button onclick="playTrack(0)" class="soft-btn-primary px-3 py-1 rounded-full text-[11px] font-bold flex items-center gap-1 shadow-sm">
+                <i class="ri-play-fill text-xs"></i> 播放全部
+              </button>
+              <button onclick="showMobileToast('已收藏该精选歌单', 'ri-heart-3-fill text-rose-500')" class="soft-btn px-2.5 py-1 rounded-full text-[11px] font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1">
+                <i class="ri-heart-3-line text-xs"></i> 收藏
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tracklist Section -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-[11px] font-bold text-slate-400 px-1">
+            <span>歌曲列表 (共 6 首)</span>
+            <span class="text-emerald-500 font-mono">Hi-Res 无损</span>
+          </div>
+          <div id="mPlaylistTracklist" class="space-y-1 divide-y divide-slate-100 dark:divide-white/5">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================================================
+           TAB 6: Mobile Daily Recommendation (每日推荐)
+           ========================================================================== -->
+      <div id="mViewDailyRecommend" class="space-y-4 hidden">
+        <div class="flex items-center justify-between py-1">
+          <button onclick="closeMobileSubView()" class="soft-btn px-3 py-1.5 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
+            <i class="ri-arrow-left-s-line text-base"></i>
+            <span>返回</span>
+          </button>
+          <span class="text-xs font-bold text-slate-800 dark:text-slate-100">每日推荐</span>
+          <button onclick="showMobileToast('已生成今日专属离线缓存', 'ri-download-cloud-line text-emerald-400')" class="soft-btn w-8 h-8 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300">
+            <i class="ri-download-line text-sm"></i>
+          </button>
+        </div>
+
+        <!-- Hero Calendar Card -->
+        <div class="soft-card-raised p-4 rounded-squircle bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent border border-emerald-500/20 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-baseline gap-2">
+              <span id="mDailyDateMonth" class="text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">09月</span>
+              <span id="mDailyDateNumber" class="text-sm font-bold text-slate-400">21 日</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold">今日私享</span>
+            </div>
+            <span class="text-[10px] text-slate-400">每天 06:00 准时更新</span>
+          </div>
+          <div class="text-xs text-slate-600 dark:text-slate-300">根据你常听的 <span class="font-bold text-emerald-600 dark:text-emerald-400">周杰伦</span>、<span class="font-bold text-emerald-600 dark:text-emerald-400">M83</span> 与治愈流行定制</div>
+          <div class="flex items-center gap-2 pt-1">
+            <button onclick="playAllDaily()" class="soft-btn-primary px-4 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm">
+              <i class="ri-play-fill text-sm"></i> 播放全部 (6首)
+            </button>
+            <button onclick="showMobileToast('已收藏今日私享歌单', 'ri-heart-3-fill text-rose-500')" class="soft-btn px-3 py-1.5 rounded-full text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1">
+              <i class="ri-heart-3-line"></i> 收藏
+            </button>
+          </div>
+        </div>
+
+        <!-- Songs List -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-[11px] font-bold text-slate-400 px-1">
+            <span>推荐歌曲明细</span>
+            <span class="text-emerald-500 font-mono">Hi-Res 无损</span>
+          </div>
+          <div id="mDailyTracklist" class="space-y-1 divide-y divide-slate-100 dark:divide-white/5">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================================================
+           TAB 7: Mobile Playlist Square (歌单广场)
+           ========================================================================== -->
+      <div id="mViewPlaylistSquare" class="space-y-4 hidden">
+        <div class="flex items-center justify-between py-1">
+          <button onclick="closeMobileSubView()" class="soft-btn px-3 py-1.5 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
+            <i class="ri-arrow-left-s-line text-base"></i>
+            <span>返回</span>
+          </button>
+          <span class="text-xs font-bold text-slate-800 dark:text-slate-100">歌单广场</span>
+          <button onclick="showMobileToast('已刷新最新热门歌单', 'ri-refresh-line text-emerald-400')" class="soft-btn w-8 h-8 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300">
+            <i class="ri-refresh-line text-sm"></i>
+          </button>
+        </div>
+
+        <!-- Category Pills (Horizontal Scroll) -->
+        <div id="mSquareFilterGroup" class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 text-[11px]">
+          <button onclick="filterMobilePlaylistCategory('all', this)" id="mPlCatAll" class="soft-btn px-3 py-1 rounded-full font-bold text-emerald-500 shrink-0">全部</button>
+          <button onclick="filterMobilePlaylistCategory('pop', this)" id="mPlCatPop" class="soft-btn px-3 py-1 rounded-full text-slate-600 dark:text-slate-300 shrink-0">流行</button>
+          <button onclick="filterMobilePlaylistCategory('chinese', this)" id="mPlCatChinese" class="soft-btn px-3 py-1 rounded-full text-slate-600 dark:text-slate-300 shrink-0">华语</button>
+          <button onclick="filterMobilePlaylistCategory('rock', this)" id="mPlCatRock" class="soft-btn px-3 py-1 rounded-full text-slate-600 dark:text-slate-300 shrink-0">摇滚</button>
+          <button onclick="filterMobilePlaylistCategory('lofi', this)" id="mPlCatLofi" class="soft-btn px-3 py-1 rounded-full text-slate-600 dark:text-slate-300 shrink-0">Lo-Fi</button>
+          <button onclick="filterMobilePlaylistCategory('electronic', this)" id="mPlCatElectronic" class="soft-btn px-3 py-1 rounded-full text-slate-600 dark:text-slate-300 shrink-0">电子</button>
+        </div>
+
+        <!-- Playlist Grid -->
+        <div class="grid grid-cols-2 gap-3" id="mPlaylistSquareGrid">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- ==========================================================================
+           TAB 8: Mobile Toplist Charts (巅峰排行榜)
+           ========================================================================== -->
+      <div id="mViewToplist" class="space-y-4 hidden">
+        <div class="flex items-center justify-between py-1">
+          <button onclick="closeMobileSubView()" class="soft-btn px-3 py-1.5 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
+            <i class="ri-arrow-left-s-line text-base"></i>
+            <span>返回</span>
+          </button>
+          <span class="text-xs font-bold text-slate-800 dark:text-slate-100">官方巅峰榜</span>
+          <span class="text-[10px] text-slate-400">每日 09:00 更新</span>
+        </div>
+
+        <!-- Toplist Cards List -->
+        <div class="space-y-3" id="mToplistCardsContainer">
+          <!-- Populated dynamically: 飙升榜, 热歌榜, 新歌榜, 原创榜 with top 3 songs -->
+        </div>
+      </div>
+
+      <!-- ==========================================================================
+           TAB 9: Mobile Radio & Podcast (声音电台)
+           ========================================================================== -->
+      <div id="mViewRadio" class="space-y-4 hidden">
+        <div class="flex items-center justify-between py-1">
+          <button onclick="closeMobileSubView()" class="soft-btn px-3 py-1.5 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
+            <i class="ri-arrow-left-s-line text-base"></i>
+            <span>返回</span>
+          </button>
+          <span class="text-xs font-bold text-slate-800 dark:text-slate-100">声音电台 · 播客</span>
+          <button onclick="showMobileToast('已订阅电台更新提醒', 'ri-notification-3-line text-emerald-400')" class="soft-btn w-8 h-8 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300">
+            <i class="ri-notification-3-line text-sm"></i>
+          </button>
+        </div>
+
+        <!-- 4 Categories -->
+        <div class="grid grid-cols-2 gap-2 text-center text-xs">
+          <div onclick="playTrack(2)" class="soft-card p-3 rounded-2xl cursor-pointer hover:border-emerald-500/40 group">
+            <div class="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-500 flex items-center justify-center mx-auto mb-1.5 text-lg group-active:scale-90">
+              <i class="ri-moon-foggy-fill"></i>
+            </div>
+            <div class="font-bold text-slate-900 dark:text-white">深夜治愈</div>
+            <div class="text-[9px] text-slate-400">128万人在听</div>
+          </div>
+          <div onclick="playTrack(1)" class="soft-card p-3 rounded-2xl cursor-pointer hover:border-emerald-500/40 group">
+            <div class="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-500 flex items-center justify-center mx-auto mb-1.5 text-lg group-active:scale-90">
+              <i class="ri-headphone-fill"></i>
+            </div>
+            <div class="font-bold text-slate-900 dark:text-white">助眠白噪</div>
+            <div class="text-[9px] text-slate-400">雨声与壁炉柴火</div>
+          </div>
+          <div onclick="playTrack(0)" class="soft-card p-3 rounded-2xl cursor-pointer hover:border-emerald-500/40 group">
+            <div class="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center mx-auto mb-1.5 text-lg group-active:scale-90">
+              <i class="ri-mic-fill"></i>
+            </div>
+            <div class="font-bold text-slate-900 dark:text-white">音乐故事</div>
+            <div class="text-[9px] text-slate-400">经典黑胶访谈录</div>
+          </div>
+          <div onclick="playTrack(4)" class="soft-card p-3 rounded-2xl cursor-pointer hover:border-emerald-500/40 group">
+            <div class="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center mx-auto mb-1.5 text-lg group-active:scale-90">
+              <i class="ri-cpu-line"></i>
+            </div>
+            <div class="font-bold text-slate-900 dark:text-white">科技前沿</div>
+            <div class="text-[9px] text-slate-400">AI与数字生活</div>
+          </div>
+        </div>
+
+        <!-- Featured Radio Episodes -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-[11px] font-bold text-slate-400 px-1">
+            <span>本周热门精选单集</span>
+            <span class="text-emerald-500 font-mono">周更</span>
+          </div>
+          <div id="mRadioEpisodesContainer" class="space-y-2">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================================================
+           TAB 10: Mobile Personal FM (私人FM 沉浸模式)
+           ========================================================================== -->
+      <div id="mViewPersonalFM" class="space-y-4 hidden flex flex-col justify-between">
+        <div class="flex items-center justify-between py-1">
+          <button onclick="closeMobileSubView()" class="soft-btn px-3 py-1.5 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
+            <i class="ri-arrow-left-s-line text-base"></i>
+            <span>退出FM</span>
+          </button>
+          <div class="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-100">
+            <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+            <span>私人漫游 FM</span>
+          </div>
+          <button onclick="showMobileToast('私人FM已根据偏好实时校准', 'ri-equalizer-line text-emerald-400')" class="soft-btn w-8 h-8 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300">
+            <i class="ri-sound-module-line text-sm"></i>
+          </button>
+        </div>
+
+        <!-- Turntable Vinyl Card -->
+        <div class="soft-card-raised p-6 rounded-squircle flex flex-col items-center justify-center space-y-4 my-auto relative overflow-hidden">
+          <div id="mFmVinyl" class="relative w-44 h-44 rounded-full vinyl-record vinyl-spinning overflow-hidden flex items-center justify-center shadow-2xl">
+            <img id="mFmCover" src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&auto=format&fit=crop&q=80" alt="Cover" class="w-20 h-20 rounded-full object-cover ring-2 ring-black">
+            <div class="absolute w-4 h-4 rounded-full bg-black/90"></div>
+          </div>
+          <div class="text-center space-y-1">
+            <div id="mFmTitle" class="text-base font-extrabold text-slate-900 dark:text-white truncate max-w-[240px]">晴天 (Sunny Day)</div>
+            <div id="mFmArtist" class="text-xs text-slate-400 truncate max-w-[200px]">周杰伦 · 猜你喜欢</div>
+          </div>
+        </div>
+
+        <!-- FM Controls: Trash, Heart, Play/Pause, Next -->
+        <div class="soft-dock p-3 rounded-full flex items-center justify-around shadow-xl">
+          <button onclick="trashFmSong()" class="w-10 h-10 rounded-full soft-btn flex items-center justify-center text-slate-400 hover:text-rose-500 text-lg active:scale-90" title="不再收听">
+            <i class="ri-delete-bin-line"></i>
+          </button>
+          <button onclick="likeFmSong()" id="mFmLikeBtn" class="w-11 h-11 rounded-full soft-btn flex items-center justify-center text-rose-500 text-xl active:scale-90" title="喜欢">
+            <i id="mFmLikeIcon" class="ri-heart-3-fill"></i>
+          </button>
+          <button onclick="togglePlayPause()" class="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/40 text-2xl active:scale-90">
+            <i id="mFmPlayIcon" class="ri-pause-fill ml-0.5"></i>
+          </button>
+          <button onclick="nextFmSong()" class="w-10 h-10 rounded-full soft-btn flex items-center justify-center text-slate-700 dark:text-slate-200 text-lg active:scale-90" title="下一首">
+            <i class="ri-skip-forward-fill"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ==========================================================================
+           TAB 11: Mobile Artists List (热门歌手专区)
+           ========================================================================== -->
+      <div id="mViewArtists" class="space-y-4 hidden">
+        <div class="flex items-center justify-between py-1">
+          <button onclick="closeMobileSubView()" class="soft-btn px-3 py-1.5 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
+            <i class="ri-arrow-left-s-line text-base"></i>
+            <span>返回</span>
+          </button>
+          <span class="text-xs font-bold text-slate-800 dark:text-slate-100">热门歌手专区</span>
+          <span class="text-[10px] text-slate-400 font-mono">POP / ROCK</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3" id="mArtistsGrid">
+          <!-- Artists populated dynamically -->
+        </div>
+      </div>
+
+      <!-- ==========================================================================
+           TAB 12: Mobile Artist Detail View (歌手详情页)
+           ========================================================================== -->
+      <div id="mViewArtistDetail" class="space-y-4 hidden">
+        <div class="flex items-center justify-between py-1">
+          <button onclick="closeMobileArtistDetail()" class="soft-btn px-3 py-1.5 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
+            <i class="ri-arrow-left-s-line text-base"></i>
+            <span>返回歌手列表</span>
+          </button>
+          <span class="text-xs font-bold text-slate-800 dark:text-slate-100">歌手主页</span>
+          <button onclick="showMobileToast('已分享歌手名片', 'ri-share-line text-emerald-400')" class="soft-btn w-8 h-8 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300">
+            <i class="ri-share-line text-sm"></i>
+          </button>
+        </div>
+
+        <!-- Artist Hero Banner -->
+        <div class="soft-card-raised p-4 rounded-squircle flex items-center gap-3.5">
+          <img id="mArtistDetailBanner" src="" alt="Artist" class="w-16 h-16 rounded-full object-cover ring-3 ring-emerald-500/30 shadow-lg shrink-0">
+          <div class="min-w-0 flex-1 space-y-1">
+            <div class="flex items-center gap-1">
+              <h2 id="mArtistDetailName" class="text-sm font-extrabold text-slate-900 dark:text-white truncate">周杰伦</h2>
+              <i class="ri-verified-badge-fill text-amber-500 text-xs"></i>
+            </div>
+            <div id="mArtistDetailFans" class="text-[10px] text-slate-400">3280 万 关注者 · 热门音乐人认证</div>
+            <div id="mArtistDetailBio" class="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-2"></div>
+            <div class="flex items-center gap-2 pt-1">
+              <button onclick="playTrack(0)" class="soft-btn-primary px-3 py-1 rounded-full text-[11px] font-bold flex items-center gap-1">
+                <i class="ri-play-fill text-xs"></i> 热门歌曲
+              </button>
+              <button id="mArtistFollowBtn" onclick="toggleMobileArtistFollow()" class="soft-btn px-2.5 py-1 rounded-full text-[11px] font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1">
+                <i class="ri-add-line"></i> 关注
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Artist Top Tracks -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-[11px] font-bold text-slate-400 px-1">
+            <span>代表作与热门单曲</span>
+            <span class="text-emerald-500 font-mono">Hi-Res</span>
+          </div>
+          <div id="mArtistDetailTracklist" class="space-y-1 divide-y divide-slate-100 dark:divide-white/5">
+            <!-- Tracks populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================================================
+           TAB 13: Mobile Local Music & Offline Downloads (本地与下载音乐专区)
+           ========================================================================== -->
+      <div id="mViewLocal" class="space-y-4 hidden">
+        <div class="flex items-center justify-between py-1">
+          <button onclick="closeMobileSubView()" class="soft-btn px-3 py-1.5 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
+            <i class="ri-arrow-left-s-line text-base"></i>
+            <span>返回</span>
+          </button>
+          <span class="text-xs font-bold text-slate-800 dark:text-slate-100">本地与离线下载</span>
+          <span class="text-[10px] font-mono text-emerald-500 font-bold">2.4 GB 已就绪</span>
+        </div>
+
+        <!-- Local Upload Pill / Card -->
+        <input type="file" id="mLocalFileInput" accept="audio/*" multiple class="hidden" onchange="handleMobileLocalFileSelect(event)">
+        <div onclick="document.getElementById('mLocalFileInput').click()" class="soft-card p-4 rounded-squircle border-2 border-dashed border-emerald-500/30 text-center cursor-pointer hover:border-emerald-500 transition-colors space-y-1.5">
+          <div class="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto text-lg">
+            <i class="ri-upload-cloud-2-line"></i>
+          </div>
+          <div class="text-xs font-bold text-slate-900 dark:text-white">点此导入本地音频文件</div>
+          <div class="text-[10px] text-slate-400">支持 MP3, FLAC, WAV, AAC, OGG 格式</div>
+        </div>
+
+        <!-- Local Tracklist -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-[11px] font-bold text-slate-400 px-1">
+            <span>已缓存与本地曲目</span>
+            <span id="mLocalTrackCount" class="text-slate-400">6 首</span>
+          </div>
+          <div id="mLocalTracklist" class="space-y-1 divide-y divide-slate-100 dark:divide-white/5">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ==========================================================================
+         2. Floating Mini Pill Player (悬浮胶囊迷你播放器)
+         ========================================================================== -->
+    <div id="miniPlayerDock" onclick="openFullscreenLyrics()" class="absolute bottom-16 left-3 right-3 soft-dock rounded-2xl p-2.5 flex items-center justify-between z-30 shadow-xl cursor-pointer">
+      
+      <!-- Top Slim Progress Line -->
+      <div class="absolute top-0 left-3 right-3 h-[2px] bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
+        <div id="mDockProgressBar" class="h-full bg-emerald-500 rounded-full w-0 transition-all"></div>
+      </div>
+
+      <!-- Song Metadata -->
+      <div class="flex items-center gap-3 min-w-0 flex-1">
+        <img id="mDockCover" src="" alt="" class="w-10 h-10 rounded-xl object-cover shadow-sm shrink-0 bg-gradient-to-tr from-emerald-500/20 to-teal-500/30">
+        <div class="min-w-0 flex-1 pr-2">
+          <div class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate" id="mDockTitle">晴天</div>
+          <div class="text-[10px] text-slate-400 truncate mt-0.5" id="mDockArtist">周杰伦 · 叶惠美</div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-3 shrink-0 px-1" onclick="event.stopPropagation()">
+        <button onclick="toggleLike()" class="text-slate-400 hover:text-rose-500">
+          <i id="mDockLikeIcon" class="ri-heart-3-line text-lg"></i>
+        </button>
+
+        <!-- Play/Pause Hero Button -->
+        <button onclick="togglePlayPause()" class="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/40">
+          <i id="mDockPlayIcon" class="ri-play-fill text-base ml-0.5"></i>
+        </button>
+
+        <button onclick="nextTrack()" class="text-slate-600 dark:text-slate-300">
+          <i class="ri-skip-forward-fill text-lg"></i>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- ==========================================================================
+         3. Fixed Bottom TabBar Island (移动端底部胶囊导航岛 - 4大标签页)
+         ========================================================================== -->
+    <nav class="absolute bottom-2 left-4 right-4 h-12 soft-dock rounded-full px-4 flex items-center justify-around z-20 shadow-lg text-slate-400 text-xs" id="mobileBottomNav">
+      <button onclick="switchMobileTab('discover')" id="mTabDiscover" class="flex flex-col items-center text-emerald-500 font-bold transition-all">
+        <i class="ri-compass-3-fill text-lg"></i>
+        <span class="text-[9px]">发现</span>
+      </button>
+      <button onclick="switchMobileTab('explore')" id="mTabExplore" class="flex flex-col items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all">
+        <i class="ri-search-2-line text-lg"></i>
+        <span class="text-[9px]">探索</span>
+      </button>
+      <button onclick="switchMobileTab('library')" id="mTabLibrary" class="flex flex-col items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all">
+        <i class="ri-folder-music-line text-lg"></i>
+        <span class="text-[9px]">资料库</span>
+      </button>
+      <button onclick="switchMobileTab('profile')" id="mTabProfile" class="flex flex-col items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all">
+        <i class="ri-user-3-line text-lg"></i>
+        <span class="text-[9px]">我的</span>
+      </button>
+    </nav>
+
+    <!-- ==========================================================================
+         4. Mobile Fullscreen Immersive Lyrics View (支持黑胶唱盘与纯字大幕一键轻触切换)
+         ========================================================================== -->
+    <div id="mFullLyrics" class="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-3xl flex flex-col p-6 text-white translate-y-full transition-transform duration-400 ease-out overflow-hidden">
+      
+      <!-- Ambient Glow Blobs -->
+      <div class="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <div id="mBlob1" class="absolute -top-16 -left-16 w-64 h-64 rounded-full blur-3xl opacity-25 transition-all duration-700 bg-emerald-500/40"></div>
+        <div id="mBlob2" class="absolute -bottom-16 -right-16 w-64 h-64 rounded-full blur-3xl opacity-25 transition-all duration-700 bg-blue-500/30"></div>
+      </div>
+      
+      <!-- Pull-down pill handle for quick dismiss -->
+      <div onclick="closeFullscreenLyrics()" class="w-12 h-1.5 bg-white/30 hover:bg-white/60 active:bg-white/80 rounded-full mx-auto mb-2 cursor-pointer transition-all z-10" title="下拉收起"></div>
+
+      <!-- Top Control Bar -->
+      <div class="flex items-center justify-between pb-2 z-10">
+        <button onclick="closeFullscreenLyrics()" class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 active:scale-90 text-white text-xs font-bold transition-all shadow-sm" title="返回主页">
+          <i class="ri-arrow-down-s-line text-lg"></i>
+          <span>返回</span>
+        </button>
+        <div class="text-center min-w-0 px-2 cursor-pointer" onclick="closeFullscreenLyrics()">
+          <div class="text-sm font-bold truncate" id="mFullTitle">晴天</div>
+          <div class="text-[11px] text-white/60 truncate" id="mFullArtist">周杰伦</div>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button id="mEqBtn" onclick="openMobileEqModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-90 text-emerald-400 flex items-center justify-center text-sm" title="音效与均衡器">
+            <i class="ri-sound-module-line"></i>
+          </button>
+          <button id="mSleepTimerBtn" onclick="openMobileSleepTimer()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-90 text-white/80 flex items-center justify-center text-sm relative" title="睡眠定时器">
+            <i class="ri-timer-line"></i>
+            <span id="mSleepDot" class="hidden absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          </button>
+          <button id="mModeToggleBtn" onclick="togglePlayerVisualMode()" class="px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-[10px] font-mono text-emerald-400 border border-white/15 flex items-center gap-1" title="切换黑胶唱机 / 纯歌词巨幕">
+            <i id="mModeToggleIcon" class="ri-disc-line"></i>
+            <span id="mModeToggleText">纯歌词</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Body: Realistic Neumorphic Vinyl Disc or Pure Kinetic Lyrics -->
+      <div class="flex-1 flex flex-col items-center justify-center relative overflow-hidden py-3" id="mPlayerCenterStage">
+        
+        <!-- Turntable Disc (Tappable to toggle mode) -->
+        <div id="mVinylContainer" onclick="togglePlayerVisualMode()" class="flex flex-col items-center justify-center my-auto transition-all cursor-pointer group" title="轻触切换纯歌词/黑胶唱盘">
+          <div id="mVinylDisc" class="w-56 h-56 rounded-full vinyl-record vinyl-spinning overflow-hidden flex items-center justify-center shadow-2xl transition-transform group-hover:scale-105">
+            <img id="mFullCover" src="" alt="Album" class="w-24 h-24 rounded-full object-cover ring-2 ring-black">
+            <div class="absolute w-5 h-5 rounded-full bg-black/90"></div>
+          </div>
+          <div class="mt-3 text-[10px] text-white/50 flex items-center gap-1">
+            <i class="ri-fingerprint-line text-xs text-emerald-400"></i> 轻触切换纯歌词模式
+          </div>
+        </div>
+
+        <!-- Apple Music Kinetic Lyrics Container (No scrollbar) -->
+        <div id="mLyricsContainer" class="w-full h-full overflow-y-auto text-center space-y-4 pr-1 select-none my-auto hidden">
+          <!-- Lyrics lines injected dynamically -->
+        </div>
+
+      </div>
+
+      <!-- Bottom Playback Controls -->
+      <div class="space-y-4 pt-3 shrink-0">
+        <!-- Seekbar -->
+        <div class="space-y-1">
+          <div class="flex justify-between text-[10px] font-mono text-white/50">
+            <span id="mCurrTime">00:00</span>
+            <span id="mDuration">04:29</span>
+          </div>
+          <div class="soft-track h-1.5 w-full bg-white/10 relative rounded-full overflow-hidden" onclick="handleSeekMobile(event)">
+            <div id="mSeekFill" class="h-full bg-emerald-500 rounded-full w-0"></div>
+          </div>
+        </div>
+
+        <!-- Large Tactile Buttons -->
+        <div class="flex items-center justify-between px-3 py-2">
+          <!-- Play Mode Toggle -->
+          <button id="mPlayModeBtn" onclick="toggleMobilePlayMode()" class="text-white/70 hover:text-white active:scale-90 transition-transform p-2" title="切换播放模式">
+            <i id="mPlayModeIcon" class="ri-repeat-line text-xl"></i>
+          </button>
+
+          <!-- Prev Track -->
+          <button onclick="prevTrack()" class="text-white/80 hover:text-white active:scale-90 transition-transform p-1">
+            <i class="ri-skip-back-fill text-2xl"></i>
+          </button>
+
+          <!-- Play/Pause Hero Button -->
+          <button onclick="togglePlayPause()" class="w-14 h-14 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/40 active:scale-90 transition-transform">
+            <i id="mFullPlayIcon" class="ri-play-fill text-2xl ml-0.5"></i>
+          </button>
+
+          <!-- Next Track -->
+          <button onclick="nextTrack()" class="text-white/80 hover:text-white active:scale-90 transition-transform p-1">
+            <i class="ri-skip-forward-fill text-2xl"></i>
+          </button>
+
+          <!-- Queue Drawer Toggle -->
+          <button id="mQueueBtn" onclick="openMobileQueue()" class="text-white/70 hover:text-white active:scale-90 transition-transform p-2" title="播放队列">
+            <i class="ri-play-list-2-line text-xl"></i>
+          </button>
+        </div>
+
+        <!-- Tactile Volume Slider -->
+        <div class="flex items-center gap-3 px-2 py-0.5">
+          <button onclick="toggleMobileMute()" id="mVolumeBtn" class="text-white/60 hover:text-white active:scale-90 transition-transform">
+            <i id="mVolumeIcon" class="ri-volume-up-line text-base"></i>
+          </button>
+          <div id="mVolumeTrack" onclick="handleMobileVolume(event)" class="soft-track flex-1 h-1.5 bg-white/10 relative rounded-full overflow-hidden cursor-pointer">
+            <div id="mVolumeFill" class="h-full bg-emerald-500 rounded-full w-[70%]"></div>
+          </div>
+          <span id="mVolumeText" class="text-[10px] font-mono text-white/50 w-7 text-right">70%</span>
+        </div>
+
+        <!-- Return to Home Button -->
+        <div class="text-center pt-1">
+          <button onclick="closeFullscreenLyrics()" class="text-xs text-white/60 hover:text-white flex items-center justify-center gap-1 mx-auto py-1 active:scale-95 transition-all">
+            <i class="ri-arrow-down-double-line"></i>
+            <span>收起播放器 · 返回主页</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ==========================================================================
+           Mobile Play Queue Bottom Sheet (播放队列抽屉)
+           ========================================================================== -->
+      <div id="mQueueSheet" class="absolute inset-x-0 bottom-0 max-h-[60%] bg-slate-900/95 backdrop-blur-2xl rounded-t-3xl border-t border-white/10 p-5 flex flex-col z-60 transform translate-y-full transition-transform duration-300 shadow-2xl">
+        <div class="flex items-center justify-between pb-3 border-b border-white/10 shrink-0">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-bold text-white">当前播放队列</span>
+            <span id="mQueueCount" class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-emerald-400 font-mono">6 首</span>
+          </div>
+          <button onclick="closeMobileQueue()" class="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white">
+            <i class="ri-close-line text-base"></i>
+          </button>
+        </div>
+        <div id="mQueueList" class="flex-1 overflow-y-auto py-2 space-y-1 divide-y divide-white/5 select-none">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ==========================================================================
+         5. Mobile Audio Equalizer Modal (#mEqModal)
+         ========================================================================== -->
+    <div id="mEqModal" class="hidden absolute inset-0 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-5" style="z-index: 70;">
+      <div class="soft-card-raised rounded-squircle p-5 max-w-xs w-full space-y-4 bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-white/10 shadow-2xl">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-white/5">
+          <div class="flex items-center gap-2">
+            <i class="ri-sound-module-line text-emerald-500"></i>
+            <span class="text-xs font-bold text-slate-900 dark:text-white">声学校准均衡器</span>
+          </div>
+          <button onclick="closeMobileEqModal()" class="soft-btn w-7 h-7 rounded-full flex items-center justify-center text-slate-500">
+            <i class="ri-close-line text-xs"></i>
+          </button>
+        </div>
+
+        <!-- Visual Audio Equalizer Frequency Bars -->
+        <div class="soft-recessed p-3 rounded-2xl flex items-end justify-around h-16 gap-2">
+          <div id="mEqBar1" class="w-full bg-emerald-500/80 rounded-full transition-all duration-300 h-8"></div>
+          <div id="mEqBar2" class="w-full bg-emerald-500/80 rounded-full transition-all duration-300 h-12"></div>
+          <div id="mEqBar3" class="w-full bg-emerald-500/80 rounded-full transition-all duration-300 h-10"></div>
+          <div id="mEqBar4" class="w-full bg-emerald-500/80 rounded-full transition-all duration-300 h-14"></div>
+          <div id="mEqBar5" class="w-full bg-emerald-500/80 rounded-full transition-all duration-300 h-9"></div>
+        </div>
+
+        <!-- 5 Presets Grid -->
+        <div class="grid grid-cols-2 gap-2 text-xs" id="mEqPresetsGroup">
+          <button onclick="setMobileEqPreset('flat')" data-meq="flat" class="soft-btn p-2 rounded-xl text-left border-emerald-500/50 bg-emerald-500/10 font-bold text-emerald-600 dark:text-emerald-400">
+            原声直通 (Flat)
+          </button>
+          <button onclick="setMobileEqPreset('bass')" data-meq="bass" class="soft-btn p-2 rounded-xl text-left font-bold text-slate-700 dark:text-slate-200">
+            超重低音 (Bass)
+          </button>
+          <button onclick="setMobileEqPreset('vocal')" data-meq="vocal" class="soft-btn p-2 rounded-xl text-left font-bold text-slate-700 dark:text-slate-200">
+            清澈人声 (Vocal)
+          </button>
+          <button onclick="setMobileEqPreset('jazz')" data-meq="jazz" class="soft-btn p-2 rounded-xl text-left font-bold text-slate-700 dark:text-slate-200">
+            温润爵士 (Jazz)
+          </button>
+          <button onclick="setMobileEqPreset('surround')" data-meq="surround" class="soft-btn p-2 rounded-xl text-left col-span-2 font-bold text-slate-700 dark:text-slate-200">
+            3D全景空间环绕 (Spatial)
+          </button>
+        </div>
+
+        <div class="pt-1 flex justify-end">
+          <button onclick="closeMobileEqModal()" class="soft-btn-primary px-4 py-1.5 rounded-full text-xs font-bold">
+            完成
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================================================
+         6. Mobile Sleep Timer Modal (#mSleepTimerModal)
+         ========================================================================== -->
+    <div id="mSleepTimerModal" class="hidden absolute inset-0 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-5" style="z-index: 70;">
+      <div class="soft-card-raised rounded-squircle p-5 max-w-xs w-full space-y-3 bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-white/10 shadow-2xl">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-white/5">
+          <div class="flex items-center gap-2">
+            <i class="ri-timer-line text-emerald-500"></i>
+            <span class="text-xs font-bold text-slate-900 dark:text-white">睡眠定时关闭</span>
+          </div>
+          <button onclick="closeMobileSleepTimer()" class="soft-btn w-7 h-7 rounded-full flex items-center justify-center text-slate-500">
+            <i class="ri-close-line text-xs"></i>
+          </button>
+        </div>
+
+        <div id="mSleepTimerActiveBox" class="p-2.5 rounded-xl soft-recessed text-center hidden">
+          <div class="text-[10px] text-slate-400">正在倒计时</div>
+          <div id="mSleepCountdownText" class="text-lg font-mono font-bold text-emerald-500">15:00</div>
+        </div>
+
+        <div class="space-y-1.5 text-xs">
+          <button onclick="setMobileSleepTimer(0)" class="w-full text-left p-2 rounded-xl text-rose-500 font-bold flex items-center justify-between hover:bg-slate-100 dark:hover:bg-white/5">
+            <span>关闭定时器</span>
+            <i class="ri-forbid-line"></i>
+          </button>
+          <button onclick="setMobileSleepTimer(15)" class="w-full text-left p-2 rounded-xl text-slate-700 dark:text-slate-200 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-white/5">
+            <span>15 分钟后</span>
+            <span class="text-[10px] text-slate-400 font-mono">15m</span>
+          </button>
+          <button onclick="setMobileSleepTimer(30)" class="w-full text-left p-2 rounded-xl text-slate-700 dark:text-slate-200 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-white/5">
+            <span>30 分钟后</span>
+            <span class="text-[10px] text-slate-400 font-mono">30m</span>
+          </button>
+          <button onclick="setMobileSleepTimer(60)" class="w-full text-left p-2 rounded-xl text-slate-700 dark:text-slate-200 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-white/5">
+            <span>60 分钟后</span>
+            <span class="text-[10px] text-slate-400 font-mono">60m</span>
+          </button>
+          <button onclick="setMobileSleepTimer('song')" class="w-full text-left p-2 rounded-xl text-slate-700 dark:text-slate-200 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-white/5">
+            <span>播完当前歌曲停止</span>
+            <i class="ri-disc-line text-emerald-500"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const SONGS = [
+      {
+        id: 1,
+        title: "晴天 (Sunny Day)",
+        artist: "周杰伦",
+        album: "叶惠美",
+        cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80",
+        duration: "04:29",
+        durationSec: 269,
+        glow: { c1: "rgba(16, 185, 129, 0.4)", c2: "rgba(59, 130, 246, 0.3)" },
+        lyrics: [
+          { time: 0, text: "故事的小黄花 从出生那年就飘着" },
+          { time: 6, text: "童年的荡秋千 随记忆一直晃到现在" },
+          { time: 14, text: "Re So So Si Do Si La So La Si" },
+          { time: 22, text: "为你翘课的那一天 花落的那一天" },
+          { time: 30, text: "消失的下雨天 我好想再淋一遍" },
+          { time: 40, text: "没想到失去的勇气我还留着" },
+          { time: 48, text: "好想再问一遍 你会等待还是离开" },
+          { time: 58, text: "刮风这天 我试过握着你手" },
+          { time: 68, text: "但偏偏 雨渐渐 大到我看你不见" }
+        ]
+      },
+      {
+        id: 2,
+        title: "Midnight City",
+        artist: "M83",
+        album: "Hurry Up, We're Dreaming",
+        cover: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80",
+        duration: "04:03",
+        durationSec: 243,
+        glow: { c1: "rgba(139, 92, 246, 0.45)", c2: "rgba(236, 72, 153, 0.35)" },
+        lyrics: [
+          { time: 0, text: "Waiting in a car" },
+          { time: 8, text: "Waiting for a ride in the dark" },
+          { time: 18, text: "The night city grows" },
+          { time: 28, text: "The city is my church" },
+          { time: 38, text: "The night is on my side" }
+        ]
+      },
+      {
+        id: 3,
+        title: "慢冷",
+        artist: "梁静茹",
+        album: "我好吗？- 太阳如常升起",
+        cover: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&auto=format&fit=crop&q=80",
+        duration: "05:18",
+        durationSec: 318,
+        glow: { c1: "rgba(244, 63, 94, 0.4)", c2: "rgba(245, 158, 11, 0.3)" },
+        lyrics: [
+          { time: 0, text: "怎么先炽热的却先变冷了" },
+          { time: 8, text: "慢热的却停不了还在沸腾着" },
+          { time: 18, text: "看每一次日落 怎么越走越远" },
+          { time: 28, text: "慢冷的人 最怕突然的余温" }
+        ]
+      },
+      {
+        id: 4,
+        title: "Golden Hour",
+        artist: "JVKE",
+        album: "Golden Hour",
+        cover: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80",
+        duration: "03:29",
+        durationSec: 209,
+        glow: { c1: "rgba(245, 158, 11, 0.45)", c2: "rgba(234, 88, 12, 0.35)" },
+        lyrics: [
+          { time: 0, text: "It was just two lovers" },
+          { time: 6, text: "Sittin' in the car, listening to Blonde" },
+          { time: 14, text: "She's got the golden hour shine" }
+        ]
+      },
+      {
+        id: 5,
+        title: "爱在西元前",
+        artist: "周杰伦",
+        album: "范特西",
+        cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80",
+        duration: "03:54",
+        durationSec: 234,
+        glow: { c1: "rgba(16, 185, 129, 0.4)", c2: "rgba(20, 184, 166, 0.35)" },
+        lyrics: [
+          { time: 0, text: "古巴比伦王颁布了汉谟拉比法典" },
+          { time: 6, text: "刻在黑色的玄武岩 距今已经三千七百多年" },
+          { time: 13, text: "你在橱窗前 凝视碑文的字眼" },
+          { time: 20, text: "我却在旁静静欣赏你那张我深爱的脸" }
+        ]
+      },
+      {
+        id: 6,
+        title: "Starboy",
+        artist: "The Weeknd ft. Daft Punk",
+        album: "Starboy",
+        cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80",
+        duration: "03:50",
+        durationSec: 230,
+        glow: { c1: "rgba(239, 68, 68, 0.4)", c2: "rgba(59, 130, 246, 0.35)" },
+        lyrics: [
+          { time: 0, text: "I'm tryna put you in the worst mood, ah" },
+          { time: 6, text: "P1 cleaner than your church shoes, ah" },
+          { time: 12, text: "Milli point two just to hurt you, ah" },
+          { time: 18, text: "All red Lamb' just to tease you, ah" },
+          { time: 24, text: "Look what you've done" },
+          { time: 28, text: "I'm a motherfuckin' starboy" }
+        ]
+      }
+    ];
+
+    const RELEASES = [
+      { title: "Aura Chill", artist: "Playlist · 24首", cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80" },
+      { title: "Echo Beats", artist: "Electronic", cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&auto=format&fit=crop&q=80" },
+      { title: "Ethereal Waves", artist: "Lo-Fi Album", cover: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=400&auto=format&fit=crop&q=80" },
+      { title: "Pacific Drift", artist: "ODEsza", cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&auto=format&fit=crop&q=80" }
+    ];
+
+    // ==========================================================================
+    // Modern Soft Acoustic Synthesizer for Mobile
+    // ==========================================================================
+    class ModernSoftMobileAudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.masterGain = null;
+        this.eqFilter = null;
+        this.eqPreset = 'flat';
+        this.isPlaying = false;
+        this.currentChordTimer = null;
+        this.chordIndex = 0;
+        this.volume = 0.7;
+        this.chords = [
+          [261.63, 329.63, 392.00, 493.88], // CMaj7
+          [220.00, 261.63, 329.63, 392.00], // Am7
+          [293.66, 349.23, 440.00, 523.25], // Dm7
+          [196.00, 246.94, 293.66, 349.23], // G7
+          [349.23, 440.00, 523.25, 659.25], // FMaj7
+          [164.81, 246.94, 329.63, 392.00]  // Em7
+        ];
+      }
+
+      init() {
+        if (this.ctx) return;
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+          this.masterGain = this.ctx.createGain();
+          this.masterGain.gain.setValueAtTime(this.volume, this.ctx.currentTime);
+          this.eqFilter = this.ctx.createBiquadFilter();
+          this.setEqPreset(this.eqPreset);
+          this.masterGain.connect(this.eqFilter);
+          this.eqFilter.connect(this.ctx.destination);
+        } catch(e) {
+          console.log("Web Audio API not supported or blocked:", e);
+        }
+      }
+
+      setVolume(v) {
+        this.volume = Math.max(0, Math.min(1, v));
+        if (this.masterGain && this.ctx) {
+          this.masterGain.gain.cancelScheduledValues(this.ctx.currentTime);
+          this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, this.ctx.currentTime);
+          this.masterGain.gain.linearRampToValueAtTime(this.volume, this.ctx.currentTime + 0.05);
+        }
+      }
+
+      setEqPreset(preset) {
+        this.eqPreset = preset;
+        this.init();
+        if (!this.ctx || !this.eqFilter) return;
+        const now = this.ctx.currentTime;
+        switch(preset) {
+          case 'bass':
+            this.eqFilter.type = 'lowshelf';
+            this.eqFilter.frequency.setValueAtTime(200, now);
+            this.eqFilter.gain.setValueAtTime(6.0, now);
+            break;
+          case 'vocal':
+            this.eqFilter.type = 'peaking';
+            this.eqFilter.frequency.setValueAtTime(1200, now);
+            this.eqFilter.gain.setValueAtTime(5.0, now);
+            this.eqFilter.Q.setValueAtTime(1.0, now);
+            break;
+          case 'jazz':
+            this.eqFilter.type = 'peaking';
+            this.eqFilter.frequency.setValueAtTime(400, now);
+            this.eqFilter.gain.setValueAtTime(3.5, now);
+            this.eqFilter.Q.setValueAtTime(0.8, now);
+            break;
+          case 'surround':
+            this.eqFilter.type = 'highshelf';
+            this.eqFilter.frequency.setValueAtTime(3500, now);
+            this.eqFilter.gain.setValueAtTime(5.0, now);
+            break;
+          case 'flat':
+          default:
+            this.eqFilter.type = 'allpass';
+            this.eqFilter.gain.setValueAtTime(0, now);
+            break;
+        }
+      }
+
+      play() {
+        this.init();
+        if (!this.ctx) return;
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        this.isPlaying = true;
+        this.masterGain.gain.cancelScheduledValues(this.ctx.currentTime);
+        this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, this.ctx.currentTime);
+        this.masterGain.gain.linearRampToValueAtTime(this.volume, this.ctx.currentTime + 0.1);
+        this.triggerChord();
+        this.scheduleNextChord();
+      }
+
+      pause() {
+        this.isPlaying = false;
+        if (this.currentChordTimer) clearTimeout(this.currentChordTimer);
+        if (this.ctx && this.masterGain) {
+          this.masterGain.gain.cancelScheduledValues(this.ctx.currentTime);
+          this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, this.ctx.currentTime);
+          this.masterGain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.15);
+        }
+      }
+
+      triggerChime() {
+        this.init();
+        if (!this.ctx) return;
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        const now = this.ctx.currentTime;
+        [523.25, 659.25, 783.99].forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + i * 0.05);
+          gain.gain.setValueAtTime(0.05 * this.volume, now + i * 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.05 + 0.3);
+          osc.connect(gain);
+          gain.connect(this.masterGain);
+          osc.start(now + i * 0.05);
+          osc.stop(now + i * 0.05 + 0.32);
+        });
+      }
+
+      triggerChord() {
+        if (!this.isPlaying || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const chord = this.chords[this.chordIndex % this.chords.length];
+        this.chordIndex++;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(850, now);
+        filter.frequency.exponentialRampToValueAtTime(450, now + 2.0);
+        filter.connect(this.masterGain);
+
+        chord.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = idx % 2 === 0 ? 'triangle' : 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+
+          const noteStart = now + idx * 0.04;
+          const notePeak = noteStart + 0.08;
+          const noteDuration = 2.3;
+
+          gain.gain.setValueAtTime(0.0001, noteStart);
+          gain.gain.linearRampToValueAtTime(0.04, notePeak);
+          gain.gain.exponentialRampToValueAtTime(0.0001, noteStart + noteDuration);
+
+          osc.connect(gain);
+          gain.connect(filter);
+          osc.start(noteStart);
+          osc.stop(noteStart + noteDuration + 0.1);
+        });
+      }
+
+      scheduleNextChord() {
+        if (!this.isPlaying) return;
+        this.currentChordTimer = setTimeout(() => {
+          if (this.isPlaying) {
+            this.triggerChord();
+            this.scheduleNextChord();
+          }
+        }, 2500);
+      }
+    }
+
+    const mobileAudioEngine = new ModernSoftMobileAudioEngine();
+
+    // ==========================================================================
+    // State Variables
+    // ==========================================================================
+    let currentIdx = 0;
+    let isPlaying = false;
+    let playbackSec = 0;
+    let timer = null;
+    let currentTab = 'discover';
+    let isPureLyricsMode = false;
+    let mPlayMode = 'repeat-all'; // 'repeat-all' | 'repeat-one' | 'shuffle'
+    let mobileQueue = [0, 1, 2, 3, 4, 5];
+
+    // Liked Songs Management
+    let likedSongIds = [];
+    try {
+      likedSongIds = JSON.parse(localStorage.getItem('alger_liked_songs') || '[0, 2, 4]');
+    } catch(e) {
+      likedSongIds = [0, 2, 4];
+    }
+    likedSongIds = likedSongIds.filter(idx => typeof idx === 'number' && SONGS[idx]);
+
+    function saveLikedSongs() {
+      localStorage.setItem('alger_liked_songs', JSON.stringify(likedSongIds));
+      updateLibraryStats();
+    }
+
+    function showMobileToast(message, icon = 'ri-check-line text-emerald-400') {
+      const container = document.getElementById('mToastContainer');
+      if (!container) return;
+      container.innerHTML = '';
+      const toast = document.createElement('div');
+      toast.className = 'soft-card-raised px-4 py-2 rounded-full flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-100 shadow-2xl border border-white/60 dark:border-white/10 backdrop-blur-md bg-white/95 dark:bg-slate-900/95 transform -translate-y-2 opacity-0 transition-all duration-300 pointer-events-auto';
+      toast.innerHTML = `<i class="${icon} text-sm"></i><span>${message}</span>`;
+      container.appendChild(toast);
+      requestAnimationFrame(() => {
+        toast.classList.remove('-translate-y-2', 'opacity-0');
+      });
+      setTimeout(() => {
+        toast.classList.add('-translate-y-2', 'opacity-0');
+        setTimeout(() => toast.remove(), 350);
+      }, 2000);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      // Restore theme & accent
+      const savedTheme = localStorage.getItem('alger_theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      updateThemeIcon(savedTheme);
+
+      const savedAccent = localStorage.getItem('alger_accent') || '#10B981';
+      setMobileAccent(savedAccent, false);
+
+      renderNewReleases();
+      renderExploreList(SONGS);
+      renderLibraryList();
+      loadTrack(0);
+      setupMobileSearch();
+    });
+
+    // ==========================================================================
+    // 4-Tab Navigation Logic
+    // ==========================================================================
+    function switchMobileTab(tab) {
+      currentTab = tab;
+      hideAllMobileSubViews();
+      const views = {
+        discover: document.getElementById('mViewDiscover'),
+        explore: document.getElementById('mViewExplore'),
+        library: document.getElementById('mViewLibrary'),
+        profile: document.getElementById('mViewProfile')
+      };
+
+      const titles = {
+        discover: '发现音乐',
+        explore: '探索全库',
+        library: '我的资料库',
+        profile: '个人中心'
+      };
+
+      const tabs = {
+        discover: document.getElementById('mTabDiscover'),
+        explore: document.getElementById('mTabExplore'),
+        library: document.getElementById('mTabLibrary'),
+        profile: document.getElementById('mTabProfile')
+      };
+
+      Object.keys(views).forEach(k => {
+        if (views[k]) {
+          if (k === tab) views[k].classList.remove('hidden');
+          else views[k].classList.add('hidden');
+        }
+        if (tabs[k]) {
+          if (k === tab) {
+            tabs[k].className = 'flex flex-col items-center text-emerald-500 font-bold transition-all';
+          } else {
+            tabs[k].className = 'flex flex-col items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all';
+          }
+        }
+      });
+
+      const titleEl = document.getElementById('mHeaderTitle');
+      if (titleEl) {
+        titleEl.innerHTML = `<span>${titles[tab]}</span><span class="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">Mobile</span>`;
+      }
+
+      if (tab === 'library') renderLibraryList();
+      if (tab === 'explore') renderExploreList(SONGS);
+    }
+
+    // ==========================================================================
+    // Fullscreen Lyrics & Vinyl Turntable Mode Toggle
+    // ==========================================================================
+    function togglePlayerVisualMode() {
+      isPureLyricsMode = !isPureLyricsMode;
+      const vinyl = document.getElementById('mVinylContainer');
+      const lyrics = document.getElementById('mLyricsContainer');
+      const modeText = document.getElementById('mModeToggleText');
+      const modeIcon = document.getElementById('mModeToggleIcon');
+
+      if (isPureLyricsMode) {
+        // Switch to Pure Kinetic Lyrics
+        if (vinyl) vinyl.classList.add('hidden');
+        if (lyrics) lyrics.classList.remove('hidden');
+        if (modeText) modeText.textContent = '黑胶盘';
+        if (modeIcon) modeIcon.className = 'ri-disc-fill text-amber-400';
+        showMobileToast('已切换至纯字巨幕歌词模式', 'ri-text-snippet-line text-emerald-400');
+      } else {
+        // Switch to Vinyl Turntable
+        if (vinyl) vinyl.classList.remove('hidden');
+        if (lyrics) lyrics.classList.add('hidden');
+        if (modeText) modeText.textContent = '纯歌词';
+        if (modeIcon) modeIcon.className = 'ri-disc-line text-emerald-400';
+        showMobileToast('已切换至黑胶唱机模式', 'ri-disc-line text-emerald-400');
+      }
+    }
+
+    // ==========================================================================
+    // Explore & Instant Search Logic
+    // ==========================================================================
+    function setupMobileSearch() {
+      const input = document.getElementById('mSearchInput');
+      if (!input) return;
+      input.addEventListener('input', (e) => {
+        filterMobileSearch(e.target.value.trim());
+      });
+    }
+
+    function setMobileSearchQuery(tag) {
+      const input = document.getElementById('mSearchInput');
+      if (input) {
+        input.value = tag;
+        filterMobileSearch(tag);
+      }
+    }
+
+    function filterMobileSearch(query) {
+      const title = document.getElementById('mSearchResultTitle');
+      if (!query) {
+        if (title) title.textContent = '全部曲库清单';
+        renderExploreList(SONGS);
+        return;
+      }
+
+      const filtered = SONGS.filter(s => 
+        s.title.toLowerCase().includes(query.toLowerCase()) || 
+        s.artist.toLowerCase().includes(query.toLowerCase()) ||
+        s.album.toLowerCase().includes(query.toLowerCase())
+      );
+
+      if (title) title.textContent = `搜索结果 (${filtered.length})`;
+      renderExploreList(filtered);
+    }
+
+    function renderExploreList(songsToRender) {
+      const container = document.getElementById('mSearchResultsContainer');
+      if (!container) return;
+
+      if (songsToRender.length === 0) {
+        container.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">没有找到匹配的歌曲</div>`;
+        return;
+      }
+
+      container.innerHTML = songsToRender.map(s => {
+        const idx = SONGS.indexOf(s);
+        return `
+          <div onclick="playTrack(${idx})" class="soft-card p-2.5 rounded-2xl flex items-center justify-between cursor-pointer group">
+            <div class="flex items-center gap-3 min-w-0">
+              <img src="${s.cover}" class="w-10 h-10 rounded-xl object-cover">
+              <div class="min-w-0">
+                <div class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate group-hover:text-emerald-500">${s.title}</div>
+                <div class="text-[10px] text-slate-400 truncate mt-0.5">${s.artist} · ${s.album}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="text-[10px] font-mono text-slate-400">${s.duration}</span>
+              <button class="w-7 h-7 rounded-full soft-btn flex items-center justify-center text-slate-500 group-hover:text-emerald-500">
+                <i class="ri-play-fill text-xs"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ==========================================================================
+    // Library Logic
+    // ==========================================================================
+    function updateLibraryStats() {
+      const countEl = document.getElementById('mLibFavCount');
+      if (countEl) countEl.textContent = `共 ${likedSongIds.length} 首收藏`;
+    }
+
+    function renderLibraryList() {
+      const container = document.getElementById('mLibraryListContainer');
+      updateLibraryStats();
+      if (!container) return;
+
+      if (likedSongIds.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400">暂无收藏歌曲</div>`;
+        return;
+      }
+
+      container.innerHTML = likedSongIds.map(idx => {
+        const s = SONGS[idx];
+        if (!s) return '';
+        return `
+          <div onclick="playTrack(${idx})" class="py-2.5 flex items-center justify-between cursor-pointer group">
+            <div class="flex items-center gap-3 min-w-0">
+              <img src="${s.cover}" class="w-10 h-10 rounded-xl object-cover shadow-xs">
+              <div class="min-w-0">
+                <div class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate group-hover:text-emerald-500">${s.title}</div>
+                <div class="text-[10px] text-slate-400 truncate mt-0.5">${s.artist}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-3" onclick="event.stopPropagation()">
+              <button onclick="toggleMobileLikeSong(${idx})" class="text-rose-500 text-base">
+                <i class="ri-heart-3-fill"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleMobileLikeSong(idx) {
+      const pos = likedSongIds.indexOf(idx);
+      if (pos > -1) {
+        likedSongIds.splice(pos, 1);
+        showMobileToast(`已取消收藏: ${SONGS[idx].title}`, 'ri-heart-dislike-line text-slate-400');
+      } else {
+        likedSongIds.push(idx);
+        showMobileToast(`已收藏: ${SONGS[idx].title}`, 'ri-heart-3-fill text-rose-500');
+      }
+      saveLikedSongs();
+      renderLibraryList();
+      updateMobileDockLikeIcon();
+    }
+
+    function clearMobileCache() {
+      showMobileToast('已成功清理 2.4 GB 离线歌曲缓存', 'ri-delete-bin-line text-emerald-400');
+    }
+
+    const MOBILE_ACCENT_PALETTES = {
+      '#10B981': { name: '翡翠绿', hover: '#059669', light: 'rgba(16, 185, 129, 0.15)', glow: 'rgba(16, 185, 129, 0.38)', gradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' },
+      '#3B82F6': { name: '海洋蓝', hover: '#2563EB', light: 'rgba(59, 130, 246, 0.15)', glow: 'rgba(59, 130, 246, 0.38)', gradient: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)' },
+      '#EC4899': { name: '蔷薇粉', hover: '#DB2777', light: 'rgba(236, 72, 153, 0.15)', glow: 'rgba(236, 72, 153, 0.38)', gradient: 'linear-gradient(135deg, #EC4899 0%, #BE185D 100%)' },
+      '#8B5CF6': { name: '极光紫', hover: '#7C3AED', light: 'rgba(139, 92, 246, 0.15)', glow: 'rgba(139, 92, 246, 0.38)', gradient: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)' }
+    };
+
+    function setMobileAccent(color, save = true) {
+      const p = MOBILE_ACCENT_PALETTES[color] || {
+        name: '个性强调色',
+        hover: color,
+        light: 'rgba(16, 185, 129, 0.15)',
+        glow: 'rgba(16, 185, 129, 0.38)',
+        gradient: `linear-gradient(135deg, ${color} 0%, ${color} 100%)`
+      };
+      const root = document.documentElement;
+      root.style.setProperty('--soft-accent', color);
+      root.style.setProperty('--soft-accent-hover', p.hover);
+      root.style.setProperty('--soft-accent-light', p.light);
+      root.style.setProperty('--soft-accent-glow', p.glow);
+      root.style.setProperty('--soft-accent-gradient', p.gradient);
+
+      // Update Mobile Swatch Active Ring & Checkmarks
+      document.querySelectorAll('#mAccentPickerGroup .m-accent-dot').forEach(btn => {
+        const dotColor = btn.getAttribute('data-accent');
+        if (dotColor === color) {
+          btn.innerHTML = '<i class="ri-check-line text-white text-xs font-bold pointer-events-none"></i>';
+          btn.classList.add('ring-4', 'ring-offset-2', 'ring-slate-400', 'dark:ring-offset-slate-900', 'scale-110');
+        } else {
+          btn.innerHTML = '';
+          btn.classList.remove('ring-4', 'ring-offset-2', 'ring-slate-400', 'dark:ring-offset-slate-900', 'scale-110');
+        }
+      });
+
+      if (save) {
+        localStorage.setItem('alger_accent', color);
+        showMobileToast(`已切换移动端强调色：${p.name}`, 'ri-palette-line');
+      }
+    }
+
+    // ==========================================================================
+    // Playback Engine & Events
+    // ==========================================================================
+    function renderNewReleases() {
+      const container = document.getElementById('mobileNewReleases');
+      if (!container) return;
+      container.innerHTML = RELEASES.map((r, i) => `
+        <div onclick="openMobilePlaylist(${i})" class="soft-card p-2.5 rounded-squircle flex flex-col cursor-pointer group">
+          <div class="relative w-full aspect-square rounded-xl overflow-hidden mb-2">
+            <img src="${r.cover}" class="w-full h-full object-cover">
+            <span class="absolute bottom-1.5 right-1.5 w-6 h-6 rounded-full bg-white/90 dark:bg-black/80 flex items-center justify-center text-emerald-500 text-xs shadow-xs"><i class="ri-play-fill ml-0.5"></i></span>
+          </div>
+          <div class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">${r.title}</div>
+          <div class="text-[10px] text-slate-400 truncate mt-0.5">${r.artist}</div>
+        </div>
+      `).join('');
+    }
+
+    function loadTrack(idx) {
+      currentIdx = idx;
+      playbackSec = 0;
+      const s = SONGS[idx];
+
+      // Update Island
+      document.getElementById('islandTrackName').textContent = s.title;
+
+      // Update Mini Dock
+      document.getElementById('mDockCover').src = s.cover;
+      document.getElementById('mDockTitle').textContent = s.title;
+      document.getElementById('mDockArtist').textContent = s.artist + ' · ' + s.album;
+      document.getElementById('mDockProgressBar').style.width = "0%";
+
+      // Update Fullscreen
+      document.getElementById('mFullCover').src = s.cover;
+      document.getElementById('mFullTitle').textContent = s.title;
+      document.getElementById('mFullArtist').textContent = s.artist;
+      document.getElementById('mDuration').textContent = s.duration;
+      document.getElementById('mCurrTime').textContent = "00:00";
+      document.getElementById('mSeekFill').style.width = "0%";
+
+      // Update Mesh Blobs
+      const b1 = document.getElementById('mBlob1');
+      const b2 = document.getElementById('mBlob2');
+      if (s.glow && b1 && b2) {
+        b1.style.background = s.glow.c1;
+        b2.style.background = s.glow.c2;
+      }
+
+      // Render Lyrics
+      renderLyrics(s.lyrics);
+      updateMobileDockLikeIcon();
+    }
+
+    function updateMobileDockLikeIcon() {
+      const isL = likedSongIds.includes(currentIdx);
+      const icon = document.getElementById('mDockLikeIcon');
+      if (icon) {
+        icon.className = isL ? 'ri-heart-3-fill text-lg text-rose-500' : 'ri-heart-3-line text-lg';
+      }
+    }
+
+    function togglePlayPause() {
+      if (isPlaying) {
+        pauseTrack();
+      } else {
+        startPlay();
+      }
+    }
+
+    function startPlay() {
+      isPlaying = true;
+      document.getElementById('mDockPlayIcon').className = 'ri-pause-fill text-base';
+      document.getElementById('mFullPlayIcon').className = 'ri-pause-fill text-2xl';
+      document.getElementById('mVinylDisc').classList.remove('vinyl-paused');
+      
+      const frame = document.querySelector('.phone-simulator-frame');
+      if (frame) frame.setAttribute('data-playing', 'true');
+
+      // Start Procedural Synthesizer
+      mobileAudioEngine.play();
+
+      if (timer) clearInterval(timer);
+      timer = setInterval(() => {
+        playbackSec++;
+        const s = SONGS[currentIdx];
+        if (playbackSec >= s.durationSec) {
+          if (stopAtSongEnd) {
+            stopAtSongEnd = false;
+            pauseTrack();
+            showMobileToast('歌曲播放完毕，睡眠定时器已自动停止播放', 'ri-moon-line text-indigo-400');
+            return;
+          }
+          if (mPlayMode === 'repeat-one') {
+            playbackSec = 0;
+            updateProgress();
+            mobileAudioEngine.triggerChime();
+          } else if (mPlayMode === 'shuffle') {
+            const rnd = Math.floor(Math.random() * SONGS.length);
+            playTrack(rnd);
+          } else {
+            nextTrack();
+          }
+          return;
+        }
+        updateProgress();
+      }, 1000);
+    }
+
+    function pauseTrack() {
+      isPlaying = false;
+      document.getElementById('mDockPlayIcon').className = 'ri-play-fill text-base ml-0.5';
+      document.getElementById('mFullPlayIcon').className = 'ri-play-fill text-2xl ml-0.5';
+      document.getElementById('mVinylDisc').classList.add('vinyl-paused');
+
+      const frame = document.querySelector('.phone-simulator-frame');
+      if (frame) frame.setAttribute('data-playing', 'false');
+
+      // Stop Synthesizer
+      mobileAudioEngine.pause();
+
+      if (timer) clearInterval(timer);
+    }
+
+    function playTrack(idx) {
+      loadTrack(idx);
+      startPlay();
+      mobileAudioEngine.triggerChime();
+      showMobileToast(`正在播放: ${SONGS[idx].title}`, 'ri-music-2-line text-emerald-400');
+    }
+
+    function nextTrack() {
+      if (mPlayMode === 'shuffle') {
+        const rnd = Math.floor(Math.random() * SONGS.length);
+        playTrack(rnd);
+        return;
+      }
+      const n = (currentIdx + 1) % SONGS.length;
+      playTrack(n);
+    }
+
+    function prevTrack() {
+      if (mPlayMode === 'shuffle') {
+        const rnd = Math.floor(Math.random() * SONGS.length);
+        playTrack(rnd);
+        return;
+      }
+      const p = (currentIdx - 1 + SONGS.length) % SONGS.length;
+      playTrack(p);
+    }
+
+    function updateProgress() {
+      const s = SONGS[currentIdx];
+      const pct = (playbackSec / s.durationSec) * 100;
+      document.getElementById('mDockProgressBar').style.width = pct + '%';
+      document.getElementById('mSeekFill').style.width = pct + '%';
+
+      const m = Math.floor(playbackSec / 60).toString().padStart(2, '0');
+      const sec = Math.floor(playbackSec % 60).toString().padStart(2, '0');
+      document.getElementById('mCurrTime').textContent = `${m}:${sec}`;
+
+      // Lyrics sync
+      updateLyricsScroll(playbackSec);
+    }
+
+    function handleSeekMobile(e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const s = SONGS[currentIdx];
+      playbackSec = Math.floor(pct * s.durationSec);
+      updateProgress();
+      mobileAudioEngine.triggerChime();
+    }
+
+    function renderLyrics(lyrics) {
+      const container = document.getElementById('mLyricsContainer');
+      if (!container || !lyrics) return;
+      container.innerHTML = lyrics.map((l, i) => `
+        <div id="m-lyric-${i}" onclick="jumpToLyric(${l.time})" class="${i === 0 ? 'mobile-lyric-active' : 'mobile-lyric-inactive'} py-3 transition-all cursor-pointer">
+          ${l.text}
+        </div>
+      `).join('');
+    }
+
+    function updateLyricsScroll(sec) {
+      const lyrics = SONGS[currentIdx].lyrics;
+      let activeI = 0;
+      for (let i = 0; i < lyrics.length; i++) {
+        if (sec >= lyrics[i].time) activeI = i;
+        else break;
+      }
+
+      lyrics.forEach((_, i) => {
+        const el = document.getElementById(`m-lyric-${i}`);
+        if (!el) return;
+        if (i === activeI) {
+          el.className = 'mobile-lyric-active py-2.5';
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          el.className = 'mobile-lyric-inactive py-2.5';
+        }
+      });
+    }
+
+    function jumpToLyric(t) {
+      playbackSec = t;
+      updateProgress();
+      mobileAudioEngine.triggerChime();
+    }
+
+    function toggleLike() {
+      toggleMobileLikeSong(currentIdx);
+    }
+
+    function openFullscreenLyrics() {
+      document.getElementById('mFullLyrics').classList.remove('translate-y-full');
+    }
+
+    function closeFullscreenLyrics() {
+      document.getElementById('mFullLyrics').classList.add('translate-y-full');
+    }
+
+    // Touch swipe down gesture to close fullscreen lyrics
+    let touchStartY = 0;
+    const fullScreenEl = document.getElementById('mFullLyrics');
+    fullScreenEl.addEventListener('touchstart', (e) => {
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    fullScreenEl.addEventListener('touchend', (e) => {
+      const touchEndY = e.changedTouches[0].clientY;
+      if (touchEndY - touchStartY > 45) {
+        closeFullscreenLyrics();
+      }
+    }, { passive: true });
+
+    // Escape key support
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeFullscreenLyrics();
+      }
+    });
+
+    // ==========================================================================
+    // Mobile Play Mode & Queue Bottom Sheet
+    // ==========================================================================
+    function toggleMobilePlayMode() {
+      const modes = ['repeat-all', 'repeat-one', 'shuffle'];
+      const nextIdx = (modes.indexOf(mPlayMode) + 1) % modes.length;
+      mPlayMode = modes[nextIdx];
+      const icon = document.getElementById('mPlayModeIcon');
+      if (mPlayMode === 'repeat-all') {
+        if (icon) icon.className = 'ri-repeat-line text-xl text-white';
+        showMobileToast('播放模式：列表循环', 'ri-repeat-line text-white');
+      } else if (mPlayMode === 'repeat-one') {
+        if (icon) icon.className = 'ri-repeat-one-line text-xl text-emerald-400';
+        showMobileToast('播放模式：单曲循环', 'ri-repeat-one-line text-emerald-400');
+      } else if (mPlayMode === 'shuffle') {
+        if (icon) icon.className = 'ri-shuffle-line text-xl text-amber-400';
+        showMobileToast('播放模式：随机播放', 'ri-shuffle-line text-amber-400');
+      }
+    }
+
+    function openMobileQueue() {
+      renderMobileQueue();
+      const sheet = document.getElementById('mQueueSheet');
+      if (sheet) sheet.classList.remove('translate-y-full');
+    }
+
+    function closeMobileQueue() {
+      const sheet = document.getElementById('mQueueSheet');
+      if (sheet) sheet.classList.add('translate-y-full');
+    }
+
+    function renderMobileQueue() {
+      const container = document.getElementById('mQueueList');
+      const countEl = document.getElementById('mQueueCount');
+      if (countEl) countEl.textContent = `${mobileQueue.length} 首`;
+      if (!container) return;
+
+      if (mobileQueue.length === 0) {
+        container.innerHTML = `<div class="p-6 text-center text-xs text-white/50">队列为空</div>`;
+        return;
+      }
+
+      container.innerHTML = mobileQueue.map((songIdx, queuePos) => {
+        const s = SONGS[songIdx];
+        if (!s) return '';
+        const isCurr = songIdx === currentIdx;
+        return `
+          <div class="py-2.5 flex items-center justify-between group cursor-pointer" onclick="playTrack(${songIdx})">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="text-xs font-mono ${isCurr ? 'text-emerald-400 font-bold' : 'text-white/40'} w-4 text-center">
+                ${isCurr ? '<i class="ri-volume-up-fill"></i>' : queuePos + 1}
+              </span>
+              <img src="${s.cover}" class="w-9 h-9 rounded-lg object-cover shrink-0">
+              <div class="min-w-0 pr-2">
+                <div class="text-xs font-bold truncate ${isCurr ? 'text-emerald-400' : 'text-white'}">${s.title}</div>
+                <div class="text-[10px] text-white/50 truncate">${s.artist}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0" onclick="event.stopPropagation()">
+              <button onclick="removeMobileQueueItem(${queuePos})" class="text-white/40 hover:text-rose-400 p-1">
+                <i class="ri-delete-bin-line text-sm"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function removeMobileQueueItem(pos) {
+      if (mobileQueue.length <= 1) {
+        showMobileToast('播放队列至少保留一首歌曲', 'ri-information-line text-amber-400');
+        return;
+      }
+      const removedIdx = mobileQueue.splice(pos, 1)[0];
+      renderMobileQueue();
+      showMobileToast(`已移出队列: ${SONGS[removedIdx].title}`, 'ri-delete-bin-line text-rose-400');
+    }
+
+    // ==========================================================================
+    // Mobile Playlist Detail View Logic
+    // ==========================================================================
+    function openMobilePlaylist(idx = 0) {
+      const views = ['mViewDiscover', 'mViewExplore', 'mViewLibrary', 'mViewProfile'];
+      views.forEach(v => {
+        const el = document.getElementById(v);
+        if (el) el.classList.add('hidden');
+      });
+      const detail = document.getElementById('mViewPlaylistDetail');
+      if (detail) detail.classList.remove('hidden');
+
+      const pData = RELEASES[idx % RELEASES.length] || {
+        title: "落日微风 · 私人漫游",
+        artist: "Alger 推荐制作",
+        cover: SONGS[0].cover
+      };
+
+      const coverEl = document.getElementById('mPlaylistDetailCover');
+      const titleEl = document.getElementById('mPlaylistDetailTitle');
+      const curatorEl = document.getElementById('mPlaylistDetailCurator');
+      if (coverEl) coverEl.src = pData.cover;
+      if (titleEl) titleEl.textContent = pData.title;
+      if (curatorEl) curatorEl.innerHTML = `<i class="ri-user-smile-line text-emerald-500"></i><span>${pData.artist}</span>`;
+
+      // Render tracklist
+      const tracklistEl = document.getElementById('mPlaylistTracklist');
+      if (tracklistEl) {
+        tracklistEl.innerHTML = SONGS.map((s, i) => `
+          <div onclick="playTrack(${i})" class="py-2.5 flex items-center justify-between cursor-pointer group">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="text-xs font-mono text-slate-400 w-4 text-center group-hover:text-emerald-500">${i + 1}</span>
+              <img src="${s.cover}" class="w-10 h-10 rounded-xl object-cover shadow-xs">
+              <div class="min-w-0 pr-2">
+                <div class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate group-hover:text-emerald-500">${s.title}</div>
+                <div class="text-[10px] text-slate-400 truncate mt-0.5">${s.artist} · ${s.album}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="text-[10px] font-mono text-slate-400">${s.duration}</span>
+              <button class="w-7 h-7 rounded-full soft-btn flex items-center justify-center text-slate-500 group-hover:text-emerald-500">
+                <i class="ri-play-fill text-xs"></i>
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      const titleHeader = document.getElementById('mHeaderTitle');
+      if (titleHeader) {
+        titleHeader.innerHTML = `<span>歌单详情</span><span class="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">Playlist</span>`;
+      }
+    }
+
+    // ==========================================================================
+    // Sub-view Navigation Management
+    // ==========================================================================
+    function hideAllMobileSubViews() {
+      const allSubViews = [
+        'mViewDiscover', 'mViewExplore', 'mViewLibrary', 'mViewProfile',
+        'mViewDailyRecommend', 'mViewPlaylistSquare', 'mViewToplist', 
+        'mViewRadio', 'mViewPersonalFM', 'mViewArtists', 
+        'mViewArtistDetail', 'mViewLocal', 'mViewPlaylistDetail'
+      ];
+      allSubViews.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
+    }
+
+    function closeMobileSubView() {
+      hideAllMobileSubViews();
+      switchMobileTab(currentTab);
+    }
+
+    function closeMobilePlaylist() {
+      closeMobileSubView();
+    }
+
+    // ==========================================================================
+    // 1. Daily Recommend View Logic
+    // ==========================================================================
+    function openMobileDailyRecommend() {
+      hideAllMobileSubViews();
+      const v = document.getElementById('mViewDailyRecommend');
+      if (v) v.classList.remove('hidden');
+      const now = new Date();
+      const dEl = document.getElementById('mDailyDateNumber');
+      const mEl = document.getElementById('mDailyDateMonth');
+      if (dEl) dEl.textContent = String(now.getDate()).padStart(2, '0');
+      if (mEl) mEl.textContent = String(now.getMonth() + 1).padStart(2, '0') + '月';
+      renderDailyRecommendList();
+    }
+
+    function renderDailyRecommendList() {
+      const listEl = document.getElementById('mDailyTracklist');
+      if (!listEl) return;
+      listEl.innerHTML = SONGS.map((s, i) => `
+        <div onclick="playTrack(${i})" class="py-2.5 flex items-center justify-between cursor-pointer group">
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="text-xs font-mono text-slate-400 w-4 text-center group-hover:text-emerald-500 font-bold">${i + 1}</span>
+            <img src="${s.cover}" class="w-10 h-10 rounded-xl object-cover shadow-xs">
+            <div class="min-w-0 pr-2">
+              <div class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate group-hover:text-emerald-500">${s.title}</div>
+              <div class="text-[10px] text-slate-400 truncate mt-0.5">${s.artist} · ${s.album}</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="text-[10px] font-mono text-slate-400">${s.duration}</span>
+            <button class="w-7 h-7 rounded-full soft-btn flex items-center justify-center text-slate-500 group-hover:text-emerald-500">
+              <i class="ri-play-fill text-xs"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function playAllDaily() {
+      playTrack(0);
+      showMobileToast('开始播放今日每日推荐歌曲', 'ri-play-circle-line text-emerald-400');
+    }
+
+    // ==========================================================================
+    // 2. Playlist Square View Logic
+    // ==========================================================================
+    const PLAYLIST_SQUARE_ITEMS = [
+      { id: 0, title: "流行热歌速递 · 华语榜首", curator: "Alger 精选", count: "38 首", cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&auto=format&fit=crop&q=80", tag: "流行" },
+      { id: 1, title: "午后咖啡馆 · 治愈Lo-Fi", curator: "Chillhop", count: "50 首", cover: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=400&auto=format&fit=crop&q=80", tag: "Lo-Fi" },
+      { id: 2, title: "经典摇滚不朽传奇", curator: "Rock Live", count: "42 首", cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&auto=format&fit=crop&q=80", tag: "摇滚" },
+      { id: 3, title: "未来合成器 · 电子声浪", curator: "Cyber Beats", count: "29 首", cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80", tag: "电子" },
+      { id: 4, title: "千禧年华语黄金岁月", curator: "时光留声", count: "65 首", cover: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&auto=format&fit=crop&q=80", tag: "华语" },
+      { id: 5, title: "深夜电台 · 沉浸私语", curator: "Whisper", count: "24 首", cover: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80", tag: "流行" }
+    ];
+
+    function openMobilePlaylistSquare() {
+      hideAllMobileSubViews();
+      const v = document.getElementById('mViewPlaylistSquare');
+      if (v) v.classList.remove('hidden');
+      renderPlaylistSquare('all');
+    }
+
+    function filterMobilePlaylistCategory(cat, btn) {
+      const tagMap = {
+        'all': 'all',
+        'pop': '流行',
+        'chinese': '华语',
+        'rock': '摇滚',
+        'lofi': 'Lo-Fi',
+        'electronic': '电子',
+        '流行': '流行',
+        '华语': '华语',
+        '摇滚': '摇滚',
+        'Lo-Fi': 'Lo-Fi',
+        '电子': '电子'
+      };
+      const actualTag = tagMap[cat] || cat;
+
+      document.querySelectorAll('#mSquareFilterGroup button').forEach(b => {
+        b.className = 'soft-btn px-3 py-1 rounded-full text-slate-600 dark:text-slate-300 shrink-0';
+      });
+      if (btn) {
+        btn.className = 'soft-btn px-3 py-1 rounded-full font-bold text-emerald-500 shrink-0';
+      }
+      renderPlaylistSquare(actualTag);
+    }
+
+    function renderPlaylistSquare(filterCat = 'all') {
+      const container = document.getElementById('mPlaylistSquareGrid');
+      if (!container) return;
+      const list = filterCat === 'all' 
+        ? PLAYLIST_SQUARE_ITEMS 
+        : PLAYLIST_SQUARE_ITEMS.filter(item => item.tag === filterCat);
+      
+      container.innerHTML = list.map(p => `
+        <div onclick="openMobilePlaylist(${p.id})" class="soft-card p-2.5 rounded-squircle flex flex-col cursor-pointer group hover:border-emerald-500/40">
+          <div class="relative w-full aspect-square rounded-xl overflow-hidden mb-2">
+            <img src="${p.cover}" class="w-full h-full object-cover">
+            <span class="absolute bottom-1.5 right-1.5 w-6 h-6 rounded-full bg-white/90 dark:bg-black/80 flex items-center justify-center text-emerald-500 text-xs shadow-xs"><i class="ri-play-fill ml-0.5"></i></span>
+            <span class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-[9px] font-bold text-white">${p.tag}</span>
+          </div>
+          <div class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate group-hover:text-emerald-500">${p.title}</div>
+          <div class="text-[10px] text-slate-400 truncate mt-0.5">${p.curator} · ${p.count}</div>
+        </div>
+      `).join('');
+    }
+
+    // ==========================================================================
+    // 3. Toplist View Logic
+    // ==========================================================================
+    function openMobileToplist() {
+      hideAllMobileSubViews();
+      const v = document.getElementById('mViewToplist');
+      if (v) v.classList.remove('hidden');
+      renderMobileToplist();
+    }
+
+    function renderMobileToplist() {
+      const container = document.getElementById('mToplistCardsContainer');
+      if (!container) return;
+      const CHARTS = [
+        {
+          name: "🚀 飙升排行榜 (Daily Surge)",
+          tag: "每日 10:00 更新",
+          color: "from-emerald-500/20 to-teal-500/5",
+          songs: [0, 4, 1]
+        },
+        {
+          name: "🔥 热歌榜 (Alger Hot 500)",
+          tag: "全网播放 TOP",
+          color: "from-rose-500/20 to-amber-500/5",
+          songs: [4, 0, 5]
+        },
+        {
+          name: "✨ 全球新歌榜 (Fresh Hits)",
+          tag: "最新发售抢先听",
+          color: "from-blue-500/20 to-indigo-500/5",
+          songs: [1, 5, 3]
+        },
+        {
+          name: "🎨 原创独立音乐榜 (Indie Vibes)",
+          tag: "每周独立策展",
+          color: "from-purple-500/20 to-pink-500/5",
+          songs: [2, 3, 0]
+        }
+      ];
+
+      container.innerHTML = CHARTS.map((chart, cIdx) => `
+        <div onclick="playToplistChart(${cIdx})" class="soft-card p-3.5 rounded-2xl cursor-pointer hover:border-emerald-500/40 space-y-2.5 transition-all group">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-xs font-bold text-slate-900 dark:text-white group-hover:text-emerald-500 transition-colors">${chart.name}</div>
+              <div class="text-[10px] text-slate-400">${chart.tag}</div>
+            </div>
+            <button class="w-7 h-7 rounded-full bg-emerald-500/15 text-emerald-500 flex items-center justify-center text-xs group-active:scale-90">
+              <i class="ri-play-fill"></i>
+            </button>
+          </div>
+          <div class="space-y-1.5 divide-y divide-slate-100 dark:divide-white/5 text-xs">
+            ${chart.songs.map((sIdx, r) => {
+              const s = SONGS[sIdx];
+              const rankColor = r === 0 ? 'text-amber-500 font-extrabold' : r === 1 ? 'text-slate-400 font-bold' : 'text-amber-700 dark:text-amber-300 font-bold';
+              return `
+                <div class="pt-1.5 flex items-center gap-2">
+                  <span class="w-4 text-center text-[11px] ${rankColor}">${r + 1}</span>
+                  <img src="${s.cover}" class="w-6 h-6 rounded-md object-cover">
+                  <span class="text-[11px] font-semibold text-slate-800 dark:text-slate-200 truncate flex-1">${s.title}</span>
+                  <span class="text-[9px] text-slate-400 truncate">${s.artist}</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function playToplistChart(chartIdx) {
+      playTrack(chartIdx % SONGS.length);
+      showMobileToast('开始播放官方榜单曲目', 'ri-fire-line text-emerald-400');
+    }
+
+    // ==========================================================================
+    // 4. Radio View Logic
+    // ==========================================================================
+    function openMobileRadio() {
+      hideAllMobileSubViews();
+      const v = document.getElementById('mViewRadio');
+      if (v) v.classList.remove('hidden');
+      renderMobileRadio();
+    }
+
+    function renderMobileRadio() {
+      const container = document.getElementById('mRadioEpisodesContainer');
+      if (!container) return;
+      const EPISODES = [
+        { title: "Vol.128 深夜爵士与威士忌的低语", author: "Alger Radio", duration: "42:15", plays: "48.2万", cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=150" },
+        { title: "Vol.127 走进久石让的纯真动画宇宙", author: "宫崎骏配乐档案馆", duration: "56:30", plays: "92.6万", cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=150" },
+        { title: "Vol.126 电子合成器与未来复古狂潮", author: "Cyber Synthesizer", duration: "38:40", plays: "33.1万", cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=150" },
+        { title: "Vol.125 雨夜咖啡馆 Lo-Fi 冥想专注流", author: "Chill & Work Studio", duration: "60:00", plays: "120.4万", cover: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=150" }
+      ];
+      container.innerHTML = EPISODES.map(ep => `
+        <div onclick="playRadioEpisode('${ep.title}')" class="soft-card p-2.5 rounded-xl flex items-center gap-3 cursor-pointer hover:border-emerald-500/40 group transition-all">
+          <img src="${ep.cover}" class="w-11 h-11 rounded-lg object-cover group-hover:scale-105 transition-transform">
+          <div class="flex-1 min-w-0">
+            <div class="text-xs font-bold text-slate-900 dark:text-white truncate group-hover:text-emerald-500 transition-colors">${ep.title}</div>
+            <div class="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+              <span>${ep.author}</span>
+              <span>·</span>
+              <span><i class="ri-headphone-line text-[10px]"></i> ${ep.plays}</span>
+            </div>
+          </div>
+          <button class="w-7 h-7 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-600 dark:text-slate-300 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+            <i class="ri-play-fill text-xs"></i>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function playRadioEpisode(epTitle) {
+      startPlay();
+      mobileAudioEngine.triggerChime();
+      showMobileToast(`正在收听电台：${epTitle}`, 'ri-radio-line text-emerald-400');
+    }
+
+    // ==========================================================================
+    // 5. Personal FM View Logic
+    // ==========================================================================
+    function openMobilePersonalFM() {
+      hideAllMobileSubViews();
+      const v = document.getElementById('mViewPersonalFM');
+      if (v) v.classList.remove('hidden');
+      updateFmUI();
+    }
+
+    function updateFmUI() {
+      const s = SONGS[currentIdx];
+      const coverEl = document.getElementById('mFmCover');
+      const titleEl = document.getElementById('mFmTitle');
+      const artistEl = document.getElementById('mFmArtist');
+      const discEl = document.getElementById('mFmVinyl');
+      const playIcon = document.getElementById('mFmPlayIcon');
+      const likeBtn = document.getElementById('mFmLikeBtn');
+
+      if (coverEl) coverEl.src = s.cover;
+      if (titleEl) titleEl.textContent = s.title;
+      if (artistEl) artistEl.textContent = s.artist + ' · ' + s.album;
+      if (discEl) {
+        if (isPlaying) discEl.classList.remove('vinyl-paused');
+        else discEl.classList.add('vinyl-paused');
+      }
+      if (playIcon) {
+        playIcon.className = isPlaying ? 'ri-pause-fill text-2xl' : 'ri-play-fill text-2xl ml-0.5';
+      }
+      if (likeBtn) {
+        const isL = likedSongIds.includes(currentIdx);
+        likeBtn.innerHTML = `<i class="${isL ? 'ri-heart-3-fill text-rose-500' : 'ri-heart-3-line text-slate-600 dark:text-slate-300'} text-xl"></i>`;
+      }
+    }
+
+    function toggleFmPlay() {
+      togglePlayPause();
+      updateFmUI();
+    }
+
+    function likeFmSong() {
+      toggleMobileLikeSong(currentIdx);
+      updateFmUI();
+    }
+
+    function trashFmSong() {
+      showMobileToast('已加入不喜欢，已为你漫游下一首', 'ri-delete-bin-line text-slate-400');
+      nextFmSong();
+    }
+
+    function nextFmSong() {
+      const rnd = (currentIdx + 1 + Math.floor(Math.random() * (SONGS.length - 1))) % SONGS.length;
+      playTrack(rnd);
+      updateFmUI();
+    }
+
+    // ==========================================================================
+    // 6. Artists & Artist Detail View Logic
+    // ==========================================================================
+    const ARTISTS_DATA = [
+      { 
+        name: "周杰伦", 
+        en: "Jay Chou", 
+        followers: "3280 万", 
+        avatar: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&auto=format&fit=crop&q=80",
+        bio: "华语流行音乐天王、音乐人，引领千禧年至今华语流行音乐潮流。",
+        isFollowed: true,
+        songs: [0, 4]
+      },
+      { 
+        name: "The Weeknd", 
+        en: "Abel Tesfaye", 
+        followers: "2840 万", 
+        avatar: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80",
+        bio: "全球顶级流行与R&B巨星，多次斩获格莱美音乐大奖。",
+        isFollowed: false,
+        songs: [5]
+      },
+      { 
+        name: "M83", 
+        en: "Anthony Gonzalez", 
+        followers: "890 万", 
+        avatar: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=400&auto=format&fit=crop&q=80",
+        bio: "法国知名氛围电子与后摇乐团，构建梦幻史诗级合成器声场。",
+        isFollowed: true,
+        songs: [1]
+      },
+      { 
+        name: "ODEsza", 
+        en: "Harrison & Clayton", 
+        followers: "760 万", 
+        avatar: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&auto=format&fit=crop&q=80",
+        bio: "西雅图空灵迷幻电子音乐双人组，营造广袤治愈声学空间。",
+        isFollowed: false,
+        songs: [2]
+      },
+      { 
+        name: "Alger", 
+        en: "Alger Music Lab", 
+        followers: "120 万", 
+        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
+        bio: "独立音乐制作人与设计先锋，探索物理质感与自然微风声学。",
+        isFollowed: true,
+        songs: [3]
+      },
+      { 
+        name: "Daft Punk", 
+        en: "Electronic Duo", 
+        followers: "1950 万", 
+        avatar: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&auto=format&fit=crop&q=80",
+        bio: "殿堂级法国电子双人组合，当代浩室与流行电子领路人。",
+        isFollowed: false,
+        songs: [5]
+      }
+    ];
+
+    let currentViewingArtist = null;
+
+    function openMobileArtists() {
+      hideAllMobileSubViews();
+      const v = document.getElementById('mViewArtists');
+      if (v) v.classList.remove('hidden');
+      renderMobileArtistsGrid();
+    }
+
+    function renderMobileArtistsGrid() {
+      const container = document.getElementById('mArtistsGrid');
+      if (!container) return;
+      container.innerHTML = ARTISTS_DATA.map((art) => `
+        <div onclick="openMobileArtistDetail('${art.name}')" class="soft-card p-3 rounded-squircle flex flex-col items-center text-center cursor-pointer group hover:border-emerald-500/40">
+          <div class="relative w-20 h-20 rounded-full overflow-hidden mb-2 shadow-xs group-hover:ring-2 ring-emerald-500/40 transition-all">
+            <img src="${art.avatar}" class="w-full h-full object-cover">
+          </div>
+          <div class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate w-full group-hover:text-emerald-500">${art.name}</div>
+          <div class="text-[10px] text-slate-400 truncate w-full mt-0.5">${art.followers} 粉丝</div>
+        </div>
+      `).join('');
+    }
+
+    function openMobileArtistDetail(name) {
+      const art = ARTISTS_DATA.find(a => a.name === name) || ARTISTS_DATA[0];
+      currentViewingArtist = art;
+      hideAllMobileSubViews();
+      const v = document.getElementById('mViewArtistDetail');
+      if (v) v.classList.remove('hidden');
+
+      const banner = document.getElementById('mArtistDetailBanner');
+      const nameEl = document.getElementById('mArtistDetailName');
+      const fansEl = document.getElementById('mArtistDetailFans');
+      const bioEl = document.getElementById('mArtistDetailBio');
+      const followBtn = document.getElementById('mArtistFollowBtn');
+
+      if (banner) banner.src = art.avatar;
+      if (nameEl) nameEl.textContent = art.name;
+      if (fansEl) fansEl.textContent = `${art.followers} 关注者 · 热门音乐人认证`;
+      if (bioEl) bioEl.textContent = art.bio;
+      if (followBtn) updateArtistFollowBtn(followBtn, art.isFollowed);
+
+      // Render artist songs
+      const listContainer = document.getElementById('mArtistDetailTracklist');
+      if (listContainer) {
+        const songIndices = art.songs.length ? art.songs : [0, 1, 2];
+        listContainer.innerHTML = songIndices.map((idx, pos) => {
+          const s = SONGS[idx];
+          return `
+            <div onclick="playTrack(${idx})" class="py-2.5 flex items-center justify-between cursor-pointer group">
+              <div class="flex items-center gap-3 min-w-0">
+                <span class="text-xs font-mono text-slate-400 w-4 text-center group-hover:text-emerald-500 font-bold">${pos + 1}</span>
+                <img src="${s.cover}" class="w-10 h-10 rounded-xl object-cover shadow-xs">
+                <div class="min-w-0 pr-2">
+                  <div class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate group-hover:text-emerald-500">${s.title}</div>
+                  <div class="text-[10px] text-slate-400 truncate mt-0.5">${s.album} · ${s.duration}</div>
+                </div>
+              </div>
+              <button class="w-7 h-7 rounded-full soft-btn flex items-center justify-center text-slate-500 group-hover:text-emerald-500 shrink-0">
+                <i class="ri-play-fill text-xs"></i>
+              </button>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function closeMobileArtistDetail() {
+      openMobileArtists();
+    }
+
+    function updateArtistFollowBtn(btn, isFollowed) {
+      if (!btn) return;
+      if (isFollowed) {
+        btn.className = 'soft-btn px-3.5 py-1.5 rounded-full text-xs font-bold text-slate-600 dark:text-slate-300';
+        btn.innerHTML = '<i class="ri-check-line text-emerald-500 mr-1"></i>已关注';
+      } else {
+        btn.className = 'soft-btn-primary px-3.5 py-1.5 rounded-full text-xs font-bold';
+        btn.innerHTML = '<i class="ri-add-line mr-1"></i>关注';
+      }
+    }
+
+    function toggleMobileArtistFollow() {
+      if (!currentViewingArtist) return;
+      currentViewingArtist.isFollowed = !currentViewingArtist.isFollowed;
+      const btn = document.getElementById('mArtistFollowBtn');
+      updateArtistFollowBtn(btn, currentViewingArtist.isFollowed);
+      showMobileToast(currentViewingArtist.isFollowed ? `已关注歌手：${currentViewingArtist.name}` : `已取消关注歌手：${currentViewingArtist.name}`, 'ri-user-star-line text-emerald-400');
+    }
+
+    // ==========================================================================
+    // 7. Local & Offline Music View Logic
+    // ==========================================================================
+    let localSongList = [
+      { id: 101, title: "晴天 (无损离线版).flac", artist: "周杰伦", size: "32.4 MB", time: "04:29", idx: 0 },
+      { id: 102, title: "Midnight City (HQ).mp3", artist: "M83", size: "9.8 MB", time: "04:03", idx: 1 },
+      { id: 103, title: "Aura Chill (Master).wav", artist: "ODEsza", size: "48.1 MB", time: "03:45", idx: 2 },
+      { id: 104, title: "落日微风 (录音室母带).flac", artist: "Alger", size: "28.6 MB", time: "03:12", idx: 3 },
+      { id: 105, title: "爱在西元前 (离线缓存).flac", artist: "周杰伦", size: "26.7 MB", time: "03:54", idx: 4 },
+      { id: 106, title: "Starboy (HQ).mp3", artist: "The Weeknd", size: "8.9 MB", time: "03:50", idx: 5 }
+    ];
+
+    function openMobileLocal() {
+      hideAllMobileSubViews();
+      const v = document.getElementById('mViewLocal');
+      if (v) v.classList.remove('hidden');
+      renderMobileLocalList();
+    }
+
+    function renderMobileLocalList() {
+      const container = document.getElementById('mLocalTracklist');
+      const countEl = document.getElementById('mLocalCount');
+      const libCountEl = document.getElementById('mLibLocalCount');
+      if (countEl) countEl.textContent = `${localSongList.length} 首本地音频`;
+      if (libCountEl) libCountEl.textContent = `${localSongList.length} 首本地音频`;
+      if (!container) return;
+
+      container.innerHTML = localSongList.map((item) => `
+        <div onclick="playTrack(${item.idx % SONGS.length})" class="py-2.5 flex items-center justify-between cursor-pointer group">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-base shrink-0 group-hover:scale-105 transition-transform">
+              <i class="ri-music-fill"></i>
+            </div>
+            <div class="min-w-0 pr-2">
+              <div class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate group-hover:text-emerald-500">${item.title}</div>
+              <div class="text-[10px] text-slate-400 truncate mt-0.5">${item.artist} · ${item.size}</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0" onclick="event.stopPropagation()">
+            <span class="text-[10px] font-mono text-slate-400">${item.time}</span>
+            <button onclick="playTrack(${item.idx % SONGS.length})" class="w-7 h-7 rounded-full soft-btn flex items-center justify-center text-slate-500 group-hover:text-emerald-500">
+              <i class="ri-play-fill text-xs"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function triggerMobileLocalUpload() {
+      const input = document.getElementById('mLocalFileInput');
+      if (input) input.click();
+    }
+
+    function handleMobileLocalFileSelect(e) {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const sizeMb = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
+        localSongList.unshift({
+          id: Date.now() + i,
+          title: file.name,
+          artist: "本地音频",
+          size: sizeMb,
+          time: "03:30",
+          idx: Math.floor(Math.random() * SONGS.length)
+        });
+      }
+      renderMobileLocalList();
+      showMobileToast(`成功导入 ${files.length} 首本地音频文件`, 'ri-hard-drive-2-line text-emerald-400');
+    }
+
+    // ==========================================================================
+    // 8. Equalizer & Sleep Timer Modals Logic
+    // ==========================================================================
+    function openMobileEqModal() {
+      const modal = document.getElementById('mEqModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeMobileEqModal() {
+      const modal = document.getElementById('mEqModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function setMobileEqPreset(preset) {
+      mobileAudioEngine.setEqPreset(preset);
+      const names = {
+        flat: '原声直通 (Flat)',
+        bass: '超重低音 (Bass)',
+        vocal: '清澈人声 (Vocal)',
+        jazz: '温润爵士 (Jazz)',
+        surround: '3D全景空间环绕 (Spatial)'
+      };
+      // Update UI button highlights
+      document.querySelectorAll('#mEqPresetsGroup button').forEach(btn => {
+        const p = btn.getAttribute('data-meq');
+        if (p === preset) {
+          btn.className = 'soft-btn p-2 rounded-xl text-left border-emerald-500/50 bg-emerald-500/10 font-bold text-emerald-600 dark:text-emerald-400';
+        } else {
+          btn.className = 'soft-btn p-2 rounded-xl text-left font-bold text-slate-700 dark:text-slate-200' + (p === 'surround' ? ' col-span-2' : '');
+        }
+      });
+      // Animate visual bars based on preset
+      const heights = {
+        flat: ['h-8', 'h-12', 'h-10', 'h-14', 'h-9'],
+        bass: ['h-14', 'h-12', 'h-8', 'h-6', 'h-5'],
+        vocal: ['h-6', 'h-9', 'h-14', 'h-12', 'h-8'],
+        jazz: ['h-10', 'h-14', 'h-11', 'h-8', 'h-6'],
+        surround: ['h-12', 'h-8', 'h-7', 'h-11', 'h-14']
+      };
+      const barH = heights[preset] || heights.flat;
+      for (let i = 1; i <= 5; i++) {
+        const bar = document.getElementById(`mEqBar${i}`);
+        if (bar) {
+          bar.className = `w-full bg-emerald-500/80 rounded-full transition-all duration-300 ${barH[i - 1]}`;
+        }
+      }
+      showMobileToast(`音效已切换：${names[preset]}`, 'ri-sound-module-line text-emerald-400');
+    }
+
+    let mobileSleepTimerId = null;
+    let sleepRemainingSec = 0;
+    let sleepCountdownInterval = null;
+    let stopAtSongEnd = false;
+
+    function openMobileSleepTimer() {
+      const modal = document.getElementById('mSleepTimerModal');
+      if (modal) modal.classList.remove('hidden');
+      const activeBox = document.getElementById('mSleepTimerActiveBox');
+      const countdownText = document.getElementById('mSleepCountdownText');
+      if (activeBox) {
+        if (sleepRemainingSec > 0) {
+          activeBox.classList.remove('hidden');
+          if (countdownText) {
+            const m = Math.floor(sleepRemainingSec / 60);
+            const s = sleepRemainingSec % 60;
+            countdownText.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+          }
+        } else {
+          activeBox.classList.add('hidden');
+        }
+      }
+    }
+
+    function closeMobileSleepTimer() {
+      const modal = document.getElementById('mSleepTimerModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function setMobileSleepTimer(param) {
+      if (mobileSleepTimerId) clearTimeout(mobileSleepTimerId);
+      if (sleepCountdownInterval) clearInterval(sleepCountdownInterval);
+      stopAtSongEnd = false;
+
+      const activeBox = document.getElementById('mSleepTimerActiveBox');
+      const countdownText = document.getElementById('mSleepCountdownText');
+      const sleepDot = document.getElementById('mSleepDot');
+
+      if (param === 0) {
+        sleepRemainingSec = 0;
+        if (activeBox) activeBox.classList.add('hidden');
+        if (sleepDot) sleepDot.classList.add('hidden');
+        showMobileToast('已取消睡眠定时器', 'ri-forbid-line text-slate-400');
+        closeMobileSleepTimer();
+        return;
+      }
+
+      if (param === 'song') {
+        stopAtSongEnd = true;
+        sleepRemainingSec = 0;
+        if (activeBox) activeBox.classList.add('hidden');
+        if (sleepDot) sleepDot.classList.remove('hidden');
+        showMobileToast('将在播放完当前歌曲后停止播放', 'ri-disc-line text-emerald-400');
+        closeMobileSleepTimer();
+        return;
+      }
+
+      if (typeof param === 'number') {
+        sleepRemainingSec = param * 60;
+        if (activeBox) activeBox.classList.remove('hidden');
+        if (sleepDot) sleepDot.classList.remove('hidden');
+        if (countdownText) {
+          const m = Math.floor(sleepRemainingSec / 60);
+          countdownText.textContent = `${m}:00`;
+        }
+
+        sleepCountdownInterval = setInterval(() => {
+          sleepRemainingSec--;
+          if (sleepRemainingSec <= 0) {
+            clearInterval(sleepCountdownInterval);
+            pauseTrack();
+            if (activeBox) activeBox.classList.add('hidden');
+            if (sleepDot) sleepDot.classList.add('hidden');
+            showMobileToast('睡眠定时器已触发，已停止播放', 'ri-moon-line text-indigo-400');
+          } else {
+            const m = Math.floor(sleepRemainingSec / 60);
+            const s = sleepRemainingSec % 60;
+            if (countdownText) {
+              countdownText.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            }
+          }
+        }, 1000);
+
+        showMobileToast(`已开启睡眠定时器：${param} 分钟后停止播放`, 'ri-timer-line text-emerald-400');
+        closeMobileSleepTimer();
+      }
+    }
+
+    // ==========================================================================
+    // 9. Tactile Volume Slider Controls Logic
+    // ==========================================================================
+    let mobileVolumeLevel = 0.7;
+    let isMobileMuted = false;
+    let preMuteVolume = 0.7;
+
+    function handleMobileVolume(e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      setMobileVolume(pct);
+    }
+
+    function setMobileVolume(v) {
+      mobileVolumeLevel = v;
+      if (v > 0) isMobileMuted = false;
+      mobileAudioEngine.setVolume(v);
+
+      const fill = document.getElementById('mVolumeFill');
+      const text = document.getElementById('mVolumeText');
+      const icon = document.getElementById('mVolumeIcon');
+
+      if (fill) fill.style.width = `${Math.round(v * 100)}%`;
+      if (text) text.textContent = `${Math.round(v * 100)}%`;
+      if (icon) {
+        if (v === 0) icon.className = 'ri-volume-mute-fill text-base text-rose-400';
+        else if (v < 0.5) icon.className = 'ri-volume-down-line text-base';
+        else icon.className = 'ri-volume-up-line text-base';
+      }
+    }
+
+    function toggleMobileMute() {
+      if (isMobileMuted) {
+        setMobileVolume(preMuteVolume || 0.7);
+        isMobileMuted = false;
+        showMobileToast('已恢复移动端音量', 'ri-volume-up-line text-emerald-400');
+      } else {
+        preMuteVolume = mobileVolumeLevel;
+        setMobileVolume(0);
+        isMobileMuted = true;
+        showMobileToast('移动端已静音', 'ri-volume-mute-fill text-rose-400');
+      }
+    }
+
+    function toggleTheme() {
+      const curr = document.documentElement.getAttribute('data-theme') || 'light';
+      const next = curr === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('alger_theme', next);
+      updateThemeIcon(next);
+      showMobileToast(next === 'dark' ? '已切换至深色模式' : '已切换至浅色模式', 'ri-contrast-2-line text-indigo-400');
+    }
+
+    function updateThemeIcon(theme) {
+      const icon = document.getElementById('themeIcon');
+      if (icon) {
+        icon.className = theme === 'dark' ? 'ri-moon-line text-sm text-indigo-400' : 'ri-sun-line text-sm text-amber-500';
+      }
+    }
+  </script>
+</body>
+</html>

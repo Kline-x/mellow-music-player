@@ -1,0 +1,26 @@
+{
+  "name": "alger-music-player-modern-soft-ui",
+  "version": "1.0.0",
+  "description": "Modern Soft UI redesign and high-fidelity interactive prototype for AlgerMusicPlayer (Desktop & Mobile)",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node e2e_test.js",
+    "test:e2e": "node e2e_test.js"
+  },
+  "keywords": [
+    "music-player",
+    "modern-soft-ui",
+    "soft-depth",
+    "calm-tech",
+    "web-audio-api",
+    "alger-music-player",
+    "ui-prototype"
+  ],
+  "author": "Kline-x",
+  "license": "MIT",
+  "devDependencies": {
+    "puppeteer-core": "^25.11.0"
+  }
+}

@@ -1,0 +1,217 @@
+/**
+ * Modern Soft UI Design Tokens
+ * Specially crafted for AlgerMusicPlayer
+ * 
+ * Concepts:
+ * - Porcelain & Calm Tech Canvas
+ * - Multi-layer Diffused Soft Depth & Ambient Occlusion
+ * - Tactile Micro-Interactions (Convex / Concave / Pressed)
+ * - Dynamic Chromatic Ambient Glow (Mesh Gradients)
+ */
+
+:root {
+  /* ==========================================================================
+     1. Color Palette - Light Mode (Porcelain & Soft Slate)
+     ========================================================================== */
+  --soft-bg-canvas: #F5F7FB;
+  --soft-bg-subtle: #EDF2F7;
+  --soft-bg-surface: #FFFFFF;
+  --soft-bg-surface-translucent: rgba(255, 255, 255, 0.78);
+  --soft-bg-recessed: #E8EEF5;
+  --soft-bg-hover: rgba(0, 0, 0, 0.03);
+  
+  /* Text & Content */
+  --soft-text-main: #1E293B;      /* Slate 800 */
+  --soft-text-secondary: #64748B; /* Slate 500 */
+  --soft-text-muted: #94A3B8;     /* Slate 400 */
+  --soft-text-inverse: #FFFFFF;
+
+  /* Accent - Soft Emerald (Refined from classical Spotify/Netease green) */
+  --soft-accent: #10B981;
+  --soft-accent-light: rgba(16, 185, 129, 0.15);
+  --soft-accent-hover: #059669;
+  --soft-accent-glow: rgba(16, 185, 129, 0.35);
+  --soft-accent-gradient: linear-gradient(135deg, #10B981 0%, #059669 100%);
+
+  /* Borders & Dividers */
+  --soft-border-subtle: rgba(226, 232, 240, 0.8);
+  --soft-border-highlight: rgba(255, 255, 255, 0.9);
+  --soft-border-glass: rgba(255, 255, 255, 0.4);
+
+  /* ==========================================================================
+     2. Soft Depth Shadows (Tactile & Diffused)
+     ========================================================================== */
+  /* Level 1: Flat/Subtle Card */
+  --soft-shadow-flat: 
+    0 2px 8px -1px rgba(112, 144, 176, 0.08),
+    0 1px 3px 0 rgba(112, 144, 176, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+
+  /* Level 2: Raised (Floating Pods, PlayBar, Squircles) */
+  --soft-shadow-raised: 
+    0 12px 32px -4px rgba(112, 144, 176, 0.16),
+    0 4px 12px -2px rgba(112, 144, 176, 0.08),
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.95);
+
+  /* Level 3: Hero / Floating Dock */
+  --soft-shadow-dock: 
+    0 20px 48px -8px rgba(15, 23, 42, 0.12),
+    0 8px 20px -4px rgba(112, 144, 176, 0.1),
+    inset 0 1px 1px rgba(255, 255, 255, 0.9);
+
+  /* Recessed / Pressed Wells (Track bars, active buttons, inputs) */
+  --soft-shadow-recessed: 
+    inset 0 2px 4px 0 rgba(112, 144, 176, 0.14),
+    inset 0 1px 2px 0 rgba(112, 144, 176, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.8);
+
+  --soft-shadow-btn-convex: 
+    0 4px 12px -1px rgba(112, 144, 176, 0.18),
+    0 2px 4px -1px rgba(112, 144, 176, 0.08),
+    inset 0 1px 0.5px rgba(255, 255, 255, 1);
+
+  --soft-shadow-btn-pressed: 
+    inset 0 2px 5px rgba(112, 144, 176, 0.25),
+    0 1px 1px rgba(255, 255, 255, 0.6);
+
+  /* Glassmorphism & Blurs */
+  --soft-blur-glass: blur(28px) saturate(190%);
+  --soft-blur-ambient: blur(72px);
+
+  /* Dynamic Mesh Glow Base (Default Emerald/Sky) */
+  --glow-color-1: rgba(16, 185, 129, 0.35);
+  --glow-color-2: rgba(59, 130, 246, 0.3);
+  --glow-color-3: rgba(245, 158, 11, 0.25);
+}
+
+/* ==========================================================================
+   Dark Mode (Deep Graphite & Soft Night Canvas)
+   ========================================================================== */
+[data-theme="dark"] {
+  --soft-bg-canvas: #0D1117;
+  --soft-bg-subtle: #161B22;
+  --soft-bg-surface: #1C2128;
+  --soft-bg-surface-translucent: rgba(28, 33, 40, 0.82);
+  --soft-bg-recessed: #13171E;
+  --soft-bg-hover: rgba(255, 255, 255, 0.05);
+
+  --soft-text-main: #F0F6FC;
+  --soft-text-secondary: #8B949E;
+  --soft-text-muted: #6E7681;
+  --soft-text-inverse: #0D1117;
+
+  --soft-accent: #10B981;
+  --soft-accent-light: rgba(16, 185, 129, 0.2);
+  --soft-accent-hover: #34D399;
+  --soft-accent-glow: rgba(16, 185, 129, 0.45);
+  --soft-accent-gradient: linear-gradient(135deg, #10B981 0%, #059669 100%);
+
+  --soft-border-subtle: rgba(240, 246, 252, 0.08);
+  --soft-border-highlight: rgba(255, 255, 255, 0.12);
+  --soft-border-glass: rgba(255, 255, 255, 0.06);
+
+  --soft-shadow-flat: 
+    0 4px 16px -2px rgba(0, 0, 0, 0.35),
+    0 1px 3px 0 rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  --soft-shadow-raised: 
+    0 16px 36px -4px rgba(0, 0, 0, 0.5),
+    0 4px 12px -2px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.08);
+
+  --soft-shadow-dock: 
+    0 24px 52px -6px rgba(0, 0, 0, 0.65),
+    0 8px 24px -3px rgba(0, 0, 0, 0.45),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+
+  --soft-shadow-recessed: 
+    inset 0 2px 5px 0 rgba(0, 0, 0, 0.45),
+    inset 0 1px 2px 0 rgba(0, 0, 0, 0.3),
+    0 1px 0 rgba(255, 255, 255, 0.04);
+
+  --soft-shadow-btn-convex: 
+    0 4px 12px -1px rgba(0, 0, 0, 0.4),
+    0 2px 4px -1px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.1);
+
+  --soft-shadow-btn-pressed: 
+    inset 0 2px 5px rgba(0, 0, 0, 0.6),
+    0 1px 1px rgba(255, 255, 255, 0.02);
+
+  --glow-color-1: rgba(16, 185, 129, 0.25);
+  --glow-color-2: rgba(59, 130, 246, 0.2);
+  --glow-color-3: rgba(245, 158, 11, 0.15);
+}
+
+/* ==========================================================================
+   Geometric Squircles & Radius Standards
+   ========================================================================== */
+:root {
+  --radius-pill: 9999px;
+  --radius-window: 28px;
+  --radius-card-lg: 24px;
+  --radius-card-md: 18px;
+  --radius-card-sm: 12px;
+  --radius-btn: 14px;
+}
+
+/* ==========================================================================
+   Dynamic Accent Overrides & Utilities
+   ========================================================================== */
+.text-emerald-400,
+.text-emerald-500,
+.text-emerald-600,
+.dark\:text-emerald-400,
+.hover\:text-emerald-500:hover,
+.group-hover\:text-emerald-500:hover,
+.group:hover .group-hover\:text-emerald-500 {
+  color: var(--soft-accent) !important;
+}
+
+.bg-emerald-500,
+.bg-emerald-600 {
+  background-color: var(--soft-accent) !important;
+}
+
+.bg-emerald-500\/10,
+.bg-emerald-500\/15,
+.dark\:bg-emerald-500\/15 {
+  background-color: var(--soft-accent-light) !important;
+}
+
+.border-emerald-500,
+.border-emerald-500\/20 {
+  border-color: var(--soft-accent-glow) !important;
+}
+
+.shadow-emerald-500\/40 {
+  box-shadow: 0 6px 18px var(--soft-accent-glow) !important;
+}
+
+input[type="range"].accent-emerald-500,
+input[type="radio"].accent-emerald-500 {
+  accent-color: var(--soft-accent) !important;
+}
+
+.soft-btn-primary {
+  background: var(--soft-accent-gradient, linear-gradient(135deg, var(--soft-accent) 0%, var(--soft-accent-hover) 100%)) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 6px 20px -2px var(--soft-accent-glow, rgba(16, 185, 129, 0.4)), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+.soft-btn-primary:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 8px 24px -2px var(--soft-accent-glow, rgba(16, 185, 129, 0.5)), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+}
+.soft-track-fill {
+  background: linear-gradient(90deg, var(--soft-accent), var(--soft-accent-hover, var(--soft-accent))) !important;
+  box-shadow: 0 0 14px var(--soft-accent-glow, rgba(16, 185, 129, 0.4)) !important;
+}
+.soft-thumb {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), 0 0 0 3px var(--soft-accent-glow, rgba(16, 185, 129, 0.35)) !important;
+}
+.eq-bar,
+.eq-mini-bar {
+  background: var(--soft-accent) !important;
+}
+
