@@ -6,12 +6,10 @@ class ThemeProvider extends ChangeNotifier {
   bool _isDarkMode = false;
   AccentColorType _accentType = AccentColorType.blue;
   double _glowIntensity = 0.65;
-  bool _isMobilePreview = false; // 桌面模式下是否强制移动端视口预览
 
   bool get isDarkMode => _isDarkMode;
   AccentColorType get accentType => _accentType;
   double get glowIntensity => _glowIntensity;
-  bool get isMobilePreview => _isMobilePreview;
 
   Color get accentColor => _accentType.getColor(_isDarkMode);
   Color get canvasColor => MellowColors.canvas(_isDarkMode);
@@ -44,17 +42,5 @@ class ThemeProvider extends ChangeNotifier {
   void setGlowIntensity(double value) {
     _glowIntensity = value.clamp(0.0, 1.0);
     notifyListeners();
-  }
-
-  void toggleMobilePreview() {
-    _isMobilePreview = !_isMobilePreview;
-    notifyListeners();
-  }
-
-  void setMobilePreview(bool value) {
-    if (_isMobilePreview != value) {
-      _isMobilePreview = value;
-      notifyListeners();
-    }
   }
 }

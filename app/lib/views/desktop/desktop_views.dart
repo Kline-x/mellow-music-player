@@ -8,6 +8,7 @@ import '../../design_system/recessed_well.dart';
 import '../../design_system/mellow_image.dart';
 import '../../core/audio/audio_player_service.dart';
 import '../../core/audio/track_model.dart';
+import '../common/modals.dart';
 
 /// 1. 发现音乐主页 (DiscoverView - Bento Grid 仪表盘)
 class DesktopDiscoverView extends StatelessWidget {
@@ -692,13 +693,14 @@ class DesktopFavoriteView extends StatelessWidget {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
 
-    final favTracks = mockPresetTracks.where((t) => player.isFavorite(t.id)).toList();
+    final favTracks = player.favoriteTracks;
 
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
       children: [
         SoftCard(
           padding: const EdgeInsets.all(28),
+          borderRadius: MellowRadii.borderR24,
           child: Row(
             children: [
               Container(
@@ -707,6 +709,13 @@ class DesktopFavoriteView extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(colors: [Color(0xFFEC4899), Color(0xFFF472B6)]),
                   borderRadius: MellowRadii.borderR24,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFEC4899).withValues(alpha: 0.35),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
                 child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 48),
               ),
@@ -716,16 +725,30 @@ class DesktopFavoriteView extends StatelessWidget {
                 children: [
                   Text('我喜欢的音乐', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: theme.textPrimary)),
                   const SizedBox(height: 6),
-                  Text('共收藏 ${favTracks.length} 首心动单曲', style: TextStyle(color: theme.textSecondary, fontSize: 13)),
+                  Text('共收藏 ${favTracks.length} 首心动单曲 · 实时云端同步', style: TextStyle(color: theme.textSecondary, fontSize: 13)),
                   const SizedBox(height: 14),
-                  SoftButton(
-                    label: '一键播放全部',
-                    icon: Icons.play_arrow_rounded,
-                    isActive: true,
-                    isPill: true,
-                    onTap: () {
-                      if (favTracks.isNotEmpty) player.playTrack(favTracks[0]);
-                    },
+                  Row(
+                    children: [
+                      SoftButton(
+                        label: '一键播放全部',
+                        icon: Icons.play_arrow_rounded,
+                        isActive: true,
+                        isPill: true,
+                        onTap: () {
+                          if (favTracks.isNotEmpty) player.playPlaylist(favTracks);
+                        },
+                      ),
+                      const SizedBox(width: 10),
+                      SoftButton(
+                        label: '导入更多',
+                        icon: Icons.add_link_rounded,
+                        isPill: true,
+                        onTap: () => showDialog(
+                          context: context,
+                          builder: (_) => const ImportPlaylistModal(),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -734,34 +757,175 @@ class DesktopFavoriteView extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         if (favTracks.isEmpty)
-          Center(child: Text('暂无收藏曲目', style: TextStyle(color: theme.textMuted)))
+          Padding(
+            padding: const EdgeInsets.all(40),
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(Icons.favorite_border_rounded, size: 48, color: theme.textMuted),
+                  const SizedBox(height: 12),
+                  Text('暂无收藏曲目，在播放或搜索时点击红心即可收入心动歌单', style: TextStyle(color: theme.textMuted, fontSize: 13)),
+                ],
+              ),
+            ),
+          )
         else
-          ...favTracks.map((t) => SoftCard(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            onTap: () => player.playTrack(t),
-            child: Row(
-              children: [
-                MellowImage(url: t.coverUrl, width: 40, height: 40, borderRadius: MellowRadii.borderR8),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                      Text('${t.artist} · ${t.album}', style: TextStyle(fontSize: 12, color: theme.textMuted)),
-                    ],
+          for (final t in favTracks)
+            SoftCard(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              onTap: () => player.playTrack(t),
+              child: Row(
+                children: [
+                  MellowImage(url: t.coverUrl, width: 42, height: 42, borderRadius: MellowRadii.borderR8),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                        Text('${t.artist} · ${t.album}', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                      ],
+                    ),
                   ),
-                ),
-                Text(t.formattedDuration, style: TextStyle(color: theme.textSecondary, fontSize: 12)),
-                const SizedBox(width: 16),
-                IconButton(
-                  icon: const Icon(Icons.favorite_rounded, color: Colors.pink, size: 20),
-                  onPressed: () => player.toggleFavorite(t.id),
+                  Text(t.formattedDuration, style: TextStyle(color: theme.textSecondary, fontSize: 12)),
+                  const SizedBox(width: 16),
+                  IconButton(
+                    icon: const Icon(Icons.favorite_rounded, color: Colors.pink, size: 20),
+                    tooltip: '取消收藏',
+                    onPressed: () => player.toggleFavorite(t.id),
+                  ),
+                ],
+              ),
+            ),
+      ],
+    );
+  }
+}
+
+/// 7.5. 导入与自建歌单中心 (DesktopImportedPlaylistsView - 对标 AlgerMusicPlayer 歌单库)
+class DesktopImportedPlaylistsView extends StatelessWidget {
+  final Function(String viewId, [String? extra]) onNavigate;
+  const DesktopImportedPlaylistsView({super.key, required this.onNavigate});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.watch<ThemeProvider>();
+    final player = context.watch<AudioPlayerService>();
+    final playlists = player.importedPlaylists;
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('导入与自建歌单', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                const SizedBox(height: 4),
+                Text('支持网易云音乐、QQ音乐分享链接与 ID 一键秒级抓取导入', style: TextStyle(fontSize: 13, color: theme.textMuted)),
+              ],
+            ),
+            SoftButton(
+              label: '导入新歌单',
+              icon: Icons.add_link_rounded,
+              isActive: true,
+              isPill: true,
+              onTap: () => showDialog(
+                context: context,
+                builder: (_) => const ImportPlaylistModal(),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+
+        if (playlists.isEmpty)
+          SoftCard(
+            padding: const EdgeInsets.all(40),
+            borderRadius: MellowRadii.borderR24,
+            child: Column(
+              children: [
+                Icon(Icons.queue_music_rounded, size: 56, color: theme.accentColor),
+                const SizedBox(height: 16),
+                Text('暂无外部导入歌单', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                const SizedBox(height: 6),
+                Text('点击上方“导入新歌单”，粘贴网易云公开歌单（如官方热歌榜 3778678）即可完整同步！', style: TextStyle(fontSize: 13, color: theme.textMuted)),
+                const SizedBox(height: 20),
+                SoftButton(
+                  label: '立即体验导入',
+                  icon: Icons.download_rounded,
+                  isActive: true,
+                  onTap: () => showDialog(
+                    context: context,
+                    builder: (_) => const ImportPlaylistModal(),
+                  ),
                 ),
               ],
             ),
-          )),
+          )
+        else
+          for (final pl in playlists)
+            SoftCard(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(20),
+              borderRadius: MellowRadii.borderR20,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      MellowImage(url: pl.coverUrl, width: 72, height: 72, borderRadius: MellowRadii.borderR12),
+                      const SizedBox(width: 18),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              pl.title,
+                              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                            ),
+                            const SizedBox(height: 4),
+                            Text('包含 ${pl.trackCount} 首完整音轨 · ${pl.description}', style: TextStyle(fontSize: 12.5, color: theme.textMuted)),
+                          ],
+                        ),
+                      ),
+                      SoftButton(
+                        label: '播放全部',
+                        icon: Icons.play_arrow_rounded,
+                        isActive: true,
+                        isPill: true,
+                        onTap: () => player.playPlaylist(pl.tracks),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  const Divider(height: 1),
+                  const SizedBox(height: 10),
+                  // 前 5 首曲目预览
+                  for (final t in pl.tracks.take(5))
+                    InkWell(
+                      onTap: () => player.playTrack(t),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                        child: Row(
+                          children: [
+                            Icon(Icons.play_circle_outline_rounded, size: 18, color: theme.accentColor),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text('${t.title} - ${t.artist}', style: TextStyle(fontSize: 13, color: theme.textPrimary)),
+                            ),
+                            Text(t.formattedDuration, style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
       ],
     );
   }

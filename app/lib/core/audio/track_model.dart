@@ -27,6 +27,20 @@ class LyricLine {
     }
     return null;
   }
+
+  /// 批量解析完整 LRC 歌词文本
+  static List<LyricLine> parseLrc(String lrcContent) {
+    final lines = lrcContent.split('\n');
+    final result = <LyricLine>[];
+    for (final line in lines) {
+      final parsed = LyricLine.parse(line);
+      if (parsed != null && parsed.text.isNotEmpty) {
+        result.add(parsed);
+      }
+    }
+    result.sort((a, b) => a.time.compareTo(b.time));
+    return result;
+  }
 }
 
 /// 音乐曲目模型

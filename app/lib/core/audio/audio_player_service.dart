@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'track_model.dart';
+import '../sources/online_music_service.dart';
 
 /// 播放循环模式
 enum PlaybackMode {
@@ -18,6 +19,7 @@ class AudioPlayerService extends ChangeNotifier {
   final List<Track> _playlist = List.from(mockPresetTracks);
   final List<Track> _playHistory = [];
   final Set<String> _favoriteIds = {'track-1', 'track-3', 'track-5', 'track-6'};
+  final List<ImportedPlaylist> _importedPlaylists = [];
 
   int _currentIndex = 0;
   bool _isPlaying = false;
@@ -44,6 +46,24 @@ class AudioPlayerService extends ChangeNotifier {
   int get sleepTimerRemainingSeconds => _sleepTimerRemainingSeconds;
   bool get pauseAfterCurrent => _pauseAfterCurrent;
 
+  List<ImportedPlaylist> get importedPlaylists => List.unmodifiable(_importedPlaylists);
+
+  List<Track> get favoriteTracks {
+    final list = <Track>[];
+    final addedIds = <String>{};
+    for (final t in _playlist) {
+      if (_favoriteIds.contains(t.id) && addedIds.add(t.id)) {
+        list.add(t.copyWith(isFavorite: true));
+      }
+    }
+    for (final t in mockPresetTracks) {
+      if (_favoriteIds.contains(t.id) && addedIds.add(t.id)) {
+        list.add(t.copyWith(isFavorite: true));
+      }
+    }
+    return list;
+  }
+
   Track? get currentTrack {
     if (_playlist.isEmpty || _currentIndex >= _playlist.length) return null;
     return _playlist[_currentIndex].copyWith(
@@ -54,6 +74,44 @@ class AudioPlayerService extends ChangeNotifier {
   AudioPlayerService() {
     if (_playlist.isNotEmpty) {
       _recordHistory(_playlist[0]);
+    }
+  }
+
+  // 导入外部歌单
+  void addImportedPlaylist(ImportedPlaylist playlist) {
+    _importedPlaylists.removeWhere((p) => p.id == playlist.id);
+    _importedPlaylists.insert(0, playlist);
+    for (final t in playlist.tracks) {
+      if (!_playlist.any((p) => p.id == t.id)) {
+        _playlist.add(t);
+      }
+    }
+    notifyListeners();
+  }
+
+  // 一键替换为新歌单并播放
+  void playPlaylist(List<Track> tracks, {int startIndex = 0}) {
+    if (tracks.isEmpty) return;
+    _playlist.clear();
+    _playlist.addAll(tracks);
+    _currentIndex = startIndex.clamp(0, _playlist.length - 1);
+    _position = Duration.zero;
+    _recordHistory(_playlist[_currentIndex]);
+    play();
+    _loadLyricIfNeed(_playlist[_currentIndex]);
+  }
+
+  void _loadLyricIfNeed(Track track) {
+    if (track.lyrics.isEmpty && track.id.startsWith('netease_')) {
+      OnlineMusicService.fetchTrackLyric(track.id).then((lyrics) {
+        if (lyrics.isNotEmpty) {
+          final idx = _playlist.indexWhere((t) => t.id == track.id);
+          if (idx != -1) {
+            _playlist[idx] = _playlist[idx].copyWith(lyrics: lyrics);
+            notifyListeners();
+          }
+        }
+      });
     }
   }
 
@@ -90,6 +148,7 @@ class AudioPlayerService extends ChangeNotifier {
     _position = Duration.zero;
     _recordHistory(_playlist[_currentIndex]);
     play();
+    _loadLyricIfNeed(_playlist[_currentIndex]);
   }
 
   void next() {
