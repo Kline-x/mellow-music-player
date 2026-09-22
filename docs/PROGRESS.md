@@ -32,10 +32,16 @@
   - 将项目正式命名为 **Mellow Music · 润音**。
   - 创建 GitHub 仓库 `https://github.com/Kline-x/mellow-music-player`，完成初始代码库提交与远端推送。
 - **[Completed] 深度集成规划 (AlgerMusicPlayer & LX-Music)**：
-  - 制定基于 Flutter + `media_kit` + `flutter_js` + `Isar` 的全平台工程技术方案。
+  - 制定基于 Flutter + `media_kit` + `flutter_js` + `Drift` 的全平台工程技术方案。
   - 建立 1:1 零遗漏全页面矩阵：确认桌面端 12 大视图 + 4 弹窗抽屉、移动端 13 大页面 + 5 底部抽屉全量实现规范。
   - 纳入 LX 音源脚本沙箱、网易云/QQ 歌单链接解析导入、WebDAV / 局域网直连同步、桌面透明穿透歌词 4 大拓展特性。
   - 形成 `docs/ROADMAP.md` 与 `docs/PROGRESS.md`，固化进代码版本库。
+- **[Completed] `/grill-with-docs` 架构深水区考问与硬核决议落地**：
+  - 1. **音源引擎**：通过 Dart 原生 Polyfill 注入 QuickJS，直接支持 `lx.request`、`Buffer` 与 `Crypto`。
+  - 2. **音频与系统通信**：确立分级双流架构，UI 直连 60Hz 高刷流，系统媒体广播实施 1 秒防抖节流。
+  - 3. **独立悬浮歌词**：采用 `desktop_multi_window` 多窗口独立渲染 + Win32/macOS 鼠标透明穿透。
+  - 4. **局域网同步**：100% 原生兼容 LX-Music 同步协议（端口 23332），支持与现有 LX-Music 双向扫码互通。
+  - 5. **本地存储**：全面采纳工业级响应式数据库 `Drift` (SQLite3 FTS5)，杜绝跨平台编译冲突。
 
 ---
 

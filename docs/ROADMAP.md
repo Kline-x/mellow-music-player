@@ -33,9 +33,9 @@ graph TD
     end
 
     subgraph Infra_Layer ["基础设施与持久化 (Storage & Platform Channels)"]
-        Database["💾 Isar / SQLite 本地高性能数据库 (本地曲库, 索引, 缓存元数据)"]
+        Database["💾 Drift (SQLite3 FTS5) 工业级响应式数据库 (本地数十万曲库, 索引, 歌单外键关联)"]
         AudioCache["📁 本地音频流式缓存系统 (LRU 策略, 离线无损缓存)"]
-        PlatformChannels["🔌 原生平台通道 (Windows穿透窗口, Android悬浮窗, 快捷键)"]
+        PlatformChannels["🔌 原生平台通道 (desktop_multi_window 穿透子窗口, Android 浮窗, SMTC)"]
     end
 
     UI_Layer --> State_Layer
@@ -106,40 +106,61 @@ graph TD
 
 ---
 
-## 💎 三、核心工程实施方案
+## 💎 三、核心工程实施方案 (深水区架构规范)
 
-### 1. 音源引擎：LX-Music 用户脚本规范兼容
-- **运行时环境**：集成 `flutter_js`（底层为轻量级 QuickJS C 原生沙箱），保证在 Windows、macOS、Android、iOS 上拥有确定性、跨平台一致的 JS 运行能力。
-- **协议兼容标准**：
+### 1. 音源引擎：Dart 注入 Polyfill 桥接 QuickJS 沙箱
+- **运行时环境**：集成 `flutter_js`（底层为轻量级 QuickJS C 原生沙箱），纯原生内存隔离，零端口占用，全平台极速冷启动。
+- **Dart Polyfill 桥接层**：
+  - 由 Dart 向 JS 上下文注入标准 `globalThis.lx` 对象；
+  - `lx.request(url, options, callback)` 经由 Dart 原生 `dio` / `http` 代理发起，自动绕过 CORS 并注入合规 User-Agent；
+  - 注入 `lx.utils.buffer`（二进制 Buffer 模拟）与 `lx.utils.crypto`（基于 Dart 原生 `pointycastle` / `crypto` 提供 AES、RSA、MD5、DES 加解密），完美兼容 LX-Music 六音官方脚本。
+- **脚本标准规范**：
   - `search(query, page, type)`：跨平台关键字/歌手/专辑统一聚合检索。
   - `getMusicUrl(songInfo, quality)`：按音质等级（`128k`, `320k`, `flac`, `flac24bit`）动态解析真实播放直链。
   - `getLyric(songInfo)`：获取双语/翻译/逐字 LRC 歌词数据。
   - `getPic(songInfo)`：获取高清专辑封面 URL。
 
-### 2. 音频解码与声学 DSP 架构
+### 2. 音频解码与声学 DSP：分级双流架构 (Dual-Stream Architecture)
 - **解码底座**：采用基于工业级 `libmpv` 的 `media_kit`，原生支持 FLAC、APE、OGG、DSD 及 Hi-Res 24bit/192kHz 无损音频回放。
-- **系统级媒体控制整合 (`audio_service`)**：
-  - Windows：SMTC (System Media Transport Controls)
-  - Android：MediaSession + 通知栏大图播放控制器
-  - iOS：MPRemoteCommandCenter + 锁屏封面
+- **分级双流通信机制**：
+  - **前台 60fps 高刷渲染流**：UI 动效大幕歌词、胶囊进度条、跳动声波直接监听 `media_kit.stream.position`，在 Dart 内存中进行毫秒级高刷贝塞尔平滑滚动，杜绝卡顿；
+  - **系统媒体节流广播 (Throttled Broadcast)**：向 `audio_service` 系统通道（Windows SMTC、Android MediaSession、iOS Control Center）进行 **1 秒防抖节流广播**（仅在每秒整点或发生 Seek/切歌事件时上报），彻底避免高频 IPC 广播导致的系统卡顿、电量雪崩或 Android ANR。
 - **声学 10 频段均衡器 (DSP Equalizer)**：
   - 通过 `libmpv` 的 `equalizer` 滤镜实时注入频响调校参数，包含 Flat、Bass Boost、Clear Vocal、Warm Jazz、Spatial 3D 预设与自定义调节。
 
-### 3. 双模动效歌词系统
+### 3. 双模动效歌词系统：应用内全屏大幕 + 独立透明穿透子窗口
 - **应用内全屏动效大幕 (`MusicFull`)**：
   - Apple Music 级动态流体光晕背景（提取唱片 3 处主色 + `CustomPainter` + `BackdropFilter`）。
   - 逐字/逐句高帧率自适应插值平滑贝塞尔滚动。
-  - 点击任意歌词行即刻跳播并触发轻微触感振动。
-- **跨平台全局桌面悬浮歌词**：
-  - Windows/macOS：多窗口半透明无边框窗口，支持鼠标防误触点击穿透。
-  - Android：`SYSTEM_ALERT_WINDOW` 系统悬浮窗。
+  - 点击任意歌词行即刻跳播并伴随触觉微震动反馈。
+- **独立透明桌面穿透歌词 (`desktop_multi_window`)**：
+  - 主播放器与桌面歌词分别运行在独立渲染引擎与窗口中；
+  - 桌面端配置 Win32 扩展样式 `WS_EX_TRANSPARENT | WS_EX_LAYERED`，支持鼠标防误触点击穿透（点击歌词直接操控其背后的游戏或网页）；
+  - 主窗口与悬浮歌词窗口通过跨窗口通信总线秒级同步歌词进度。
+  - Android 端使用 `SYSTEM_ALERT_WINDOW` 实现系统级浮窗歌词。
+
+### 4. 本地数据库：Drift (基于 SQLite3) 响应式存储架构
+- **选型决议**：选用 Flutter 官方主推的 `Drift` 响应式数据库取代 Isar，消除未来新版本 Flutter/Dart 的 C++ FFI 符号冲突风险。
+- **核心数据模型**：
+  - `SongsTable`：管理本地与在线歌曲元数据、比特率、本地缓存路径；
+  - `PlaylistsTable` 与 `PlaylistSongsTable`：支持歌单与歌曲多对多关联、自定义排序索引；
+  - `HistoryTable`：基于时间戳记录播放足迹；
+  - `SourcesTable`：自定义音源脚本元数据与版本管理；
+  - 内置 SQLite3 FTS5 全文搜索模块，支持本地数十万曲库毫秒级极速联想检索。
+
+### 5. 多端云同步与局域网直连 (LX-Sync 100% 原生兼容)
+- **WebDAV 云备份**：支持坚果云/Nextcloud/群晖，定时增量双向加密同步歌单与收藏夹。
+- **局域网扫码直连 (LX-Sync 协议兼容)**：
+  - 电脑端内置轻量 HTTP/WebSocket 服务（默认端口 `23332`），生成配对二维码；
+  - 移动端扫码直连，遵循 LX-Music 原生数据包规范（公私钥签名、gzip 压缩传输），**原生兼容与现有 LX-Music 电脑版/手机版双向互相同步歌单**！
 
 ---
 
 ## 📅 四、5 阶段渐进式工程实施路线图 (5-Phase Roadmap)
 
-- **Phase 1**：核心播放底座与 Modern Soft UI 设计系统组件库
-- **Phase 2**：QuickJS 音源脚本引擎与曲库打通
+- **Phase 1**：核心播放底座 (`media_kit` + `audio_service` 双流架构) 与 Modern Soft UI 设计系统组件库
+- **Phase 2**：QuickJS 音源脚本引擎 (Dart Polyfill 桥接) 与全网聚合搜索
 - **Phase 3**：桌面端 12 大核心视图与移动端 13 大页面 1:1 完整构建
-- **Phase 4**：双模动效歌词体系与声学 10 频段 EQ
-- **Phase 5**：多端云同步 (WebDAV / LAN QR 直连)、外部歌单解析与自动化 CI/CD
+- **Phase 4**：双模动效歌词体系 (`MusicFull` + `desktop_multi_window` 穿透歌词) 与声学 10 频段 EQ
+- **Phase 5**：Drift 本地数据库、多端云同步 (WebDAV / LX-Sync 局域网互联)、外部歌单解析与自动化 CI/CD
+
