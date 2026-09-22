@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:mellow_music/design_system/tokens.dart';
 import 'package:mellow_music/design_system/theme_provider.dart';
 import 'package:mellow_music/core/audio/audio_player_service.dart';
 import 'package:mellow_music/core/audio/equalizer_manager.dart';
