@@ -203,7 +203,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // 回到发现主页
-      expect(find.text('今日私享雷达'), findsOneWidget);
+      expect(find.text('专属雷达 · Daily Mixes'), findsOneWidget);
     });
   });
 }

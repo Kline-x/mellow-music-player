@@ -40,6 +40,8 @@ class AudioPlayerService extends ChangeNotifier {
   int get currentIndex => _currentIndex;
   bool get isPlaying => _isPlaying;
   Duration get currentPosition => _position;
+  Duration get position => _position;
+  Duration get duration => currentTrack?.duration ?? Duration.zero;
   PlaybackMode get playbackMode => _mode;
   double get volume => _volume;
   int? get sleepTimerMinutes => _sleepTimerMinutes;

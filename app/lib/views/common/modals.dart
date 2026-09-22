@@ -591,6 +591,13 @@ class _QuickSearchOverlayState extends State<QuickSearchOverlay> {
                         _onSearch('');
                       },
                     ),
+                  IconButton(
+                    key: const Key('quick_search_close_button'),
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    color: theme.textMuted,
+                    tooltip: '关闭',
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
                 ],
               ),
             ),
