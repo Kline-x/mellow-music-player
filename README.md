@@ -140,20 +140,19 @@ npm start
 
 ---
 
-## 🗺️ 后续工程化开发路线图 (Architecture Roadmap)
+## 🗺️ 工程化落地架构与进度跟踪 (Roadmap & Progress)
 
-本交互原型已解耦设计系统变量、页面结构与业务交互，为后续多端开发提供了直接落地的标准骨架：
+本项目正基于已验收的原型与设计规范，统一通过 **Flutter 跨平台单一代码库**（Windows、macOS、Android、iOS）进行生产级客户端落地开发，深度融合 **AlgerMusicPlayer** 的视觉动效美学与 **LX-Music** 的强大音源生态与多端同步能力。
 
-1. **方案 A：Electron / Tauri 桌面端开发**
-   - 将 `index.html` 与 `design_tokens.css` 迁移至 Vue 3 / React SPA 架构；
-   - 接入网易云/QQ音乐/本地文件系统 API；
-   - 利用 Tauri / Electron 原生无边框窗口能力绑定自定义 TitleBar 控制点。
-2. **方案 B：Flutter / React Native 跨平台移动端开发**
-   - 参照 `mobile.html` 的 4-Tab 路由与 8 大二级页面结构建立 Flutter 路由树；
-   - 使用 `BoxShadow` 映射 `design_tokens.css` 中的三层漫散射阴影规范；
-   - 接入 `just_audio` 与 `audio_service` 实现后台播放与通知栏控制。
-3. **方案 C：PWA 独立 Web 应用**
-   - 添加 `manifest.json` 与 Service Worker 离线缓存，支持直接“添加到主屏幕”作为原生 App 离线运行。
+- 📘 **完整架构蓝图与零遗漏页面对齐矩阵**：请查阅 [docs/ROADMAP.md](docs/ROADMAP.md)
+  - 桌面端 12 大核心主视图 + 4 大抽屉弹窗
+  - 移动端 4 大主 Tab + 9 大二级跳转页 + 5 大底部抽屉/浮层
+  - QuickJS 音源脚本沙箱、外部歌单链接解析、WebDAV/局域网扫码直连同步、透明穿透桌面歌词
+- 📊 **研发里程碑与实时进度看板**：请查阅 [docs/PROGRESS.md](docs/PROGRESS.md)
+  - Phase 0: Web 双端高保真原型与 83 项 E2E 自动化验收 (100% 完成)
+  - Phase 0.5: 零遗漏全页面矩阵规划与仓库架构初始化 (100% 完成)
+  - Phase 1: 核心播放底座与 Modern Soft UI 设计系统组件库 (进行中)
+  - Phase 2 ~ 5: 音源引擎、全页面构建、动效歌词/EQ、多端同步 (排期中)
 
 ---
 
