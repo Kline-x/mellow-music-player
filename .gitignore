@@ -16,3 +16,5 @@ Thumbs.db
 scratch/
 test_*.png
 .system_generated/
+release_windows/
+verify_windows_app.ps1
