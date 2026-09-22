@@ -2,7 +2,11 @@ Write-Host "============================================================" -Foreg
 Write-Host "  Mellow Music · Windows 桌面原生物理可执行文件 E2E 验收  " -ForegroundColor Cyan
 Write-Host "============================================================" -ForegroundColor Cyan
 
-$exePath = "E:\code\AI\vibCoding\mellow-music-player\app\build\windows\x64\runner\Release\mellow_music.exe"
+$dir = "E:\code\AI\vibCoding\mellow-music-player\app\build\windows\x64\runner\Release"
+$exePath = Join-Path $dir "app.exe"
+if (-not (Test-Path $exePath)) {
+    $exePath = Join-Path $dir "mellow_music.exe"
+}
 
 if (-not (Test-Path $exePath)) {
     Write-Error "❌ 找不到物理产物: $exePath"
