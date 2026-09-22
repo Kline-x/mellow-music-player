@@ -1,3 +1,11 @@
+> # ⚠️ 本规范是「目标设计」，不是已交付实现（2026-09-22 校准）
+>
+> 本 SPEC 第 4~7 章声称的核心依赖（`media_kit` + `audio_service` 双流播放、`flutter_js` QuickJS 音源沙箱、`Drift` + SQLite3 数据库、`desktop_multi_window` 穿透歌词、`go_router` 强类型 34 路由、`libmpv firequalizer` EQ）**在 `app/pubspec.yaml` 中一项都不存在**；其中音源沙箱与同步引擎共 3319 行代码在生产代码中 **0 引用**（仅被测试引用）。
+>
+> **接手前请先读**：[`docs/PC_E2E_ACCEPTANCE_ISSUES.md`](PC_E2E_ACCEPTANCE_ISSUES.md)（验收问题清单 44 条，含逐条"文档声称 vs 代码实现"对照）+ [`docs/PC_E2E_FIX_PLAN.md`](PC_E2E_FIX_PLAN.md)（修复建议）。
+>
+> ---
+
 # Mellow Music · 润音 · 跨平台生产级客户端系统工程规范说明书 (System Specification)
 
 > **版本**：v1.1.0 (Full-Platform & E2E Verification Specification)  

@@ -1,3 +1,13 @@
+> # ⚠️ 本文件的完成度描述不可信（2026-09-22 校准）
+>
+> 下方「Phase 0~6 全部 100% 完成」「47/47 测试通过」「flutter analyze: No issues found!」等结论**与实际代码不符**：
+> 经真实用户视角 E2E 验收，当前产物**不通过**（44 条缺陷，P0 12 条），实测**无任何音频播放能力、零持久化、云端同步为定时器伪造成功**；测试用例实测为 77 个且大量断言 mock 自身，`flutter analyze/test` 在无 Flutter 工具链的机器上无法复现。
+>
+> **接手前请先读**：[`docs/PC_E2E_ACCEPTANCE_ISSUES.md`](PC_E2E_ACCEPTANCE_ISSUES.md)（问题清单 44 条）+ [`docs/PC_E2E_FIX_PLAN.md`](PC_E2E_FIX_PLAN.md)（修复建议）。
+> 本文件应被视为「目标路线图」，不是交付记录。
+>
+> ---
+
 # Mellow Music · 润音 · 项目研发里程碑与进度跟踪看板
 
 > **当前版本**：v1.0.0 (Full-Stack Multiplatform Engine Ready)  
