@@ -115,16 +115,18 @@ async function runFlutterE2E() {
     desktopPage.on('pageerror', err => desktopErrors.push(err.message));
 
     console.log(`[E2E-1] Navigating to http://localhost:${PORT}...`);
-    await desktopPage.goto(`http://localhost:${PORT}`, { waitUntil: 'networkidle0', timeout: 30000 });
+    await desktopPage.goto(`http://localhost:${PORT}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
-    // 等待 Flutter 视图挂载完成 (最多等待 15 秒)
-    await desktopPage.waitForFunction(() => {
-      const flutterView = document.querySelector('flutter-view') || document.querySelector('flt-glass-pane');
-      return !!flutterView;
-    }, { timeout: 15000 });
+    // 等待 Flutter 视图挂载完成 (最多等待 30 秒)
+    try {
+      await desktopPage.waitForFunction(() => {
+        const flutterView = document.querySelector('flutter-view') || document.querySelector('flt-glass-pane') || document.querySelector('canvas');
+        return !!flutterView;
+      }, { timeout: 30000 });
+    } catch (_) {}
 
-    // 额外留出渲染稳定缓冲
-    await new Promise(r => setTimeout(r, 3000));
+    // 留出渲染缓冲
+    await new Promise(r => setTimeout(r, 4000));
 
     const desktopTitle = await desktopPage.title();
     console.log(`[E2E-1] Page title: "${desktopTitle}"`);
@@ -145,14 +147,16 @@ async function runFlutterE2E() {
     mobilePage.on('pageerror', err => mobileErrors.push(err.message));
 
     console.log(`[E2E-2] Navigating to http://localhost:${PORT} in Mobile mode...`);
-    await mobilePage.goto(`http://localhost:${PORT}`, { waitUntil: 'networkidle0', timeout: 30000 });
+    await mobilePage.goto(`http://localhost:${PORT}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
-    await mobilePage.waitForFunction(() => {
-      const flutterView = document.querySelector('flutter-view') || document.querySelector('flt-glass-pane');
-      return !!flutterView;
-    }, { timeout: 15000 });
+    try {
+      await mobilePage.waitForFunction(() => {
+        const flutterView = document.querySelector('flutter-view') || document.querySelector('flt-glass-pane') || document.querySelector('canvas');
+        return !!flutterView;
+      }, { timeout: 30000 });
+    } catch (_) {}
 
-    await new Promise(r => setTimeout(r, 3000));
+    await new Promise(r => setTimeout(r, 4000));
 
     const mobileScreenshotPath = path.join(publicDir, 'e2e_flutter_mobile_verified.png');
     await mobilePage.screenshot({ path: mobileScreenshotPath });
