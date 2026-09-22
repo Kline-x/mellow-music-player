@@ -66,17 +66,35 @@ function startServer() {
 }
 
 async function runFlutterE2E() {
-  const CHROME_PATH = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
-  const EDGE_PATH = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
-  const browserPath = fs.existsSync(CHROME_PATH) ? CHROME_PATH : EDGE_PATH;
-  console.log(`[Flutter E2E] Using browser binary: ${browserPath}`);
+  const candidates = [
+    process.env.CHROME_PATH,
+    process.env.PUPPETEER_EXECUTABLE_PATH,
+    // Linux
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    // Windows
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+    // macOS
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+  ].filter(Boolean);
+
+  let browserPath = candidates.find(p => fs.existsSync(p));
+  console.log(`[Flutter E2E] Detected browser binary: ${browserPath || 'default puppeteer'}`);
 
   const server = await startServer();
-  const browser = await puppeteer.launch({
-    executablePath: browserPath,
+  const launchOptions = {
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--autoplay-policy=no-user-gesture-required']
-  });
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--autoplay-policy=no-user-gesture-required']
+  };
+  if (browserPath) {
+    launchOptions.executablePath = browserPath;
+  }
+  const browser = await puppeteer.launch(launchOptions);
 
   const publicDir = path.join(__dirname, 'public');
   if (!fs.existsSync(publicDir)) {

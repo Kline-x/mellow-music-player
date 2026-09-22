@@ -7,8 +7,8 @@ on:
     branches: [ main ]
 
 jobs:
-  code-quality-and-tests:
-    name: Code Quality & Comprehensive Tests
+  code-quality-and-client-e2e:
+    name: Code Quality & Client E2E Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -28,7 +28,7 @@ jobs:
         working-directory: app
         run: flutter analyze
 
-      - name: Run Full Test Suites (47/47 Suites)
+      - name: Run Full Test Suites (Including Client Native E2E Journeys)
         working-directory: app
         run: flutter test
 
@@ -44,5 +44,32 @@ jobs:
       - name: Install Root E2E Dependencies
         run: npm ci || npm install
 
-      - name: Execute Real Product-level Puppeteer E2E Tests
+      - name: Execute Real Product-level E2E Verification
         run: node flutter_e2e_verify.mjs
+
+  build-windows-desktop-client:
+    name: Build Windows Desktop Release Executable
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        working-directory: app
+        run: flutter pub get
+
+      - name: Build Windows Desktop Release Binary (.exe)
+        working-directory: app
+        run: flutter build windows --release
+
+      - name: Archive and Upload Windows Desktop Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: mellow-music-windows-x64-release
+          path: app/build/windows/x64/runner/Release/
