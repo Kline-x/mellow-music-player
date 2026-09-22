@@ -5,7 +5,6 @@ import '../../design_system/tokens.dart';
 import '../../design_system/theme_provider.dart';
 import '../../design_system/soft_card.dart';
 import '../../design_system/soft_button.dart';
-import '../../design_system/recessed_well.dart';
 import '../../design_system/acoustic_mesh_glow.dart';
 import '../../design_system/mellow_image.dart';
 import '../../core/audio/audio_player_service.dart';
@@ -125,7 +124,7 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
                                   shape: BoxShape.circle,
                                   color: const Color(0xFF141414),
                                   boxShadow: [
-                                    BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 28, offset: const Offset(0, 10)),
+                                    BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 28, offset: const Offset(0, 10)),
                                   ],
                                   border: Border.all(color: const Color(0xFF282828), width: 5),
                                 ),
@@ -326,7 +325,7 @@ class MobileQueueBottomSheet extends StatelessWidget {
           Expanded(
             child: ListView.separated(
               itemCount: player.playlist.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
               itemBuilder: (context, idx) {
                 final t = player.playlist[idx];
                 final isCur = idx == player.currentIndex;
@@ -334,7 +333,7 @@ class MobileQueueBottomSheet extends StatelessWidget {
                 return SoftCard(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   borderRadius: MellowRadii.borderR12,
-                  color: isCur ? theme.accentColor.withOpacity(0.12) : null,
+                  color: isCur ? theme.accentColor.withValues(alpha: 0.12) : null,
                   onTap: () {
                     player.playTrack(t);
                     Navigator.of(context).pop();

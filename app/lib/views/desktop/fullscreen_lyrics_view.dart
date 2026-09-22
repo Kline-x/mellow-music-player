@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../design_system/tokens.dart';
 import '../../design_system/theme_provider.dart';
-import '../../design_system/soft_card.dart';
 import '../../design_system/soft_button.dart';
 import '../../design_system/acoustic_mesh_glow.dart';
 import '../../design_system/mellow_image.dart';
@@ -138,7 +137,7 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
                               color: const Color(0xFF111111),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.55),
+                                  color: Colors.black.withValues(alpha: 0.55),
                                   blurRadius: 36,
                                   offset: const Offset(0, 16),
                                 ),
@@ -255,7 +254,7 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
                                       fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
                                       color: isActive
                                           ? theme.accentColor
-                                          : (isDark ? Colors.white.withOpacity(0.35) : Colors.black.withOpacity(0.35)),
+                                          : (isDark ? Colors.white.withValues(alpha: 0.35) : Colors.black.withValues(alpha: 0.35)),
                                       height: 1.4,
                                     ),
                                     child: Text(line.text),

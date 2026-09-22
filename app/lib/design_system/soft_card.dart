@@ -70,8 +70,8 @@ class _SoftCardState extends State<SoftCard> {
     final border = widget.border ??
         Border.all(
           color: isDark
-              ? Colors.white.withOpacity(0.06)
-              : Colors.white.withOpacity(0.85),
+              ? Colors.white.withValues(alpha: 0.06)
+              : Colors.white.withValues(alpha: 0.85),
           width: 1.0,
         );
 

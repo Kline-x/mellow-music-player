@@ -8,9 +8,6 @@ import '../../design_system/soft_button.dart';
 import '../../design_system/recessed_well.dart';
 import '../../core/audio/audio_player_service.dart';
 import '../../core/audio/track_model.dart';
-import 'mobile_pages.dart';
-import 'mobile_sheets.dart';
-import '../common/modals.dart';
 
 /// 1. 移动端 Tab 1: 发现音乐 (MobileDiscoverTab)
 class MobileDiscoverTab extends StatelessWidget {
@@ -27,7 +24,6 @@ class MobileDiscoverTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
-    final isDark = theme.isDarkMode;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
@@ -169,9 +165,9 @@ class MobileDiscoverTab extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               shape: BoxShape.circle,
-              border: Border.all(color: color.withOpacity(0.25), width: 1.5),
+              border: Border.all(color: color.withValues(alpha: 0.25), width: 1.5),
             ),
             child: Icon(icon, color: color, size: 24),
           ),
@@ -466,7 +462,7 @@ class MobileProfileTab extends StatelessWidget {
                           width: 2.5,
                         ),
                         boxShadow: [
-                          BoxShadow(color: type.getColor(isDark).withOpacity(0.35), blurRadius: 8),
+                          BoxShadow(color: type.getColor(isDark).withValues(alpha: 0.35), blurRadius: 8),
                         ],
                       ),
                       child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 20) : null,

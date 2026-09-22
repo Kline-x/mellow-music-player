@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../design_system/tokens.dart';
 import '../design_system/theme_provider.dart';
 import '../design_system/soft_card.dart';
-import '../design_system/soft_button.dart';
 import '../design_system/acoustic_mesh_glow.dart';
 import '../design_system/mellow_image.dart';
 import '../core/audio/audio_player_service.dart';
@@ -145,8 +144,8 @@ class _MobileScaffoldState extends State<MobileScaffold> {
             child: Container(
               height: 64,
               decoration: BoxDecoration(
-                color: MellowColors.canvas(isDark).withOpacity(0.85),
-                border: Border(top: BorderSide(color: theme.borderColor.withOpacity(0.5))),
+                color: MellowColors.canvas(isDark).withValues(alpha: 0.85),
+                border: Border(top: BorderSide(color: theme.borderColor.withValues(alpha: 0.5))),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,

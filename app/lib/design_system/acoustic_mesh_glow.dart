@@ -53,9 +53,9 @@ class _AcousticMeshGlowState extends State<AcousticMeshGlow>
     // 默认提取 3 处声学色
     final baseColors = widget.colors ??
         [
-          accent.withOpacity(0.45 * intensity),
-          const Color(0xFF8B5CF6).withOpacity(0.35 * intensity),
-          const Color(0xFFEC4899).withOpacity(0.30 * intensity),
+          accent.withValues(alpha: 0.45 * intensity),
+          const Color(0xFF8B5CF6).withValues(alpha: 0.35 * intensity),
+          const Color(0xFFEC4899).withValues(alpha: 0.30 * intensity),
         ];
 
     return Stack(

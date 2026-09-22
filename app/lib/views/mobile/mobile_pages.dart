@@ -183,7 +183,7 @@ class _MobilePersonalFMPageState extends State<MobilePersonalFMPage>
                   shape: BoxShape.circle,
                   color: const Color(0xFF151515),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 30, offset: const Offset(0, 10)),
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 30, offset: const Offset(0, 10)),
                   ],
                   border: Border.all(color: const Color(0xFF282828), width: 5),
                 ),
@@ -318,7 +318,7 @@ class MobileToplistPage extends StatelessWidget {
       body: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
         itemCount: charts.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, idx) {
           final chartName = charts[idx];
           return SoftCard(
@@ -388,7 +388,7 @@ class MobileRadioPage extends StatelessWidget {
       body: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
         itemCount: radios.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, idx) {
           final r = radios[idx];
           return SoftCard(
@@ -450,7 +450,7 @@ class MobileArtistsPage extends StatelessWidget {
       body: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
         itemCount: artists.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
         itemBuilder: (context, idx) {
           final a = artists[idx];
           return SoftCard(

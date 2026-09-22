@@ -5,14 +5,11 @@ import 'package:mellow_music/design_system/tokens.dart';
 import 'package:mellow_music/design_system/theme_provider.dart';
 import 'package:mellow_music/design_system/soft_card.dart';
 import 'package:mellow_music/design_system/soft_button.dart';
-import 'package:mellow_music/design_system/recessed_well.dart';
 import 'package:mellow_music/design_system/mellow_image.dart';
-import 'package:mellow_music/core/audio/track_model.dart';
 import 'package:mellow_music/core/audio/audio_player_service.dart';
 import 'package:mellow_music/core/audio/equalizer_manager.dart';
 import 'package:mellow_music/navigation/desktop_scaffold.dart';
 import 'package:mellow_music/navigation/mobile_scaffold.dart';
-import 'package:mellow_music/navigation/adaptive_scaffold.dart';
 
 Widget createTestApp(Widget child) {
   return MultiProvider(

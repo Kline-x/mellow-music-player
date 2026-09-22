@@ -82,7 +82,7 @@ class _SoftButtonState extends State<SoftButton> {
     } else if (widget.isActive) {
       shadows = [
         BoxShadow(
-          color: accent.withOpacity(0.35),
+          color: accent.withValues(alpha: 0.35),
           offset: const Offset(0, 4),
           blurRadius: 12,
         ),
@@ -162,8 +162,8 @@ class _SoftButtonState extends State<SoftButton> {
                 color: widget.isActive
                     ? accent
                     : (isDark
-                        ? Colors.white.withOpacity(0.06)
-                        : Colors.white.withOpacity(0.85)),
+                        ? Colors.white.withValues(alpha: 0.06)
+                        : Colors.white.withValues(alpha: 0.85)),
                 width: 1,
               ),
             ),

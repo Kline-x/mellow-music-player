@@ -86,7 +86,7 @@ class PlaybackQueueView extends StatelessWidget {
                   )
                 : ListView.separated(
                     itemCount: player.playlist.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       final track = player.playlist[index];
                       final isCurrent = index == player.currentIndex;
@@ -95,7 +95,7 @@ class PlaybackQueueView extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         borderRadius: MellowRadii.borderR16,
                         color: isCurrent
-                            ? theme.accentColor.withOpacity(0.12)
+                            ? theme.accentColor.withValues(alpha: 0.12)
                             : null,
                         onTap: () => player.playTrack(track),
                         child: Row(
@@ -184,7 +184,7 @@ class EqualizerModal extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: theme.accentColor.withOpacity(0.15),
+                        color: theme.accentColor.withValues(alpha: 0.15),
                         borderRadius: MellowRadii.borderR12,
                       ),
                       child: Icon(Icons.tune_rounded, color: theme.accentColor, size: 22),
@@ -269,7 +269,7 @@ class EqualizerModal extends StatelessWidget {
                                 activeTrackColor: theme.accentColor,
                                 inactiveTrackColor: isDark ? Colors.white12 : Colors.black12,
                                 thumbColor: theme.accentColor,
-                                overlayColor: theme.accentColor.withOpacity(0.15),
+                                overlayColor: theme.accentColor.withValues(alpha: 0.15),
                                 thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
                               ),
                               child: Slider(
@@ -301,7 +301,7 @@ class EqualizerModal extends StatelessWidget {
                   children: [
                     Switch.adaptive(
                       value: eq.isEnabled,
-                      activeColor: theme.accentColor,
+                      activeTrackColor: theme.accentColor,
                       onChanged: (_) => eq.toggleEnabled(),
                     ),
                     Text(
@@ -332,7 +332,6 @@ class SleepTimerModal extends StatelessWidget {
   Widget build(BuildContext context) {
     final player = context.watch<AudioPlayerService>();
     final theme = context.watch<ThemeProvider>();
-    final isDark = theme.isDarkMode;
 
     final remaining = player.sleepTimerRemainingSeconds;
     final hasActiveTimer = player.sleepTimerMinutes != null;
@@ -357,7 +356,7 @@ class SleepTimerModal extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: theme.accentColor.withOpacity(0.15),
+                        color: theme.accentColor.withValues(alpha: 0.15),
                         borderRadius: MellowRadii.borderR12,
                       ),
                       child: Icon(Icons.bedtime_rounded, color: theme.accentColor, size: 22),
@@ -494,7 +493,6 @@ class _QuickSearchOverlayState extends State<QuickSearchOverlay> {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
-    final isDark = theme.isDarkMode;
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -550,7 +548,7 @@ class _QuickSearchOverlayState extends State<QuickSearchOverlay> {
                   : ListView.separated(
                       shrinkWrap: true,
                       itemCount: _results.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 6),
+                      separatorBuilder: (_, _) => const SizedBox(height: 6),
                       itemBuilder: (context, index) {
                         final track = _results[index];
                         return SoftCard(

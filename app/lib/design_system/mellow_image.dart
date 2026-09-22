@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// 安全声学图片渲染容器：内置防撑爆尺寸约束、圆角与优雅占位降级
@@ -36,7 +35,7 @@ class MellowImage extends StatelessWidget {
     Widget placeholder = Container(
       width: width,
       height: height,
-      color: Colors.grey.withOpacity(0.15),
+      color: Colors.grey.withValues(alpha: 0.15),
       alignment: Alignment.center,
       child: Icon(
         Icons.music_note_rounded,

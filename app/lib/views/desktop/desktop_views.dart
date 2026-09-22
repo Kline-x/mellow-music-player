@@ -18,7 +18,6 @@ class DesktopDiscoverView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
-    final isDark = theme.isDarkMode;
 
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
@@ -38,7 +37,7 @@ class DesktopDiscoverView extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: theme.accentColor.withOpacity(0.15),
+                            color: theme.accentColor.withValues(alpha: 0.15),
                             borderRadius: MellowRadii.borderPill,
                           ),
                           child: Row(
@@ -244,7 +243,7 @@ class DesktopDiscoverView extends StatelessWidget {
             padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: theme.accentColor.withOpacity(0.4), width: 2),
+              border: Border.all(color: theme.accentColor.withValues(alpha: 0.4), width: 2),
             ),
             child: MellowAvatar(
               radius: 40,
@@ -956,7 +955,7 @@ class DesktopSettingsView extends StatelessWidget {
                               width: 3,
                             ),
                             boxShadow: [
-                              BoxShadow(color: type.getColor(isDark).withOpacity(0.4), blurRadius: 10),
+                              BoxShadow(color: type.getColor(isDark).withValues(alpha: 0.4), blurRadius: 10),
                             ],
                           ),
                           child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 22) : null,
@@ -1039,7 +1038,7 @@ class DesktopSourceManagerView extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: Colors.green.withOpacity(0.15), borderRadius: MellowRadii.borderR16),
+                decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.15), borderRadius: MellowRadii.borderR16),
                 child: const Icon(Icons.check_circle_outline_rounded, color: Colors.green, size: 28),
               ),
               const SizedBox(width: 16),
@@ -1053,7 +1052,7 @@ class DesktopSourceManagerView extends StatelessWidget {
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(color: theme.accentColor.withOpacity(0.15), borderRadius: MellowRadii.borderR8),
+                          decoration: BoxDecoration(color: theme.accentColor.withValues(alpha: 0.15), borderRadius: MellowRadii.borderR8),
                           child: Text('v2.1.0 · 运行中', style: TextStyle(fontSize: 10.5, color: theme.accentColor, fontWeight: FontWeight.bold)),
                         ),
                       ],
@@ -1062,7 +1061,7 @@ class DesktopSourceManagerView extends StatelessWidget {
                   ],
                 ),
               ),
-              Switch.adaptive(value: true, activeColor: theme.accentColor, onChanged: (_) {}),
+              Switch.adaptive(value: true, activeTrackColor: theme.accentColor, onChanged: (_) {}),
             ],
           ),
         ),

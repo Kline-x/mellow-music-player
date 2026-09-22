@@ -42,7 +42,7 @@ class RecessedWell extends StatelessWidget {
         borderRadius: r,
         boxShadow: MellowShadows.recessed(isDark),
         border: Border.all(
-          color: isDark ? Colors.black45 : const Color(0xFFD1D5DB).withOpacity(0.6),
+          color: isDark ? Colors.black45 : const Color(0xFFD1D5DB).withValues(alpha: 0.6),
           width: 0.8,
         ),
       ),

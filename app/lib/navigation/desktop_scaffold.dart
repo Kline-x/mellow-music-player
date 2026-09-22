@@ -40,8 +40,6 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
-    final player = context.watch<AudioPlayerService>();
-    final isDark = theme.isDarkMode;
 
     if (_isFullscreenLyrics) {
       return DesktopFullscreenLyricsView(
@@ -110,8 +108,8 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
       height: 52,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        color: MellowColors.canvas(isDark).withOpacity(0.6),
-        border: Border(bottom: BorderSide(color: theme.borderColor.withOpacity(0.5))),
+        color: MellowColors.canvas(isDark).withValues(alpha: 0.6),
+        border: Border(bottom: BorderSide(color: theme.borderColor.withValues(alpha: 0.5))),
       ),
       child: Row(
         children: [
@@ -161,7 +159,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white10 : Colors.black.withOpacity(0.06),
+                      color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
                       borderRadius: MellowRadii.borderR8,
                     ),
                     child: Text('⌘ K', style: TextStyle(fontSize: 10, color: theme.textSecondary, fontWeight: FontWeight.bold)),
@@ -203,9 +201,6 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
 
   // 左侧悬浮胶囊侧边栏
   Widget _buildSidebar(BuildContext context) {
-    final theme = context.watch<ThemeProvider>();
-    final isDark = theme.isDarkMode;
-
     return Container(
       width: 220,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
@@ -245,7 +240,6 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
   }
 
   Widget _buildNavItem(String id, String label, IconData icon) {
-    final theme = context.watch<ThemeProvider>();
     final isSelected = _activeView == id;
 
     return Padding(

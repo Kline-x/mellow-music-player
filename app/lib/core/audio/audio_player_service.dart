@@ -15,7 +15,7 @@ enum PlaybackMode {
 
 /// 播放器核心业务与状态管理服务 (双流架构)
 class AudioPlayerService extends ChangeNotifier {
-  List<Track> _playlist = List.from(mockPresetTracks);
+  final List<Track> _playlist = List.from(mockPresetTracks);
   final List<Track> _playHistory = [];
   final Set<String> _favoriteIds = {'track-1', 'track-3', 'track-5', 'track-6'};
 
