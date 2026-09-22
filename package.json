@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "Mellow Music · 润音 - Modern Soft UI high-fidelity music player (Desktop & Mobile)",
   "type": "module",
-  "main": "server.js",
+  "main": "server.cjs",
   "scripts": {
-    "start": "node server.js",
+    "start": "node server.cjs",
     "test": "node e2e_test.js",
     "test:e2e": "node e2e_test.js"
   },

@@ -79,7 +79,9 @@ jobs:
 
       - name: Package macOS Binary
         run: |
-          ditto -c -k --sequesterRsrc --keepParent app/build/macos/Build/Products/Release/mellow_music.app Mellow-Music-macOS.zip
+          APP_PATH=$(find app/build/macos/Build/Products/Release -maxdepth 1 -name "*.app" | head -n1)
+          test -n "$APP_PATH" || { echo "macOS .app not found"; exit 1; }
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" Mellow-Music-macOS.zip
 
       - name: Upload macOS Artifact
         uses: actions/upload-artifact@v4

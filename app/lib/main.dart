@@ -4,10 +4,12 @@ import 'design_system/tokens.dart';
 import 'design_system/theme_provider.dart';
 import 'core/audio/audio_player_service.dart';
 import 'core/audio/equalizer_manager.dart';
+import 'core/storage/storage_service.dart';
 import 'navigation/adaptive_scaffold.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await StorageService.instance.init();
   runApp(
     MultiProvider(
       providers: [

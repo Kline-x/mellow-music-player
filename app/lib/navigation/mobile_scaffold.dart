@@ -98,90 +98,63 @@ class _MobileScaffoldState extends State<MobileScaffold> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // 1. 左侧时间 (10:09)
-          Text(
-            '10:09',
-            style: TextStyle(
-              fontSize: 14.5,
-              fontWeight: FontWeight.w700,
-              color: theme.textPrimary,
-              letterSpacing: -0.2,
+      child: Center(
+        child: GestureDetector(
+          key: const Key('dynamic_island_capsule'),
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => MobilePlayerBottomSheet(onClose: () => Navigator.of(context).pop()),
+            );
+          },
+          child: Container(
+            height: 32,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: const Color(0xFF09090B),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+              border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 0.6),
             ),
-          ),
-
-          // 2. 居中黑色胶囊灵动岛 (Dynamic Island)
-          GestureDetector(
-            key: const Key('dynamic_island_capsule'),
-            onTap: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (_) => MobilePlayerBottomSheet(onClose: () => Navigator.of(context).pop()),
-              );
-            },
-            child: Container(
-              height: 32,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF09090B),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.35),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-                border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 0.6),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // 跳动音频频谱 3 根竖线
-                  _buildDynamicIslandSpectrum(player.isPlaying, theme.accentColor),
-                  const SizedBox(width: 8),
-                  // 当前歌曲标题
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 88),
-                    child: Text(
-                      track.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600,
-                      ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 跳动音频频谱 3 根竖线
+                _buildDynamicIslandSpectrum(player.isPlaying, theme.accentColor),
+                const SizedBox(width: 8),
+                // 当前歌曲标题
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 120),
+                  child: Text(
+                    track.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  // 播放小三角
-                  Icon(
-                    player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                    color: theme.accentColor,
-                    size: 14,
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 6),
+                // 播放小三角
+                Icon(
+                  player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                  color: theme.accentColor,
+                  size: 14,
+                ),
+              ],
             ),
           ),
-
-          // 3. 右侧状态栏图标组 (信号、WiFi、电池电量)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.signal_cellular_alt_rounded, size: 15, color: theme.textSecondary),
-              const SizedBox(width: 4),
-              Icon(Icons.wifi_rounded, size: 15, color: theme.textSecondary),
-              const SizedBox(width: 4),
-              Icon(Icons.battery_charging_full_rounded, size: 17, color: theme.textSecondary),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }

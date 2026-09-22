@@ -150,7 +150,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                     iconSize: 20,
                     isCircle: true,
                     padding: const EdgeInsets.all(6),
-                    onTap: () {},
+                    onTap: null,
                   ),
                 ],
               ),

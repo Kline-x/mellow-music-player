@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'track_model.dart';
+import 'player_backend.dart';
 import '../sources/online_music_service.dart';
+import '../storage/storage_service.dart';
 
 /// 播放循环模式
 enum PlaybackMode {
@@ -14,8 +16,14 @@ enum PlaybackMode {
   const PlaybackMode(this.label);
 }
 
-/// 播放器核心业务与状态管理服务 (双流架构)
+/// 播放器核心业务与状态管理服务 (物理声卡双流引擎 + 真实落盘持久化)
 class AudioPlayerService extends ChangeNotifier {
+  final AudioPlayerBackend _backend;
+  StreamSubscription<Duration>? _positionSub;
+  StreamSubscription<Duration>? _durationSub;
+  StreamSubscription<bool>? _playingSub;
+  StreamSubscription<void>? _completeSub;
+
   final List<Track> _playlist = List.from(mockPresetTracks);
   final List<Track> _playHistory = [];
   final Set<String> _favoriteIds = {'track-1', 'track-3', 'track-5', 'track-6'};
@@ -24,10 +32,10 @@ class AudioPlayerService extends ChangeNotifier {
   int _currentIndex = 0;
   bool _isPlaying = false;
   Duration _position = Duration.zero;
+  Duration _duration = Duration.zero;
   PlaybackMode _mode = PlaybackMode.sequence;
   double _volume = 0.85;
 
-  Timer? _positionTicker;
   Timer? _sleepTimer;
   int? _sleepTimerMinutes;
   int _sleepTimerRemainingSeconds = 0;
@@ -41,7 +49,7 @@ class AudioPlayerService extends ChangeNotifier {
   bool get isPlaying => _isPlaying;
   Duration get currentPosition => _position;
   Duration get position => _position;
-  Duration get duration => currentTrack?.duration ?? Duration.zero;
+  Duration get duration => _duration > Duration.zero ? _duration : (currentTrack?.duration ?? Duration.zero);
   PlaybackMode get playbackMode => _mode;
   double get volume => _volume;
   int? get sleepTimerMinutes => _sleepTimerMinutes;
@@ -73,9 +81,87 @@ class AudioPlayerService extends ChangeNotifier {
     );
   }
 
-  AudioPlayerService() {
+  AudioPlayerService({AudioPlayerBackend? backend})
+      : _backend = backend ?? AudioPlayerBackendFactory.create() {
+    _loadFromStorage();
+    _initAudioListeners();
     if (_playlist.isNotEmpty) {
       _recordHistory(_playlist[0]);
+    }
+  }
+
+  void _loadFromStorage() {
+    final storage = StorageService.instance;
+
+    // 1. 恢复音量
+    final savedVolume = storage.getVolume();
+    if (savedVolume != null) {
+      _volume = savedVolume.clamp(0.0, 1.0);
+      _backend.setVolume(_volume);
+    }
+
+    // 2. 恢复播放模式
+    final savedMode = storage.getPlaybackMode();
+    if (savedMode != null) {
+      for (final m in PlaybackMode.values) {
+        if (m.name == savedMode) {
+          _mode = m;
+          break;
+        }
+      }
+    }
+
+    // 3. 恢复红心收藏
+    final savedFavs = storage.getFavoriteIds();
+    if (savedFavs != null) {
+      _favoriteIds.clear();
+      _favoriteIds.addAll(savedFavs);
+    }
+
+    // 4. 恢复历史记录
+    final savedHistory = storage.getPlayHistory();
+    if (savedHistory != null && savedHistory.isNotEmpty) {
+      _playHistory.clear();
+      _playHistory.addAll(savedHistory);
+    }
+  }
+
+  void _initAudioListeners() {
+    _positionSub = _backend.onPositionChanged.listen((p) {
+      _position = p;
+      notifyListeners();
+    });
+
+    _durationSub = _backend.onDurationChanged.listen((d) {
+      if (d > Duration.zero) {
+        _duration = d;
+        notifyListeners();
+      }
+    });
+
+    _playingSub = _backend.onPlayingChanged.listen((playing) {
+      if (_isPlaying != playing) {
+        _isPlaying = playing;
+        notifyListeners();
+      }
+    });
+
+    _completeSub = _backend.onPlayerComplete.listen((_) {
+      _onTrackCompleted();
+    });
+  }
+
+  void _onTrackCompleted() {
+    if (_pauseAfterCurrent) {
+      pause();
+      cancelSleepTimer();
+      return;
+    }
+    if (_mode == PlaybackMode.singleLoop) {
+      seek(Duration.zero);
+      play();
+    } else {
+      next();
     }
   }
 
@@ -99,7 +185,7 @@ class AudioPlayerService extends ChangeNotifier {
     _currentIndex = startIndex.clamp(0, _playlist.length - 1);
     _position = Duration.zero;
     _recordHistory(_playlist[_currentIndex]);
-    play();
+    playTrack(_playlist[_currentIndex]);
     _loadLyricIfNeed(_playlist[_currentIndex]);
   }
 
@@ -129,13 +215,16 @@ class AudioPlayerService extends ChangeNotifier {
   void play() {
     if (_playlist.isEmpty) return;
     _isPlaying = true;
-    _startPositionTicker();
+    final track = currentTrack;
+    if (track != null) {
+      _executeRealPlay(track);
+    }
     notifyListeners();
   }
 
   void pause() {
     _isPlaying = false;
-    _positionTicker?.cancel();
+    _backend.pause();
     notifyListeners();
   }
 
@@ -149,8 +238,25 @@ class AudioPlayerService extends ChangeNotifier {
     }
     _position = Duration.zero;
     _recordHistory(_playlist[_currentIndex]);
-    play();
+    _isPlaying = true;
+    _executeRealPlay(_playlist[_currentIndex]);
+    notifyListeners();
     _loadLyricIfNeed(_playlist[_currentIndex]);
+  }
+
+  Future<void> _executeRealPlay(Track track) async {
+    try {
+      if (track.audioUrl != null && track.audioUrl!.isNotEmpty) {
+        await _backend.play(track.audioUrl!);
+      } else if (track.localPath != null && track.localPath!.isNotEmpty) {
+        await _backend.play(track.localPath!);
+      } else {
+        await _backend.resume();
+      }
+      await _backend.setVolume(_volume);
+    } catch (e) {
+      debugPrint('[AudioPlayerService] 真实音频播放调度异常: $e');
+    }
   }
 
   void next() {
@@ -164,16 +270,14 @@ class AudioPlayerService extends ChangeNotifier {
     _position = Duration.zero;
     _recordHistory(_playlist[_currentIndex]);
     if (_isPlaying) {
-      play();
-    } else {
-      notifyListeners();
+      _executeRealPlay(_playlist[_currentIndex]);
     }
+    notifyListeners();
   }
 
   void previous() {
     if (_playlist.isEmpty) return;
     if (_position.inSeconds > 3) {
-      // 超过3秒则重头播放当前歌曲
       seek(Duration.zero);
       return;
     }
@@ -186,21 +290,21 @@ class AudioPlayerService extends ChangeNotifier {
     _position = Duration.zero;
     _recordHistory(_playlist[_currentIndex]);
     if (_isPlaying) {
-      play();
-    } else {
-      notifyListeners();
+      _executeRealPlay(_playlist[_currentIndex]);
     }
+    notifyListeners();
   }
 
   void seek(Duration target) {
-    final duration = currentTrack?.duration ?? Duration.zero;
+    final curDuration = duration;
     if (target < Duration.zero) {
       _position = Duration.zero;
-    } else if (target > duration) {
-      _position = duration;
+    } else if (curDuration > Duration.zero && target > curDuration) {
+      _position = curDuration;
     } else {
       _position = target;
     }
+    _backend.seek(_position);
     notifyListeners();
   }
 
@@ -212,6 +316,7 @@ class AudioPlayerService extends ChangeNotifier {
     } else {
       _favoriteIds.add(id);
     }
+    StorageService.instance.saveFavoriteIds(_favoriteIds);
     notifyListeners();
   }
 
@@ -219,6 +324,8 @@ class AudioPlayerService extends ChangeNotifier {
 
   void setVolume(double val) {
     _volume = val.clamp(0.0, 1.0);
+    _backend.setVolume(_volume);
+    StorageService.instance.saveVolume(_volume);
     notifyListeners();
   }
 
@@ -234,11 +341,13 @@ class AudioPlayerService extends ChangeNotifier {
         _mode = PlaybackMode.sequence;
         break;
     }
+    StorageService.instance.savePlaybackMode(_mode.name);
     notifyListeners();
   }
 
   void setPlaybackMode(PlaybackMode mode) {
     _mode = mode;
+    StorageService.instance.savePlaybackMode(_mode.name);
     notifyListeners();
   }
 
@@ -299,39 +408,17 @@ class AudioPlayerService extends ChangeNotifier {
     if (_playHistory.length > 50) {
       _playHistory.removeLast();
     }
-  }
-
-  // 60fps 高刷进度驱动 (前台丝滑歌词插值，每 50ms 模拟推进)
-  void _startPositionTicker() {
-    _positionTicker?.cancel();
-    _positionTicker = Timer.periodic(const Duration(milliseconds: 50), (timer) {
-      final track = currentTrack;
-      if (track == null) return;
-
-      final nextPos = _position + const Duration(milliseconds: 50);
-      if (nextPos >= track.duration) {
-        if (_pauseAfterCurrent) {
-          pause();
-          cancelSleepTimer();
-          return;
-        }
-
-        if (_mode == PlaybackMode.singleLoop) {
-          _position = Duration.zero;
-        } else {
-          next();
-        }
-      } else {
-        _position = nextPos;
-      }
-      notifyListeners();
-    });
+    StorageService.instance.savePlayHistory(_playHistory);
   }
 
   @override
   void dispose() {
-    _positionTicker?.cancel();
+    _positionSub?.cancel();
+    _durationSub?.cancel();
+    _playingSub?.cancel();
+    _completeSub?.cancel();
     _sleepTimer?.cancel();
+    _backend.dispose();
     super.dispose();
   }
 }

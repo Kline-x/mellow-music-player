@@ -169,157 +169,188 @@ class EqualizerModal extends StatelessWidget {
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(20),
-      child: SoftCard(
-        width: 640,
-        padding: const EdgeInsets.all(24),
-        borderRadius: MellowRadii.borderR24,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 640),
+        child: SoftCard(
+          padding: const EdgeInsets.all(22),
+          borderRadius: MellowRadii.borderR24,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: theme.accentColor.withValues(alpha: 0.15),
-                        borderRadius: MellowRadii.borderR12,
-                      ),
-                      child: Icon(Icons.tune_rounded, color: theme.accentColor, size: 22),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '声学 10 频段硬件均衡器 (DSP EQ)',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: theme.textPrimary,
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: theme.accentColor.withValues(alpha: 0.15),
+                              borderRadius: MellowRadii.borderR12,
+                            ),
+                            child: Icon(Icons.tune_rounded, color: theme.accentColor, size: 22),
                           ),
-                        ),
-                        Text(
-                          '基于 libmpv firequalizer 高保真声学校准',
-                          style: TextStyle(fontSize: 12, color: theme.textMuted),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                SoftButton(
-                  icon: Icons.close_rounded,
-                  isCircle: true,
-                  onTap: () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            // 预设选择胶囊
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: EqualizerPreset.values.map((preset) {
-                  final isSelected = eq.currentPreset == preset;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: SoftButton(
-                      label: preset.label,
-                      isActive: isSelected,
-                      isPill: true,
-                      onTap: () => eq.applyPreset(preset),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // 10 频段滑块流
-            RecessedWell(
-              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-              borderRadius: MellowRadii.borderR20,
-              child: SizedBox(
-                height: 200,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: List.generate(10, (index) {
-                    final freq = EqualizerManager.frequencyBands[index];
-                    final gain = eq.bandGains[index];
-
-                    return Column(
-                      children: [
-                        Text(
-                          '${gain > 0 ? '+' : ''}${gain.toStringAsFixed(0)}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: gain != 0 ? theme.accentColor : theme.textMuted,
-                          ),
-                        ),
-                        Expanded(
-                          child: RotatedBox(
-                            quarterTurns: 3,
-                            child: SliderTheme(
-                              data: SliderTheme.of(context).copyWith(
-                                trackHeight: 4,
-                                activeTrackColor: theme.accentColor,
-                                inactiveTrackColor: isDark ? Colors.white12 : Colors.black12,
-                                thumbColor: theme.accentColor,
-                                overlayColor: theme.accentColor.withValues(alpha: 0.15),
-                                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
-                              ),
-                              child: Slider(
-                                value: gain,
-                                min: -12.0,
-                                max: 12.0,
-                                onChanged: (val) => eq.setBandGain(index, val),
-                              ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '声学 10 频段均衡器 (EQ)',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.textPrimary,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  '多频段声音动态补偿与声学校准',
+                                  style: TextStyle(fontSize: 12, color: theme.textMuted),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                        Text(
-                          freq,
-                          style: TextStyle(fontSize: 11, color: theme.textSecondary),
-                        ),
-                      ],
-                    );
-                  }),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // 底部重置与直通
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Switch.adaptive(
-                      value: eq.isEnabled,
-                      activeTrackColor: theme.accentColor,
-                      onChanged: (_) => eq.toggleEnabled(),
+                        ],
+                      ),
                     ),
-                    Text(
-                      eq.isEnabled ? '均衡器已启用' : '直通原声 (已旁路)',
-                      style: TextStyle(fontSize: 13, color: theme.textSecondary),
+                    const SizedBox(width: 8),
+                    SoftButton(
+                      icon: Icons.close_rounded,
+                      isCircle: true,
+                      onTap: () => Navigator.of(context).pop(),
                     ),
                   ],
                 ),
-                SoftButton(
-                  label: '恢复默认 (Flat)',
-                  icon: Icons.refresh_rounded,
-                  onTap: () => eq.reset(),
+                const SizedBox(height: 20),
+
+                // 预设选择胶囊
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: EqualizerPreset.values.map((preset) {
+                      final isSelected = eq.currentPreset == preset;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: SoftButton(
+                          label: preset.label,
+                          isActive: isSelected,
+                          isPill: true,
+                          onTap: () => eq.applyPreset(preset),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // 10 频段滑块流 (支持自适应与小屏平滑水平滚动)
+                RecessedWell(
+                  padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+                  borderRadius: MellowRadii.borderR20,
+                  child: SizedBox(
+                    height: 200,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: constraints.maxWidth < 520
+                              ? const BouncingScrollPhysics()
+                              : const NeverScrollableScrollPhysics(),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minWidth: constraints.maxWidth,
+                              maxWidth: constraints.maxWidth < 520 ? 520 : constraints.maxWidth,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: List.generate(10, (index) {
+                                final freq = EqualizerManager.frequencyBands[index];
+                                final gain = eq.bandGains[index];
+
+                                return Column(
+                                  children: [
+                                    Text(
+                                      '${gain > 0 ? '+' : ''}${gain.toStringAsFixed(0)}',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: gain != 0 ? theme.accentColor : theme.textMuted,
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: RotatedBox(
+                                        quarterTurns: 3,
+                                        child: SliderTheme(
+                                          data: SliderTheme.of(context).copyWith(
+                                            trackHeight: 4,
+                                            activeTrackColor: theme.accentColor,
+                                            inactiveTrackColor: isDark ? Colors.white12 : Colors.black12,
+                                            thumbColor: theme.accentColor,
+                                            overlayColor: theme.accentColor.withValues(alpha: 0.15),
+                                            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+                                          ),
+                                          child: Slider(
+                                            value: gain,
+                                            min: -12.0,
+                                            max: 12.0,
+                                            onChanged: (val) => eq.setBandGain(index, val),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      freq,
+                                      style: TextStyle(fontSize: 11, color: theme.textSecondary),
+                                    ),
+                                  ],
+                                );
+                              }),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // 底部重置与直通 (Wrap 弹性流排版，防止窄屏右侧溢出)
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 10,
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Switch.adaptive(
+                          value: eq.isEnabled,
+                          activeTrackColor: theme.accentColor,
+                          onChanged: (_) => eq.toggleEnabled(),
+                        ),
+                        Text(
+                          eq.isEnabled ? '均衡器已启用' : '直通原声 (已旁路)',
+                          style: TextStyle(fontSize: 13, color: theme.textSecondary),
+                        ),
+                      ],
+                    ),
+                    SoftButton(
+                      label: '恢复默认 (Flat)',
+                      icon: Icons.refresh_rounded,
+                      onTap: () => eq.reset(),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );

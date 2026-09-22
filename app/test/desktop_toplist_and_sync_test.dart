@@ -92,35 +92,27 @@ void main() {
       expect(find.text('支持 WebDAV 私有云盘实时双向热备，与局域网近场毫秒级 P2P 跨端流转'), findsOneWidget);
 
       // 2. 验证数据指标健康看板
-      expect(find.text('已同步红心收藏'), findsOneWidget);
+      expect(find.text('本地红心收藏'), findsOneWidget);
       expect(find.text('自建与导入歌单'), findsOneWidget);
       expect(find.text('播放足迹历史'), findsOneWidget);
 
-      // 3. 验证 WebDAV 模块与云端备份触发
+      // 3. 验证 WebDAV 模块与云端备份触发诚实提示
       expect(find.text('WebDAV 私有云盘同步'), findsOneWidget);
       final backupBtn = find.text('立即云端备份');
       expect(backupBtn, findsOneWidget);
       await tester.tap(backupBtn);
+      await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
-
-      // 等待备份完成模拟 (900ms)
-      await tester.pump(const Duration(milliseconds: 1000));
-      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.text('云端同步功能尚未完整接入，请勿依赖此页面备份数据'), findsOneWidget);
 
       // 4. 滚动到局域网协同设备模块
-      final sendBtn = find.text('投送当前播放列表');
-      await tester.scrollUntilVisible(sendBtn, 200, scrollable: find.byType(Scrollable).first);
+      final lanTitle = find.text('局域网近场设备协同 (LAN P2P)');
+      await tester.scrollUntilVisible(lanTitle, 200, scrollable: find.byType(Scrollable).first);
       await tester.pump(const Duration(milliseconds: 100));
 
-      // 验证局域网近场协同 (LAN P2P) 在线设备与投送
-      expect(find.text('局域网近场设备协同 (LAN P2P)'), findsOneWidget);
-      expect(find.text('Gaore 的 iPhone 15 Pro'), findsOneWidget);
-      expect(sendBtn, findsOneWidget);
-      await tester.tap(sendBtn);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(find.text('已向 Gaore 的 iPhone 15 Pro 成功投送当前播放列表！'), findsOneWidget);
+      // 验证局域网近场协同模块与当前未发现配对设备的真实状态
+      expect(lanTitle, findsOneWidget);
+      expect(find.text('当前未发现局域网配对设备'), findsOneWidget);
 
       audioPlayerService.pause();
       await tester.pump(const Duration(milliseconds: 100));

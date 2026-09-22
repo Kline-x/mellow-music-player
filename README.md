@@ -29,13 +29,13 @@
 ## 📸 界面预览 (UI Gallery)
 
 ### 🖥️ 桌面端沉浸工作台 (Desktop 1440x900)
-| 浅色温润白瓷模式 | 深色石墨夜间模式 |
+| 桌面端主工作台 (Modern Soft UI) | 巅峰榜单与多端同步视图 |
 | :---: | :---: |
-| ![Desktop Light](public/e2e_desktop_verified.png) | ![Desktop Dark](public/showcase_desktop_dark.png) |
+| ![Desktop Light](public/e2e_flutter_desktop_verified.png) | ![Desktop Toplist](public/e2e_flutter_desktop_toplist.png) |
 
-| 沉浸式动效大幕歌词与旋转唱片 | 声学校准均衡器 EQ 模态框 |
+| 多端协同中心视图 | 声学校准均衡器 EQ 模态框 |
 | :---: | :---: |
-| ![Desktop Lyrics](public/showcase_desktop_lyrics.png) | ![Desktop EQ](public/showcase_mobile_eq.png) |
+| ![Desktop Sync](public/e2e_flutter_desktop_sync.png) | ![Desktop EQ](public/showcase_mobile_eq.png) |
 
 ### 📱 移动端原生全景 (Mobile 390x844)
 | 原生 4-Tab 发现主页 | 私人漫游 FM 沉浸模式 | 歌手详情页 (对齐桌面端) | 本地与离线下载专区 |

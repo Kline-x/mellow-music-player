@@ -47,7 +47,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // 验证 EQ 弹窗渲染
-      expect(find.text('声学 10 频段硬件均衡器 (DSP EQ)'), findsOneWidget);
+      expect(find.text('声学 10 频段均衡器 (EQ)'), findsOneWidget);
 
       // 点击“澎湃低音 (Bass Boost)”预设
       final bassPreset = find.text('澎湃低音 (Bass Boost)');

@@ -76,7 +76,7 @@ class DesktopDiscoverView extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '精选 30 首私人流媒体高保真曲目，支持 24bit/192kHz 无损直出，实时声学生态律动',
+                      '精选推荐曲目，沉浸式 Modern Soft UI 交互体验',
                       style: TextStyle(fontSize: 13.5, color: theme.textSecondary),
                     ),
                     const SizedBox(height: 20),
@@ -146,34 +146,34 @@ class DesktopDiscoverView extends StatelessWidget {
               '东方禅境 · 幽篁古筝琴韵精选',
               '48.6万播放 · 巫娜 / 常静',
               'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80',
-              () => player.playTrack(mockPresetTracks[0]),
+              () => player.playPlaylist(mockWuNaTracks, startIndex: 0),
             ),
             _buildPlaylistCard(
               context,
               '夜幕降临时的华语流行浪漫',
               '129.4万播放 · 周杰伦 / 伯远',
               'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
-              () => player.playTrack(mockPresetTracks[1]),
+              () => player.playPlaylist(mockJayChouTracks, startIndex: 0),
             ),
             _buildPlaylistCard(
               context,
               '岁月如歌 · 粤语传世经典不朽巡礼',
-              '98.2万播放 · Beyond / 张国荣',
+              '98.2万播放 · Beyond / 传奇殿堂',
               'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80',
-              () => player.playTrack(mockPresetTracks[2]),
+              () => player.playPlaylist(mockBeyondTracks, startIndex: 0),
             ),
             _buildPlaylistCard(
               context,
-              '深夜微醺爵士 · 复古胶片呢喃',
-              '34.1万播放 · La La Land OST',
-              'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80',
-              () => player.playTrack(mockPresetTracks[4]),
+              '原创独立先锋 · 诗意民谣声线',
+              '45.1万播放 · 独立音乐人代表作',
+              'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=500&q=80',
+              () => player.playPlaylist(toplistOriginTracks, startIndex: 0),
             ),
           ],
         ),
         const SizedBox(height: 32),
 
-        // 热门歌手推荐环
+        // 热门歌手推荐环 (统一从 mockArtistsProfiles 单点源读取)
         Text(
           '热门入驻与关注歌手',
           style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: theme.textPrimary),
@@ -181,12 +181,15 @@ class DesktopDiscoverView extends StatelessWidget {
         const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildArtistAvatar(context, '巫娜', '古琴演奏家', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80', () => onNavigate('artist_detail', '巫娜')),
-            _buildArtistAvatar(context, '周杰伦', '华语流行天王', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80', () => onNavigate('artist_detail', '周杰伦')),
-            _buildArtistAvatar(context, 'Beyond', '传奇摇滚乐队', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&q=80', () => onNavigate('artist_detail', 'Beyond')),
-            _buildArtistAvatar(context, '伯远', '新锐流行歌手', 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=300&q=80', () => onNavigate('artist_detail', '伯远')),
-          ],
+          children: mockArtistsProfiles.map((a) {
+            return _buildArtistAvatar(
+              context,
+              a.name,
+              a.role.split('/')[0].trim(),
+              a.avatarUrl,
+              () => onNavigate('artist_detail', a.name),
+            );
+          }).toList(),
         ),
       ],
     );
@@ -277,6 +280,7 @@ class _DesktopPlaylistSquareViewState extends State<DesktopPlaylistSquareView> {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
+    final playlists = getPlaylistsByTag(_activeTag);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
@@ -314,23 +318,69 @@ class _DesktopPlaylistSquareViewState extends State<DesktopPlaylistSquareView> {
             crossAxisCount: 4,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
-            childAspectRatio: 0.85,
+            childAspectRatio: 0.82,
           ),
-          itemCount: mockPresetTracks.length,
+          itemCount: playlists.length,
           itemBuilder: (context, idx) {
-            final t = mockPresetTracks[idx];
+            final pl = playlists[idx];
             return SoftCard(
               padding: const EdgeInsets.all(12),
-              onTap: () => player.playTrack(t),
+              onTap: () {
+                if (pl.tracks.isNotEmpty) {
+                  player.playPlaylist(pl.tracks, startIndex: 0);
+                }
+              },
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: MellowImage(url: t.coverUrl, width: double.infinity, height: double.infinity, borderRadius: MellowRadii.borderR16),
+                    child: Stack(
+                      children: [
+                        MellowImage(
+                          url: pl.coverUrl,
+                          width: double.infinity,
+                          height: double.infinity,
+                          borderRadius: MellowRadii.borderR16,
+                        ),
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.55),
+                              borderRadius: MellowRadii.borderPill,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 12),
+                                const SizedBox(width: 2),
+                                Text(
+                                  pl.playCount,
+                                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 10),
-                  Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: theme.textPrimary)),
-                  Text('${t.artist} · ${t.album}', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                  Text(
+                    pl.title,
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: theme.textPrimary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '${pl.desc} · 共${pl.tracks.length}首',
+                    style: TextStyle(fontSize: 11.5, color: theme.textMuted),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ],
               ),
             );
@@ -406,8 +456,9 @@ class DesktopToplistView extends StatelessWidget {
               isActive: true,
               isPill: true,
               onTap: () {
-                if (mockPresetTracks.isNotEmpty) {
-                  player.playPlaylist(mockPresetTracks);
+                final allTracks = getAllToplistTracks();
+                if (allTracks.isNotEmpty) {
+                  player.playPlaylist(allTracks);
                 }
               },
             ),
@@ -428,13 +479,15 @@ class DesktopToplistView extends StatelessWidget {
             final c = charts[idx];
             final gradientColors = c['gradient'] as List<Color>;
             final iconData = c['icon'] as IconData;
+            final chartTitle = c['title'] as String;
+            final chartTracks = toplistTracksMap[chartTitle] ?? mockPresetTracks;
 
             return SoftCard(
               padding: const EdgeInsets.all(14),
               borderRadius: MellowRadii.borderR20,
               onTap: () {
-                if (mockPresetTracks.isNotEmpty) {
-                  player.playTrack(mockPresetTracks[idx % mockPresetTracks.length]);
+                if (chartTracks.isNotEmpty) {
+                  player.playPlaylist(chartTracks, startIndex: 0);
                 }
               },
               child: Row(
@@ -527,9 +580,8 @@ class DesktopToplistView extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: List.generate(5, (i) {
-                        final trackIndex = (idx * 3 + i) % mockPresetTracks.length;
-                        final t = mockPresetTracks[trackIndex];
+                      children: List.generate(chartTracks.length.clamp(0, 5), (i) {
+                        final t = chartTracks[i];
                         final rank = i + 1;
                         final Color rankColor = rank == 1
                             ? const Color(0xFFFFB800)
@@ -540,7 +592,7 @@ class DesktopToplistView extends StatelessWidget {
                                     : theme.textMuted;
 
                         return InkWell(
-                          onTap: () => player.playTrack(t),
+                          onTap: () => player.playPlaylist(chartTracks, startIndex: i),
                           borderRadius: BorderRadius.circular(6),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -608,12 +660,7 @@ class DesktopArtistsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
-    final artists = [
-      {'name': '巫娜', 'fans': '86.4万', 'role': '古琴演奏家 / 音乐制作人', 'img': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80'},
-      {'name': '周杰伦', 'fans': '3890.2万', 'role': '华语流行音乐天王', 'img': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80'},
-      {'name': 'Beyond', 'fans': '1240.8万', 'role': '传奇殿堂级摇滚乐队', 'img': 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&q=80'},
-      {'name': '伯远', 'fans': '512.6万', 'role': '流行歌手 / 唱跳创作人', 'img': 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=300&q=80'},
-    ];
+    final artists = mockArtistsProfiles;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
@@ -634,24 +681,24 @@ class DesktopArtistsView extends StatelessWidget {
             final a = artists[idx];
             return SoftCard(
               padding: const EdgeInsets.all(16),
-              onTap: () => onNavigate('artist_detail', a['name']),
+              onTap: () => onNavigate('artist_detail', a.name),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  MellowAvatar(radius: 46, url: a['img']!),
+                  MellowAvatar(radius: 46, url: a.avatarUrl),
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(a['name']!, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                      Text(a.name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary)),
                       const SizedBox(width: 4),
                       Icon(Icons.verified_rounded, size: 16, color: theme.accentColor),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text(a['role']!, style: TextStyle(fontSize: 11.5, color: theme.textMuted), textAlign: TextAlign.center),
+                  Text(a.role, style: TextStyle(fontSize: 11.5, color: theme.textMuted), textAlign: TextAlign.center),
                   const SizedBox(height: 8),
-                  Text('粉丝 ${a['fans']}', style: TextStyle(fontSize: 11, color: theme.textSecondary)),
+                  Text('粉丝 ${a.fans}', style: TextStyle(fontSize: 11, color: theme.textSecondary)),
                 ],
               ),
             );
@@ -679,29 +726,38 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
+    final artist = getArtistProfileByName(widget.artistName);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
       children: [
-        Row(
-          children: [
-            SoftButton(
-              icon: Icons.arrow_back_rounded,
-              isCircle: true,
-              onTap: () => widget.onNavigate('artists'),
+        InkWell(
+          onTap: () => widget.onNavigate('artists'),
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SoftButton(
+                  icon: Icons.arrow_back_rounded,
+                  isCircle: true,
+                  onTap: () => widget.onNavigate('artists'),
+                ),
+                const SizedBox(width: 12),
+                Text('返回歌手列表', style: TextStyle(color: theme.textSecondary, fontSize: 14, fontWeight: FontWeight.w500)),
+              ],
             ),
-            const SizedBox(width: 16),
-            Text('返回歌手列表', style: TextStyle(color: theme.textSecondary)),
-          ],
+          ),
         ),
         const SizedBox(height: 20),
         SoftCard(
           padding: const EdgeInsets.all(28),
           child: Row(
             children: [
-              const MellowAvatar(
+              MellowAvatar(
                 radius: 60,
-                url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&q=80',
+                url: artist.avatarUrl,
               ),
               const SizedBox(width: 24),
               Expanded(
@@ -710,13 +766,13 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
                   children: [
                     Row(
                       children: [
-                        Text(widget.artistName, style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                        Text(artist.name, style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: theme.textPrimary)),
                         const SizedBox(width: 8),
                         Icon(Icons.verified_rounded, color: theme.accentColor),
                       ],
                     ),
                     const SizedBox(height: 6),
-                    Text('官方认证音乐人 · 粉丝量 189.4万 · 单曲播放突破 1.2 亿', style: TextStyle(color: theme.textSecondary, fontSize: 13)),
+                    Text(artist.bio, style: TextStyle(color: theme.textSecondary, fontSize: 13)),
                     const SizedBox(height: 16),
                     Row(
                       children: [
@@ -732,8 +788,8 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
                           icon: Icons.play_arrow_rounded,
                           isPill: true,
                           onTap: () {
-                            if (player.playlist.isNotEmpty) {
-                              player.playTrack(player.playlist[0]);
+                            if (artist.tracks.isNotEmpty) {
+                              player.playPlaylist(artist.tracks, startIndex: 0);
                             }
                           },
                         ),
@@ -748,32 +804,35 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
         const SizedBox(height: 24),
         Text('代表作列表', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary)),
         const SizedBox(height: 12),
-        ...mockPresetTracks.map((t) => SoftCard(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          onTap: () => player.playTrack(t),
-          child: Row(
-            children: [
-              MellowImage(url: t.coverUrl, width: 40, height: 40, borderRadius: MellowRadii.borderR8),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                    Text(t.album, style: TextStyle(fontSize: 12, color: theme.textMuted)),
-                  ],
+        ...List.generate(artist.tracks.length, (idx) {
+          final t = artist.tracks[idx];
+          return SoftCard(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            onTap: () => player.playPlaylist(artist.tracks, startIndex: idx),
+            child: Row(
+              children: [
+                MellowImage(url: t.coverUrl, width: 40, height: 40, borderRadius: MellowRadii.borderR8),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                      Text('${t.artist} · ${t.album}', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                    ],
+                  ),
                 ),
-              ),
-              Text(t.formattedDuration, style: TextStyle(color: theme.textSecondary, fontSize: 12)),
-              const SizedBox(width: 16),
-              IconButton(
-                icon: Icon(player.isFavorite(t.id) ? Icons.favorite_rounded : Icons.favorite_border_rounded, color: Colors.pink, size: 20),
-                onPressed: () => player.toggleFavorite(t.id),
-              ),
-            ],
-          ),
-        )),
+                Text(t.formattedDuration, style: TextStyle(color: theme.textSecondary, fontSize: 12)),
+                const SizedBox(width: 16),
+                IconButton(
+                  icon: Icon(player.isFavorite(t.id) ? Icons.favorite_rounded : Icons.favorite_border_rounded, color: Colors.pink, size: 20),
+                  onPressed: () => player.toggleFavorite(t.id),
+                ),
+              ],
+            ),
+          );
+        }),
       ],
     );
   }
@@ -788,13 +847,7 @@ class DesktopPodcastView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
-
-    final radios = [
-      {'title': '深夜治愈故事馆', 'sub': '伴你入眠的温暖声音', 'img': 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80'},
-      {'title': '助眠白噪音与雨声', 'sub': '大自然沉浸式深度放松', 'img': 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80'},
-      {'title': '音乐背后的人文故事', 'sub': '解码华语流行四十年', 'img': 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80'},
-      {'title': '科技前沿早知道', 'sub': 'AI 时代的智识声音', 'img': 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80'},
-    ];
+    final radios = mockRadioStations;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
@@ -816,22 +869,22 @@ class DesktopPodcastView extends StatelessWidget {
             return SoftCard(
               padding: const EdgeInsets.all(16),
               onTap: () {
-                if (mockPresetTracks.isNotEmpty) {
-                  player.playTrack(mockPresetTracks[idx % mockPresetTracks.length]);
-                }
+                player.playTrack(r.track);
               },
               child: Row(
                 children: [
-                  MellowImage(url: r['img']!, width: 90, height: 90, borderRadius: MellowRadii.borderR16),
+                  MellowImage(url: r.coverUrl, width: 90, height: 90, borderRadius: MellowRadii.borderR16),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(r['title']!, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                        Text(r.title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary)),
                         const SizedBox(height: 4),
-                        Text(r['sub']!, style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                        Text(r.sub, style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                        const SizedBox(height: 6),
+                        Text(r.listeners, style: TextStyle(fontSize: 11, color: theme.accentColor, fontWeight: FontWeight.w500)),
                       ],
                     ),
                   ),
@@ -888,7 +941,7 @@ class DesktopFavoriteView extends StatelessWidget {
                 children: [
                   Text('我喜欢的音乐', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: theme.textPrimary)),
                   const SizedBox(height: 6),
-                  Text('共收藏 ${favTracks.length} 首心动单曲 · 实时云端同步', style: TextStyle(color: theme.textSecondary, fontSize: 13)),
+                  Text('共收藏 ${favTracks.length} 首心动单曲 · 本地安全持久化存储', style: TextStyle(color: theme.textSecondary, fontSize: 13)),
                   const SizedBox(height: 14),
                   Row(
                     children: [
@@ -1149,7 +1202,6 @@ class DesktopLocalMusicView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
-    final player = context.watch<AudioPlayerService>();
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
@@ -1163,43 +1215,26 @@ class DesktopLocalMusicView extends StatelessWidget {
             children: [
               Icon(Icons.file_upload_outlined, size: 48, color: theme.accentColor),
               const SizedBox(height: 12),
-              Text('拖拽音频文件或文件夹至此，或点击导入', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary, fontSize: 16)),
+              Text('本地音频导入与目录扫描', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary, fontSize: 16)),
               const SizedBox(height: 4),
-              Text('支持 FLAC, APE, WAV, MP3, OGG, DSD 无损音频格式', style: TextStyle(color: theme.textMuted, fontSize: 12.5)),
+              Text('支持 FLAC, WAV, MP3 等格式（功能正在接入中）', style: TextStyle(color: theme.textMuted, fontSize: 12.5)),
               const SizedBox(height: 16),
               SoftButton(
-                label: '选择本地文件夹扫描',
+                label: '本地扫描接入中',
                 icon: Icons.folder_open_rounded,
                 isPill: true,
-                onTap: () {},
+                onTap: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('本地文件与目录扫描功能正在接入中...')),
+                  );
+                },
               ),
             ],
           ),
         ),
         const SizedBox(height: 24),
-        Text('已解析本地曲目', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-        const SizedBox(height: 12),
-        ...mockPresetTracks.map((t) => SoftCard(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          onTap: () => player.playTrack(t),
-          child: Row(
-            children: [
-              const Icon(Icons.audio_file_rounded, color: Colors.blueAccent),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                    Text('FLAC 24bit/96kHz · 42.8 MB', style: TextStyle(fontSize: 11.5, color: theme.textMuted)),
-                  ],
-                ),
-              ),
-              Icon(Icons.play_arrow_rounded, color: theme.accentColor),
-            ],
-          ),
-        )),
+        Text('本地曲库暂无内容', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: theme.textMuted)),
       ],
     );
   }
@@ -1345,16 +1380,20 @@ class DesktopSourceManagerView extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('自定义音源管理 (QuickJS)', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                Text('原生兼容 LX-Music 六音脚本生态规范', style: TextStyle(fontSize: 13, color: theme.textMuted)),
+                Text('自定义音源管理', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                Text('支持扩展音源解析脚本（功能接入中）', style: TextStyle(fontSize: 13, color: theme.textMuted)),
               ],
             ),
             SoftButton(
-              label: '在线导入音源链接',
+              label: '在线导入音源',
               icon: Icons.add_link_rounded,
-              isActive: true,
               isPill: true,
-              onTap: () {},
+              onTap: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('自定义音源在线导入功能接入中...')),
+                );
+              },
             ),
           ],
         ),
@@ -1365,30 +1404,20 @@ class DesktopSourceManagerView extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.15), borderRadius: MellowRadii.borderR16),
-                child: const Icon(Icons.check_circle_outline_rounded, color: Colors.green, size: 28),
+                decoration: BoxDecoration(color: theme.accentColor.withValues(alpha: 0.15), borderRadius: MellowRadii.borderR16),
+                child: Icon(Icons.source_rounded, color: theme.accentColor, size: 28),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Text('内置综合聚合音源 (Built-in)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: theme.textPrimary)),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(color: theme.accentColor.withValues(alpha: 0.15), borderRadius: MellowRadii.borderR8),
-                          child: Text('v2.1.0 · 运行中', style: TextStyle(fontSize: 10.5, color: theme.accentColor, fontWeight: FontWeight.bold)),
-                        ),
-                      ],
-                    ),
-                    Text('支持全网多引擎搜索、FLAC/320k 直链动态解析与 LRC 歌词同步', style: TextStyle(fontSize: 12, color: theme.textSecondary)),
+                    Text('网易云在线开放音源 (Built-in)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: theme.textPrimary)),
+                    const SizedBox(height: 4),
+                    Text('支持在线搜索与公开歌单导入解析', style: TextStyle(fontSize: 12, color: theme.textSecondary)),
                   ],
                 ),
               ),
-              Switch.adaptive(value: true, activeTrackColor: theme.accentColor, onChanged: (_) {}),
             ],
           ),
         ),
@@ -1407,51 +1436,22 @@ class DesktopSyncView extends StatefulWidget {
 }
 
 class _DesktopSyncViewState extends State<DesktopSyncView> {
-  bool _isAutoSync = true;
-  bool _isSyncing = false;
-  String _syncStatusText = '就绪 · 待同步';
-  DateTime? _lastSyncTime;
-  final String _serverUrl = 'https://dav.jianguoyun.com/dav/';
-  final String _username = 'gaore@mellow.music';
+  final String _syncStatusText = '未配置';
+  final String _serverUrl = '未配置端点 (例如 https://dav.jianguoyun.com/dav/)';
+  final String _username = '未绑定账号';
 
-  void _triggerUpload() async {
-    setState(() {
-      _isSyncing = true;
-      _syncStatusText = '正在打包数据快照并上传至 WebDAV...';
-    });
-    await Future.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
-    setState(() {
-      _isSyncing = false;
-      _lastSyncTime = DateTime.now();
-      _syncStatusText = '同步成功！已热备全量数据';
-    });
-    if (mounted) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已成功将本地播放数据、收藏及歌单备份至 WebDAV 云端！')),
-      );
-    }
+  void _triggerUpload() {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('云端同步功能尚未完整接入，请勿依赖此页面备份数据')),
+    );
   }
 
-  void _triggerRestore() async {
-    setState(() {
-      _isSyncing = true;
-      _syncStatusText = '正在从 WebDAV 拉取最新快照 (LWW合并)...';
-    });
-    await Future.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
-    setState(() {
-      _isSyncing = false;
-      _lastSyncTime = DateTime.now();
-      _syncStatusText = '拉取完成！数据已合并';
-    });
-    if (mounted) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已成功从 WebDAV 云端合并最新快照数据！')),
-      );
-    }
+  void _triggerRestore() {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('云端恢复功能尚未完整接入')),
+    );
   }
 
   @override
@@ -1477,25 +1477,12 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                 Text('支持 WebDAV 私有云盘实时双向热备，与局域网近场毫秒级 P2P 跨端流转', style: TextStyle(fontSize: 13, color: theme.textMuted)),
               ],
             ),
-            Row(
-              children: [
-                if (_isSyncing)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2.5, color: theme.accentColor),
-                    ),
-                  ),
-                SoftButton(
-                  label: _isSyncing ? '同步处理中' : '立即云端备份',
-                  icon: Icons.cloud_upload_rounded,
-                  isActive: true,
-                  isPill: true,
-                  onTap: _isSyncing ? null : _triggerUpload,
-                ),
-              ],
+            SoftButton(
+              label: '立即云端备份',
+              icon: Icons.cloud_upload_rounded,
+              isActive: true,
+              isPill: true,
+              onTap: _triggerUpload,
             ),
           ],
         ),
@@ -1523,7 +1510,7 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('$favCount 首', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                        Text('已同步红心收藏', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                        Text('本地红心收藏', style: TextStyle(fontSize: 12, color: theme.textMuted)),
                       ],
                     ),
                   ],
@@ -1613,7 +1600,7 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('WebDAV 私有云盘同步', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                          Text('支持坚果云、NextCloud、又拍云等标准 WebDAV 协议', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                          Text('支持标准 WebDAV 协议（功能接入中）', style: TextStyle(fontSize: 12, color: theme.textMuted)),
                         ],
                       ),
                     ],
@@ -1621,15 +1608,15 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.15),
+                      color: Colors.grey.withValues(alpha: 0.15),
                       borderRadius: MellowRadii.borderPill,
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.check_circle_rounded, size: 14, color: Colors.green),
+                        Icon(Icons.info_outline_rounded, size: 14, color: Colors.grey),
                         SizedBox(width: 4),
-                        Text('服务就绪', style: TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold)),
+                        Text('待配置', style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ),
@@ -1661,10 +1648,6 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                               Text(_syncStatusText, style: TextStyle(fontSize: 12.5, color: theme.accentColor, fontWeight: FontWeight.w600)),
                             ],
                           ),
-                          if (_lastSyncTime != null) ...[
-                            const SizedBox(height: 4),
-                            Text('上次同步时间: ${_lastSyncTime!.toString().substring(0, 19)}', style: TextStyle(fontSize: 11, color: theme.textMuted)),
-                          ],
                         ],
                       ),
                     ),
@@ -1672,22 +1655,10 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                       label: '从云端恢复',
                       icon: Icons.cloud_download_rounded,
                       isPill: true,
-                      onTap: _isSyncing ? null : _triggerRestore,
+                      onTap: _triggerRestore,
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('后台自动定时同步 (每 30 分钟)', style: TextStyle(fontSize: 13.5, color: theme.textPrimary)),
-                  Switch.adaptive(
-                    value: _isAutoSync,
-                    activeTrackColor: theme.accentColor,
-                    onChanged: (v) => setState(() => _isAutoSync = v),
-                  ),
-                ],
               ),
             ],
           ),
@@ -1719,107 +1690,33 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('局域网近场设备协同 (LAN P2P)', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                          Text('免配置自动探测同 Wi-Fi 下的手机、平板与车载设备，毫秒级流转', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                          Text('同一 Wi-Fi 下设备近场流转与歌单互传（功能接入中）', style: TextStyle(fontSize: 12, color: theme.textMuted)),
                         ],
                       ),
                     ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: theme.accentColor.withValues(alpha: 0.15),
-                      borderRadius: MellowRadii.borderPill,
-                    ),
-                    child: Text('本机端口: 18585 监听中', style: TextStyle(color: theme.accentColor, fontSize: 11, fontWeight: FontWeight.bold)),
-                  ),
                 ],
               ),
               const SizedBox(height: 18),
-              Text('已探测到的同一局域网在线设备', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+              Text('局域网在线设备', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: theme.textPrimary)),
               const SizedBox(height: 10),
 
-              // 在线设备 1
+              // 设备列表空状态卡片
               SoftCard(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 child: Row(
                   children: [
-                    const Icon(Icons.phone_iphone_rounded, color: Colors.blueAccent, size: 28),
+                    Icon(Icons.devices_other_rounded, color: theme.textMuted, size: 28),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              Text('Gaore 的 iPhone 15 Pro', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                              const SizedBox(width: 8),
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.green),
-                              ),
-                              const SizedBox(width: 4),
-                              Text('在线', style: TextStyle(fontSize: 10.5, color: Colors.green)),
-                            ],
-                          ),
-                          Text('IP: 192.168.1.103 · iOS 17.5 · Mellow v2.1.0', style: TextStyle(fontSize: 11.5, color: theme.textMuted)),
+                          Text('当前未发现局域网配对设备', style: TextStyle(fontWeight: FontWeight.w600, color: theme.textPrimary)),
+                          const SizedBox(height: 2),
+                          Text('局域网近场 P2P 互联功能接入中，支持设备自动发现与歌曲互传', style: TextStyle(fontSize: 12, color: theme.textMuted)),
                         ],
                       ),
-                    ),
-                    SoftButton(
-                      label: '投送当前播放列表',
-                      icon: Icons.send_rounded,
-                      isPill: true,
-                      onTap: () {
-                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('已向 Gaore 的 iPhone 15 Pro 成功投送当前播放列表！')),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              // 在线设备 2
-              SoftCard(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  children: [
-                    const Icon(Icons.speaker_group_rounded, color: Colors.deepPurpleAccent, size: 28),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text('客厅立体声音响 (HomePod)', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                              const SizedBox(width: 8),
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.green),
-                              ),
-                              const SizedBox(width: 4),
-                              Text('在线', style: TextStyle(fontSize: 10.5, color: Colors.green)),
-                            ],
-                          ),
-                          Text('IP: 192.168.1.108 · 无损立体声流媒体投送', style: TextStyle(fontSize: 11.5, color: theme.textMuted)),
-                        ],
-                      ),
-                    ),
-                    SoftButton(
-                      label: '无线音频接力',
-                      icon: Icons.cast_rounded,
-                      isPill: true,
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('已接力音频流至客厅立体声音响！')),
-                        );
-                      },
                     ),
                   ],
                 ),

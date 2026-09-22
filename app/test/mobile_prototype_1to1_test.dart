@@ -60,11 +60,6 @@ void main() {
       await tester.pumpWidget(buildMobileApp());
       await tester.pump(const Duration(milliseconds: 300));
 
-      // 1. 验证时间 10:09 与状态栏信号图标
-      expect(find.text('10:09'), findsOneWidget);
-      expect(find.byIcon(Icons.signal_cellular_alt_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.wifi_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.battery_charging_full_rounded), findsOneWidget);
 
       // 2. 验证灵动岛黑色药丸胶囊存在
       expect(find.byKey(const Key('dynamic_island_capsule')), findsOneWidget);

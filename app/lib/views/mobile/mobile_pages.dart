@@ -80,20 +80,24 @@ class MobileDailyRecommendPage extends StatelessWidget {
                 isActive: true,
                 isPill: true,
                 onTap: () {
-                  if (mockPresetTracks.isNotEmpty) player.playTrack(mockPresetTracks[0]);
+                  if (mockPresetTracks.isNotEmpty) {
+                    player.playPlaylist(mockPresetTracks, startIndex: 0);
+                  }
                 },
               ),
-              Text('高品质无损回放', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+              Text('演示曲目', style: TextStyle(fontSize: 12, color: theme.textMuted)),
             ],
           ),
           const SizedBox(height: 12),
-          ...mockPresetTracks.map((t) => SoftCard(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            onTap: () => player.playTrack(t),
-            child: Row(
-              children: [
-                MellowImage(url: t.coverUrl, width: 44, height: 44, borderRadius: MellowRadii.borderR8),
+          ...List.generate(mockPresetTracks.length, (idx) {
+            final t = mockPresetTracks[idx];
+            return SoftCard(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              onTap: () => player.playPlaylist(mockPresetTracks, startIndex: idx),
+              child: Row(
+                children: [
+                  MellowImage(url: t.coverUrl, width: 44, height: 44, borderRadius: MellowRadii.borderR8),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -110,7 +114,8 @@ class MobileDailyRecommendPage extends StatelessWidget {
                 ),
               ],
             ),
-          )),
+          );
+        }),
         ],
       ),
     );
@@ -321,10 +326,11 @@ class MobileToplistPage extends StatelessWidget {
         separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, idx) {
           final chartName = charts[idx];
+          final chartTracks = toplistTracksMap[chartName] ?? mockPresetTracks;
           return SoftCard(
             padding: const EdgeInsets.all(16),
             onTap: () {
-              if (mockPresetTracks.isNotEmpty) player.playTrack(mockPresetTracks[idx % mockPresetTracks.length]);
+              if (chartTracks.isNotEmpty) player.playPlaylist(chartTracks, startIndex: 0);
             },
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -337,8 +343,8 @@ class MobileToplistPage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 10),
-                ...List.generate(3, (i) {
-                  final t = mockPresetTracks[(idx + i) % mockPresetTracks.length];
+                ...List.generate(chartTracks.length.clamp(0, 3), (i) {
+                  final t = chartTracks[i];
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 2),
                     child: Text(
@@ -365,13 +371,7 @@ class MobileRadioPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
-
-    final radios = [
-      {'title': '深夜治愈故事馆', 'sub': '温暖伴眠精选'},
-      {'title': '大自然白噪音', 'sub': '雨声与流水'},
-      {'title': '流行音乐传奇故事', 'sub': '经典背后的人文'},
-      {'title': '科技先锋播客', 'sub': '智能未来的前沿之声'},
-    ];
+    final radios = mockRadioStations;
 
     return Scaffold(
       backgroundColor: theme.canvasColor,
@@ -394,22 +394,25 @@ class MobileRadioPage extends StatelessWidget {
           return SoftCard(
             padding: const EdgeInsets.all(16),
             onTap: () {
-              if (mockPresetTracks.isNotEmpty) player.playTrack(mockPresetTracks[idx % mockPresetTracks.length]);
+              player.playTrack(r.track);
             },
             child: Row(
               children: [
-                Icon(Icons.radio_rounded, size: 32, color: theme.accentColor),
-                const SizedBox(width: 16),
+                MellowImage(url: r.coverUrl, width: 48, height: 48, borderRadius: MellowRadii.borderR12),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(r['title']!, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: theme.textPrimary)),
-                      Text(r['sub']!, style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                      Text(r.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: theme.textPrimary)),
+                      const SizedBox(height: 2),
+                      Text(r.sub, style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                      const SizedBox(height: 4),
+                      Text(r.listeners, style: TextStyle(fontSize: 11, color: theme.accentColor)),
                     ],
                   ),
                 ),
-                Icon(Icons.play_arrow_rounded, color: theme.textSecondary),
+                Icon(Icons.play_arrow_rounded, color: theme.accentColor, size: 24),
               ],
             ),
           );
@@ -428,12 +431,7 @@ class MobileArtistsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
-    final artists = [
-      {'name': '巫娜', 'fans': '86.4万', 'img': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80'},
-      {'name': '周杰伦', 'fans': '3890.2万', 'img': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80'},
-      {'name': 'Beyond', 'fans': '1240.8万', 'img': 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&q=80'},
-      {'name': '伯远', 'fans': '512.6万', 'img': 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=300&q=80'},
-    ];
+    final artists = mockArtistsProfiles;
 
     return Scaffold(
       backgroundColor: theme.canvasColor,
@@ -455,10 +453,10 @@ class MobileArtistsPage extends StatelessWidget {
           final a = artists[idx];
           return SoftCard(
             padding: const EdgeInsets.all(12),
-            onTap: () => onSelectArtist(a['name']!),
+            onTap: () => onSelectArtist(a.name),
             child: Row(
               children: [
-                MellowAvatar(radius: 26, url: a['img']!),
+                MellowAvatar(radius: 26, url: a.avatarUrl),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
@@ -466,12 +464,12 @@ class MobileArtistsPage extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Text(a['name']!, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: theme.textPrimary)),
+                          Text(a.name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: theme.textPrimary)),
                           const SizedBox(width: 4),
                           Icon(Icons.verified_rounded, size: 14, color: theme.accentColor),
                         ],
                       ),
-                      Text('粉丝 ${a['fans']}', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                      Text('粉丝 ${a.fans}', style: TextStyle(fontSize: 12, color: theme.textMuted)),
                     ],
                   ),
                 ),
@@ -502,6 +500,7 @@ class _MobileArtistDetailPageState extends State<MobileArtistDetailPage> {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
+    final artist = getArtistProfileByName(widget.artistName);
 
     return Scaffold(
       backgroundColor: theme.canvasColor,
@@ -522,25 +521,41 @@ class _MobileArtistDetailPageState extends State<MobileArtistDetailPage> {
             padding: const EdgeInsets.all(20),
             child: Row(
               children: [
-                const MellowAvatar(
+                MellowAvatar(
                   radius: 36,
-                  url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80',
+                  url: artist.avatarUrl,
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(widget.artistName, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                      Text(artist.name, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary)),
                       const SizedBox(height: 4),
-                      Text('官方认证音乐人 · 粉丝量 189.4万', style: TextStyle(fontSize: 11.5, color: theme.textMuted)),
+                      Text(artist.bio, style: TextStyle(fontSize: 11.5, color: theme.textMuted)),
                       const SizedBox(height: 10),
-                      SoftButton(
-                        label: _isFollowing ? '已关注' : '+ 关注',
-                        isActive: _isFollowing,
-                        isPill: true,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                        onTap: () => setState(() => _isFollowing = !_isFollowing),
+                      Row(
+                        children: [
+                          SoftButton(
+                            label: _isFollowing ? '已关注' : '+ 关注',
+                            isActive: _isFollowing,
+                            isPill: true,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                            onTap: () => setState(() => _isFollowing = !_isFollowing),
+                          ),
+                          const SizedBox(width: 10),
+                          SoftButton(
+                            label: '播放热门',
+                            icon: Icons.play_arrow_rounded,
+                            isPill: true,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                            onTap: () {
+                              if (artist.tracks.isNotEmpty) {
+                                player.playPlaylist(artist.tracks, startIndex: 0);
+                              }
+                            },
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -551,24 +566,33 @@ class _MobileArtistDetailPageState extends State<MobileArtistDetailPage> {
           const SizedBox(height: 16),
           Text('代表作清单', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary)),
           const SizedBox(height: 10),
-          ...mockPresetTracks.map((t) => SoftCard(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            onTap: () => player.playTrack(t),
-            child: Row(
-              children: [
-                MellowImage(url: t.coverUrl, width: 40, height: 40, borderRadius: MellowRadii.borderR8),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: theme.textPrimary)),
-                ),
-                IconButton(
-                  icon: Icon(player.isFavorite(t.id) ? Icons.favorite_rounded : Icons.favorite_border_rounded, color: Colors.pink, size: 20),
-                  onPressed: () => player.toggleFavorite(t.id),
-                ),
-              ],
-            ),
-          )),
+          ...List.generate(artist.tracks.length, (idx) {
+            final t = artist.tracks[idx];
+            return SoftCard(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              onTap: () => player.playPlaylist(artist.tracks, startIndex: idx),
+              child: Row(
+                children: [
+                  MellowImage(url: t.coverUrl, width: 40, height: 40, borderRadius: MellowRadii.borderR8),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: theme.textPrimary)),
+                        Text('${t.artist} · ${t.album}', style: TextStyle(fontSize: 11, color: theme.textMuted)),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(player.isFavorite(t.id) ? Icons.favorite_rounded : Icons.favorite_border_rounded, color: Colors.pink, size: 20),
+                    onPressed: () => player.toggleFavorite(t.id),
+                  ),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     );
@@ -608,7 +632,7 @@ class MobileLocalMusicPage extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text('设备离线音频扫描', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary)),
                 const SizedBox(height: 4),
-                Text('已缓存 6 首无损音频 · 占用空间 182 MB', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                Text('本地离线音频扫描功能正在接入中', style: TextStyle(fontSize: 12, color: theme.textMuted)),
               ],
             ),
           ),
@@ -626,7 +650,7 @@ class MobileLocalMusicPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: theme.textPrimary)),
-                      Text('FLAC 24bit · 42.8 MB', style: TextStyle(fontSize: 11, color: theme.textMuted)),
+                      Text('${t.artist} · 演示曲目', style: TextStyle(fontSize: 11, color: theme.textMuted)),
                     ],
                   ),
                 ),
