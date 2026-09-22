@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../design_system/tokens.dart';
 import '../design_system/theme_provider.dart';
-import '../design_system/soft_card.dart';
 import '../design_system/soft_button.dart';
 import '../design_system/recessed_well.dart';
 import '../design_system/acoustic_mesh_glow.dart';
@@ -108,8 +107,8 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        color: MellowColors.canvas(isDark).withValues(alpha: 0.75),
-        border: Border(bottom: BorderSide(color: theme.borderColor.withValues(alpha: 0.6))),
+        color: MellowColors.canvas(isDark).withValues(alpha: 0.85),
+        border: Border(bottom: BorderSide(color: theme.borderColor.withValues(alpha: 0.6), width: 0.8)),
       ),
       child: Row(
         children: [
@@ -163,8 +162,8 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
           GestureDetector(
             onTap: () => showDialog(context: context, builder: (_) => const QuickSearchOverlay()),
             child: RecessedWell(
-              width: 360,
-              height: 36,
+              width: 380,
+              height: 38,
               padding: const EdgeInsets.symmetric(horizontal: 14),
               borderRadius: MellowRadii.borderPill,
               child: Row(
@@ -178,7 +177,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                     decoration: BoxDecoration(
                       color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
                       borderRadius: MellowRadii.borderR8,
@@ -212,11 +211,11 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
 
               // 2. 5大声学强调色调色盘选择微胶囊
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
                   borderRadius: MellowRadii.borderPill,
-                  border: Border.all(color: theme.borderColor.withValues(alpha: 0.4)),
+                  border: Border.all(color: theme.borderColor.withValues(alpha: 0.5)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -226,9 +225,9 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                     return GestureDetector(
                       onTap: () => theme.setAccentType(type),
                       child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                        width: isCurrent ? 14 : 10,
-                        height: isCurrent ? 14 : 10,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: isCurrent ? 16 : 11,
+                        height: isCurrent ? 16 : 11,
                         decoration: BoxDecoration(
                           color: color,
                           shape: BoxShape.circle,
@@ -267,12 +266,16 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
     );
   }
 
-  // 左侧悬浮胶囊侧边栏
+  // 左侧现代化自适应侧边栏 (支持完整滚动，避让底栏)
   Widget _buildSidebar(BuildContext context) {
+    final theme = context.watch<ThemeProvider>();
     return Container(
       width: 220,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+      decoration: BoxDecoration(
+        border: Border(right: BorderSide(color: theme.borderColor.withValues(alpha: 0.5), width: 0.8)),
+      ),
       child: ListView(
+        padding: const EdgeInsets.fromLTRB(14, 16, 14, 28),
         children: [
           _buildNavGroupTitle('在线音乐'),
           _buildNavItem('discover', '发现音乐', Icons.explore_rounded),
@@ -290,8 +293,9 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
           const SizedBox(height: 18),
 
           _buildNavGroupTitle('系统与生态'),
-          _buildNavItem('settings', '个性化设置', Icons.tune_rounded),
+          _buildNavItem('sync', '多端同步中心', Icons.cloud_sync_rounded),
           _buildNavItem('sources', 'LX 音源管理', Icons.integration_instructions_rounded),
+          _buildNavItem('settings', '个性化设置', Icons.tune_rounded),
         ],
       ),
     );
@@ -351,186 +355,285 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
         return DesktopSettingsView(onNavigate: _navigateTo);
       case 'sources':
         return DesktopSourceManagerView(onNavigate: _navigateTo);
+      case 'sync':
+        return DesktopSyncView(onNavigate: _navigateTo);
       default:
         return DesktopDiscoverView(onNavigate: _navigateTo);
     }
   }
 
-  // 底部签名级悬浮播放底栏 (Pill Dock Player)
+  // 底部现代化沉浸通栏播放栏 (Docked Glass Player Bar)
   Widget _buildBottomPlayerDock(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
     final isDark = theme.isDarkMode;
     final track = player.currentTrack ?? mockPresetTracks[0];
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-      child: SoftCard(
-        isFloatingPill: true,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        borderRadius: MellowRadii.borderPill,
-        child: Row(
-          children: [
-            // 歌曲信息卡片
-            MellowImage(
-              url: track.coverUrl,
-              width: 48,
-              height: 48,
-              borderRadius: MellowRadii.borderR12,
-            ),
-            const SizedBox(width: 14),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+    return Container(
+      height: 78,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
+      decoration: BoxDecoration(
+        color: MellowColors.card(isDark).withValues(alpha: 0.94),
+        border: Border(
+          top: BorderSide(
+            color: theme.borderColor.withValues(alpha: 0.6),
+            width: 0.8,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, -3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // 1. 左侧：正在播放曲目信息 (固定宽度约 260)
+          SizedBox(
+            width: 260,
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Text(
-                      track.title,
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: theme.textPrimary),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _isFullscreenLyrics = true),
+                    child: MellowImage(
+                      url: track.coverUrl,
+                      width: 48,
+                      height: 48,
                     ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () => player.toggleFavorite(track.id),
-                      child: Icon(
-                        player.isFavorite(track.id) ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                        size: 16,
-                        color: Colors.pink,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-                Text(
-                  '${track.artist} · ${track.album}',
-                  style: TextStyle(fontSize: 12, color: theme.textSecondary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              track.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13.5,
+                                color: theme.textPrimary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          GestureDetector(
+                            onTap: () => player.toggleFavorite(track.id),
+                            child: Icon(
+                              player.isFavorite(track.id)
+                                  ? Icons.favorite_rounded
+                                  : Icons.favorite_border_rounded,
+                              size: 18,
+                              color: player.isFavorite(track.id)
+                                  ? const Color(0xFFEF4444)
+                                  : theme.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${track.artist} · ${track.album}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 11.5, color: theme.textSecondary),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
-            const SizedBox(width: 32),
+          ),
 
-            // 核心播放控制器与进度条
-            Expanded(
+          // 2. 中央：核心播放控制器与微细平滑进度条
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // 进度条
+                  // 控制按键行
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          player.playbackMode == PlaybackMode.singleLoop
+                              ? Icons.repeat_one_rounded
+                              : (player.playbackMode == PlaybackMode.shuffle
+                                  ? Icons.shuffle_rounded
+                                  : Icons.repeat_rounded),
+                          size: 19,
+                        ),
+                        color: player.playbackMode == PlaybackMode.sequence
+                            ? theme.textMuted
+                            : theme.accentColor,
+                        tooltip: player.playbackMode.label,
+                        onPressed: () => player.cyclePlaybackMode(),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.skip_previous_rounded, size: 22),
+                        color: theme.textPrimary,
+                        tooltip: '上一首',
+                        onPressed: () => player.previous(),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () => player.togglePlay(),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: theme.accentColor,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.accentColor.withValues(alpha: 0.4),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.skip_next_rounded, size: 22),
+                        color: theme.textPrimary,
+                        tooltip: '下一首',
+                        onPressed: () => player.next(),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ],
+                  ),
+                  // 进度条行
                   Row(
                     children: [
                       Text(
                         '${(player.currentPosition.inSeconds ~/ 60).toString().padLeft(2, '0')}:${(player.currentPosition.inSeconds % 60).toString().padLeft(2, '0')}',
-                        style: TextStyle(fontSize: 11, color: theme.textMuted),
+                        style: TextStyle(fontSize: 10.5, color: theme.textMuted, fontFeatures: const [FontFeature.tabularFigures()]),
                       ),
+                      const SizedBox(width: 8),
                       Expanded(
-                        child: SliderTheme(
-                          data: SliderTheme.of(context).copyWith(
-                            trackHeight: 4,
-                            activeTrackColor: theme.accentColor,
-                            inactiveTrackColor: isDark ? Colors.white12 : Colors.black12,
-                            thumbColor: theme.accentColor,
-                            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                          ),
-                          child: Slider(
-                            value: player.currentPosition.inMilliseconds.clamp(0, track.duration.inMilliseconds).toDouble(),
-                            max: max(1.0, track.duration.inMilliseconds.toDouble()),
-                            onChanged: (val) => player.seek(Duration(milliseconds: val.toInt())),
+                        child: SizedBox(
+                          height: 18,
+                          child: SliderTheme(
+                            data: SliderTheme.of(context).copyWith(
+                              trackHeight: 3.5,
+                              activeTrackColor: theme.accentColor,
+                              inactiveTrackColor: isDark ? Colors.white12 : Colors.black12,
+                              thumbColor: theme.accentColor,
+                              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
+                              overlayShape: const RoundSliderOverlayShape(overlayRadius: 8),
+                            ),
+                            child: Slider(
+                              value: player.currentPosition.inMilliseconds.clamp(0, track.duration.inMilliseconds).toDouble(),
+                              max: max(1.0, track.duration.inMilliseconds.toDouble()),
+                              onChanged: (val) => player.seek(Duration(milliseconds: val.toInt())),
+                            ),
                           ),
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Text(
                         track.formattedDuration,
-                        style: TextStyle(fontSize: 11, color: theme.textMuted),
+                        style: TextStyle(fontSize: 10.5, color: theme.textMuted, fontFeatures: const [FontFeature.tabularFigures()]),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 24),
+          ),
 
-            // 控制按键
-            Row(
-              children: [
-                IconButton(
-                  icon: Icon(
-                    player.playbackMode == PlaybackMode.singleLoop
-                        ? Icons.repeat_one_rounded
-                        : (player.playbackMode == PlaybackMode.shuffle ? Icons.shuffle_rounded : Icons.repeat_rounded),
-                    size: 20,
+          // 3. 右侧：专业音效工具与音量调节
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.tune_rounded, size: 18),
+                color: theme.textSecondary,
+                tooltip: '10 频段专业声学 EQ',
+                visualDensity: VisualDensity.compact,
+                onPressed: () => showDialog(context: context, builder: (_) => const EqualizerModal()),
+              ),
+              IconButton(
+                icon: const Icon(Icons.hourglass_bottom_rounded, size: 18),
+                color: player.sleepTimerMinutes != null ? theme.accentColor : theme.textSecondary,
+                tooltip: player.sleepTimerMinutes != null
+                    ? '睡眠定时进行中 (${player.sleepTimerRemainingSeconds ~/ 60}分)'
+                    : '设置睡眠定时器',
+                visualDensity: VisualDensity.compact,
+                onPressed: () => showDialog(context: context, builder: (_) => const SleepTimerModal()),
+              ),
+              IconButton(
+                icon: const Icon(Icons.lyrics_rounded, size: 18),
+                color: _isFullscreenLyrics ? theme.accentColor : theme.textSecondary,
+                tooltip: '展开巨幕全屏歌词',
+                visualDensity: VisualDensity.compact,
+                onPressed: () => setState(() => _isFullscreenLyrics = true),
+              ),
+              IconButton(
+                icon: const Icon(Icons.queue_music_rounded, size: 18),
+                color: _isQueueOpen ? theme.accentColor : theme.textSecondary,
+                tooltip: '当前待播队列',
+                visualDensity: VisualDensity.compact,
+                onPressed: () => setState(() => _isQueueOpen = !_isQueueOpen),
+              ),
+              const SizedBox(width: 4),
+              // 音量图标 (点击静音/恢复)
+              GestureDetector(
+                onTap: () {
+                  if (player.volume > 0) {
+                    player.setVolume(0);
+                  } else {
+                    player.setVolume(0.8);
+                  }
+                },
+                child: Icon(
+                  player.volume == 0 ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+                  size: 18,
+                  color: theme.textSecondary,
+                ),
+              ),
+              const SizedBox(width: 4),
+              SizedBox(
+                width: 70,
+                child: SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    trackHeight: 3,
+                    activeTrackColor: theme.accentColor,
+                    inactiveTrackColor: isDark ? Colors.white12 : Colors.black12,
+                    thumbColor: theme.accentColor,
+                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 4.5),
                   ),
-                  tooltip: player.playbackMode.label,
-                  onPressed: () => player.cyclePlaybackMode(),
-                ),
-                SoftButton(
-                  icon: Icons.skip_previous_rounded,
-                  iconSize: 20,
-                  isCircle: true,
-                  onTap: () => player.previous(),
-                ),
-                const SizedBox(width: 8),
-                SoftButton(
-                  icon: player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                  iconSize: 26,
-                  isActive: true,
-                  isCircle: true,
-                  padding: const EdgeInsets.all(12),
-                  onTap: () => player.togglePlay(),
-                ),
-                const SizedBox(width: 8),
-                SoftButton(
-                  icon: Icons.skip_next_rounded,
-                  iconSize: 20,
-                  isCircle: true,
-                  onTap: () => player.next(),
-                ),
-              ],
-            ),
-            const SizedBox(width: 24),
-
-            // 实用工具组 (EQ, 定时器, 歌词, 队列, 音量)
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.tune_rounded, size: 20),
-                  tooltip: '声学 10 频段 EQ',
-                  onPressed: () => showDialog(context: context, builder: (_) => const EqualizerModal()),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.bedtime_rounded, size: 20),
-                  tooltip: '睡眠定时器',
-                  onPressed: () => showDialog(context: context, builder: (_) => const SleepTimerModal()),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.subtitles_rounded, size: 20),
-                  tooltip: '巨幕歌词 (MusicFull)',
-                  onPressed: () => setState(() => _isFullscreenLyrics = true),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.queue_music_rounded, size: 20),
-                  tooltip: '待播队列',
-                  onPressed: () => setState(() => _isQueueOpen = !_isQueueOpen),
-                ),
-                const SizedBox(width: 6),
-                // 音量滑块
-                Icon(player.volume == 0 ? Icons.volume_off_rounded : Icons.volume_up_rounded, size: 18, color: theme.textSecondary),
-                SizedBox(
-                  width: 90,
-                  child: SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      trackHeight: 3,
-                      activeTrackColor: theme.accentColor,
-                      thumbColor: theme.accentColor,
-                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
-                    ),
-                    child: Slider(
-                      value: player.volume,
-                      onChanged: (v) => player.setVolume(v),
-                    ),
+                  child: Slider(
+                    value: player.volume,
+                    onChanged: (v) => player.setVolume(v),
                   ),
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
