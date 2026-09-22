@@ -17,6 +17,7 @@
 | **Phase 3** | **桌面端 12 视图 + 移动端 13 页面 1:1 落地** | 已完成 | 🟢 **100%** | `app/lib/views/desktop/`、`app/lib/views/mobile/`、双壳自适应布局 `adaptive_scaffold.dart` |
 | **Phase 4** | **双模动效歌词系统与声学 10 频段 EQ** | 已完成 | 🟢 **100%** | `fullscreen_lyrics_view.dart` (黑胶转盘+动力学歌词)、`equalizer_manager.dart` (firequalizer 滤镜参数) |
 | **Phase 5** | **多端云同步、局域网协同与全流程集成测试** | 已完成 | 🟢 **100%** | `app/lib/core/sync/` (WebDAV 备份恢复, LX-Sync 局域网近场互传, 47/47 测试全绿) |
+| **Phase 6** | **全端脚手架、GitHub Actions 矩阵发版流水线与 E2E 质量红线** | 已完成 | 🟢 **100%** | `.github/workflows/` (CI 门禁 + Release 多端编译发布), `docs/SPEC.md` 第 9~10 章, Linux/鸿蒙脚手架 |
 
 ---
 
@@ -47,10 +48,17 @@
   - 实现 WebDAV 客户端备份与还原逻辑（支持定时自动同步与探活鉴权）；
   - 实现了基于端口 23332 的局域网直连同步互传服务，100% 兼容原生 LX-Sync 配对与报文流转协议；
   - 编写 `test/sync_services_test.dart`，15 项单元测试 100% 通过。
+- **[Completed] Phase 6 全端支持、CI/CD 自动化发版流水线与 E2E 质量红线**：
+  - 补齐 Linux 原生 CMake & GTK3 构建脚手架与 HarmonyOS NEXT / OpenHarmony 架构对接文档；
+  - 搭建 GitHub Actions CI/CD 流水线：
+    - `.github/workflows/ci.yml`：PR/Push 门禁，自动执行 `flutter analyze`、`flutter test` 及 Web 无头 E2E 质量验证；
+    - `.github/workflows/release.yml`：基于标签触发矩阵构建，自动编译 Windows (x64 ZIP)、macOS (Universal ZIP)、Linux (tar.gz)、Android (APK) 与 Web (ZIP) 产物并自动发布为 GitHub Releases；
+  - 落地工程规格书第 9 章《全平台产物端到端 (E2E) 闭环验收与质量红线规范》，建立 8 大核心使用链路与缺陷归因循环机制；
+  - 物理编译 Web Release 真实生产产物，通过无头 Chrome 真实挂载桌面与移动双视口，零未捕获异常，生成并持久化 E2E 验证存证截图。
 - **[Completed] 全流程自动化测试与静态质量分析验收**：
   - `flutter analyze` 结果：**No issues found!**（0 错误，0 警告，0 提示）；
   - `flutter test` 结果：**47 / 47 项测试用例 100% 全部通过**；
-  - 代码全量同步提交并推送至 GitHub 远端主分支 (`origin/main`)。
+  - 生产代码与流水线配置文件全量同步推送至 GitHub 远端主分支 (`origin/main`)。
 
 ---
 
@@ -65,4 +73,10 @@ flutter test
 
 # 运行代码规范与静态分析 (No issues found!)
 flutter analyze
+
+# 编译 Web 真实发布产物
+flutter build web --release
+
+# 运行无头 Chrome 真实产物级 E2E 测试
+node flutter_e2e_verify.mjs
 ```

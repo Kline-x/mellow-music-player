@@ -1,8 +1,8 @@
 # Mellow Music · 润音 · 跨平台生产级客户端系统工程规范说明书 (System Specification)
 
-> **版本**：v1.0.0 (Production Specification)  
+> **版本**：v1.1.0 (Full-Platform & E2E Verification Specification)  
 > **生效时间**：2026-09-22  
-> **系统定位**：融合 **AlgerMusicPlayer** 的极致视觉美学（Modern Soft UI 现代柔和质感、声学生态流体光晕、巨幕动效歌词）与 **LX-Music (洛雪音乐)** 强大音源沙箱与多端同步能力，面向 Windows、macOS、Android、iOS 的跨平台高保真无损音乐播放系统。
+> **系统定位**：融合 **AlgerMusicPlayer** 的极致视觉美学（Modern Soft UI 现代柔和质感、声学生态流体光晕、巨幕动效歌词）与 **LX-Music (洛雪音乐)** 强大音源沙箱与多端同步能力，面向 **Windows、macOS、Linux、Android、iOS、鸿蒙 (HarmonyOS / OpenHarmony)** 的全平台高保真无损音乐播放系统。
 
 ---
 
@@ -15,6 +15,8 @@
 6. [双模动效歌词与独立穿透窗口规范 (Kinetic Lyrics Engine)](#6-双模动效歌词与独立穿透窗口规范-kinetic-lyrics-engine)
 7. [本地数据库模型与多端同步规范 (Drift & Sync Protocol)](#7-本地数据库模型与多端同步规范-drift--sync-protocol)
 8. [工程目录结构与交付规范 (Project Structure)](#8-工程目录结构与交付规范-project-structure)
+9. [全平台产物端到端 (E2E) 闭环验收与质量红线规范 (Hard Quality Gate)](#9-全平台产物端到端-e2e-闭环验收与质量红线规范-hard-quality-gate)
+10. [多端 CI/CD 自动化发版流水线规范 (GitHub Actions Pipeline)](#10-多端-cicd-自动化发版流水线规范-github-actions-pipeline)
 
 ---
 
@@ -410,14 +412,79 @@ mellow-music-player/
 
 ---
 
-## 9. 验收与质量把控规范 (Verification Standard)
+## 9. 全平台产物端到端 (E2E) 闭环验收与质量红线规范 (Hard Quality Gate)
 
-1. **视觉保真度验收**：
-   - 桌面端 (1440x900) 与移动端 (390x844) 在真实设备上与现有的 `index.html` / `mobile.html` 进行像素级对照，连续曲率圆角与微凹内阴影偏差 `<= 1px`。
-2. **零遗漏路由完整度**：
-   - 自动化测试遍历上述清单中桌面端全部 16 个组件路由及移动端全部 18 个组件路由，断言无任何空页面、无任何死链接。
-3. **音频无损与 DSP 响应速度**：
-   - 本地 FLAC/APE 启动回放延迟 `<= 80ms`；
-   - 均衡器频段调节实时生效，无爆音、无破音、无重采样失真。
-4. **QuickJS 沙箱健壮性**：
-   - 兼容 LX-Music 官方及主流六音用户脚本，连续 100 次 `search` 与 `musicUrl` 解析无内存泄漏，无沙箱崩溃。
+本项目将**产物级真实用户端到端 (E2E) 闭环验收**作为团队交付的**不可逾越之硬性红线 (Hard Quality Gate)**。任何代码合入或发版前，均必须严格执行以下四阶段递进闭环流程：
+
+```
++-------------------------------------------------------------------------------------------------+
+|                       产物级用户视角 E2E 闭环研发循环 (E2E User-Centric Loop)                     |
+|                                                                                                 |
+|   [1. 全平台产物物理编译]                                                                         |
+|       │ Windows (.exe) / macOS (.app) / Linux (Bundle) / Android (.apk) / Web (PWA)             |
+|       ▼                                                                                         |
+|   [2. 真实用户视角 E2E 体验与自动化探索]                                                            |
+|       │ 8 大核心业务链路全量巡检、视口缩放、按键监听、手势触控、未捕获异常监控                         |
+|       ▼                                                                                         |
+|   [3. 结构化缺陷清单记录 (Defect Matrix)]                                                         |
+|       │ 录入现象、触发平台、严重程度 (P0~P3)、复现路径与渲染堆栈                                    |
+|       ▼                                                                                         |
+|   [4. 统一归因修复与全量回归复测]                                                                   |
+|       │ 实施代码优化 -> 重新触发全平台编译 -> E2E 回归验证 -> 直至达成【零未捕获缺陷】可交付成果    |
++-------------------------------------------------------------------------------------------------+
+```
+
+### 9.1 真实产物编译前置原则 (Real Artifact Compilation First)
+- **绝对禁止仅凭单元测试或局部 Widget 测试直接宣布交付**；
+- 交付前，当前物理宿主机支持的目标平台必须首先成功编译出完整的生产级发布包（如 Windows `mellow_music.exe`、Android `app-release.apk`、Web 发布包）；
+- 跨宿主平台（macOS、Linux、iOS）必须通过 GitHub Actions CI/CD 流水线完成真实容器/虚拟机的交叉编译构建与产物归档。
+
+### 9.2 用户视角 8 大端到端使用链路全景矩阵 (User-Centric E2E Matrix)
+测试人员与自动化探针必须以真实最终用户视角，对编译后的可执行产物依次执行以下 8 大业务链路闭环验证：
+
+| 链路编号 | 业务链路场景 | 真实用户行为验证点 | 严格验收标准 |
+| :--- | :--- | :--- | :--- |
+| **E2E-01** | **冷启动与无边框标题栏交互** | 打开应用、拖拽窗口、最大化/最小化、关闭、深浅色模式切换 | 启动冷加载 `<= 1.2s`，无闪白，暗黑主题切换即时无卡顿，无边框贴靠正常 |
+| **E2E-02** | **Bento 仪表盘与全网聚合搜索** | 浏览今日私享雷达、快捷搜索输入、防抖联想、按 Enter 搜索 | 聚合 6 大音源结果并发返回，列表去重，关键词高亮，无布局挤压溢出 |
+| **E2E-03** | **多音质无损播放与双重降级** | 点击歌曲播放、切换 128k/320k/FLAC/24bit 母带、单曲/列表/随机切歌 | 触发两重降级：高码率受限平滑回退，首选源下架自动毫秒级跨源热切换源，无爆音 |
+| **E2E-04** | **巨幕沉浸黑胶歌词与动力学** | 点击底部 Mini 播放栏展开全屏巨幕 (MusicFull)、跟随歌词滚动 | 黑胶转盘平滑匀速旋转，逐行 LRC 歌词以 60fps 缓动高亮居中，拖拽进度精准对齐 |
+| **E2E-05** | **声学 10 频段 EQ 与音质调校** | 呼出均衡器弹窗、切换 9 款声学预设 (摇滚/重低音等)、手动拖拽 10 频段滑块 | 图形滑块阻尼触感灵敏，实时生成 libmpv `firequalizer` 参数，音色变化平滑无咔嗒声 |
+| **E2E-06** | **多端数据协同与 WebDAV 备份** | 配置 WebDAV 地址与账号、点击探活、手动上传快照、一键恢复 | PROPFIND/PUT 全链路通畅，执行毫秒级 LWW (Last-Write-Wins) 冲突解决，歌单数据零丢失 |
+| **E2E-07** | **局域网近场直连与扫码互传** | 开启本机局域网服务、展示 `lxsync://` 配对二维码、跨机握手投送快照 | 端口 23332 握手成功，配对密钥安全校验通过，支持与原生 LX-Music 双向收发报文 |
+| **E2E-08** | **双端自适应触控与折叠屏分流** | 拖动浏览器/窗口边界使其跨越 800px 阈值，或在桌面上切换手机预览模式 | $\ge 800\text{px}$ 稳定展示桌面工作台，$< 800\text{px}$ 零缝隙切换为移动端 4-Tab 触控底栏 |
+
+### 9.3 缺陷日志矩阵与闭环修复机制 (Defect Matrix & Resolution Loop)
+在各端测试过程中发现的任何问题，必须统一记录入结构化缺陷追踪看板：
+1. **缺陷标识与元数据**：记录缺陷 ID、发现平台（Win/Mac/Linux/Android/iOS/Web）、视口分辨率、所属 E2E 场景；
+2. **严重级别分类**：
+   - `P0 (阻断性)`：进程闪退、编译崩溃、死循环卡死、核心音频流断流；
+   - `P1 (严重性)`：音源换源彻底失败、数据同步丢失、布局严重破坏或溢出；
+   - `P2 (一般性)`：动效掉帧、深色模式个别文字对比度不足、缓存清理延迟；
+   - `P3 (轻微性)`：非核心文案瑕疵、微小圆角偏差；
+3. **闭环验收条件**：**必须实现 P0 与 P1 零遗留，P2 修复率 `>= 95%`，未捕获异常 (Uncaught Exceptions) 必须为 0**。
+
+---
+
+## 10. 多端 CI/CD 自动化发版流水线规范 (GitHub Actions Pipeline)
+
+为保障跨平台发布质量与工程交付效率，项目全量集成 GitHub Actions 自动化流水线：
+
+### 10.1 持续集成门禁 (`.github/workflows/ci.yml`)
+- **触发时机**：每次对 `main` 分支的 Push 或 Pull Request；
+- **拦截规则**：
+  1. `flutter analyze` 静态代码分析必须达到 **No issues found!**（0 错误、0 警告、0 提示）；
+  2. `flutter test` 全量单元与集成测试必须达到 **100% 全部通过**（当前基线 47/47 Suites）；
+  3. 自动编译 Web Release 产物并通过 Puppeteer 执行无头 Chrome 真实视觉与渲染挂载验收。
+
+### 10.2 多端并发发版流水线 (`.github/workflows/release.yml`)
+- **触发时机**：推送以 `v*` 开头的版本 Tag（如 `git push origin v1.0.0`）或在 Actions 面板手动派发；
+- **并发构建矩阵 (`strategy.matrix`)**：
+  1. `build-windows` (`windows-latest` 虚拟化宿主)：编译 Windows x64 原生应用并打包为 `Mellow-Music-Windows-x64.zip`；
+  2. `build-macos` (`macos-14` Apple Silicon 宿主)：编译 macOS 原生 App 并打包为 `Mellow-Music-macOS.zip`；
+  3. `build-linux` (`ubuntu-latest` 容器环境)：安装 Clang/CMake/GTK3 运行时，编译 Linux Bundle 并打包为 `Mellow-Music-Linux-x64.tar.gz`；
+  4. `build-android` (`ubuntu-latest` 容器环境)：配置 JDK 17 与 Android SDK，编译发布版并重命名为 `Mellow-Music-Android.apk`；
+  5. `build-web` (`ubuntu-latest` 容器环境)：编译静态 Web PWA 独立部署包并压缩为 `Mellow-Music-Web.tar.gz`；
+- **聚合发布 (`publish-release`)**：
+  - 汇聚所有平台的编译归档产物；
+  - 自动通过 `softprops/action-gh-release` 创建正式的 GitHub Release，并将上述 5 大平台的独立安装包作为 Release Assets 上传发布，全球用户可直接点击下载安装。
+

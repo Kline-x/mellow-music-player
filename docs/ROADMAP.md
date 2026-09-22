@@ -154,6 +154,16 @@ graph TD
   - 电脑端内置轻量 HTTP/WebSocket 服务（默认端口 `23332`），生成配对二维码；
   - 移动端扫码直连，遵循 LX-Music 原生数据包规范（公私钥签名、gzip 压缩传输），**原生兼容与现有 LX-Music 电脑版/手机版双向互相同步歌单**！
 
+### 6. 六端矩阵原生支持与 HarmonyOS NEXT 架构
+- **全平台支持矩阵**：
+  - **桌面三端**：Windows (x64 / Win32 Runner)、macOS (Universal / Cocoa Runner)、Linux (x64 / GTK3 & CMake Runner)；
+  - **移动三端**：Android (ARM64 & x86_64 APK)、iOS (Runner / Xcode Workspace)、HarmonyOS NEXT (OpenHarmony Stage 架构与 ArkUI 运行时适配)；
+  - **跨端轻量态**：Web (CanvasKit / WASM 高保真渲染)。
+- **各端原生管道适配**：
+  - 桌面端配置系统级托盘 (System Tray)、无边框自由拖拽与独立多窗口动效穿透歌词；
+  - 移动端配置后台媒体通知栏 (MediaSession)、锁屏封面流控与锁屏歌词；
+  - 鸿蒙端配置 `@ohos.multimedia.audio` 与后台持续任务 `backgroundTaskManager`，保证高保真流式播放。
+
 ---
 
 ## 📅 四、5 阶段渐进式工程实施路线图 (5-Phase Roadmap)
@@ -163,4 +173,7 @@ graph TD
 - **Phase 3**：桌面端 12 大核心视图与移动端 13 大页面 1:1 完整构建
 - **Phase 4**：双模动效歌词体系 (`MusicFull` + `desktop_multi_window` 穿透歌词) 与声学 10 频段 EQ
 - **Phase 5**：Drift 本地数据库、多端云同步 (WebDAV / LX-Sync 局域网互联)、外部歌单解析与自动化 CI/CD
+- **Phase 6 (Hard Quality Gate)**：全平台产物级真实用户视角 E2E 闭环验收与 GitHub Actions 矩阵发版流水线
+  - **E2E 闭环质量红线**：产物必须真实物理编译，站在真实用户视角遍历 8 大核心使用链路，缺陷矩阵统一归因修复，达到零未捕获异常方可封板；
+  - **GitHub Actions 自动化流水线**：`.github/workflows/ci.yml` (PR/Push 质量门禁) 与 `.github/workflows/release.yml` (自动矩阵编译 Windows、macOS、Linux、Android、Web 产物并聚合发布 Release Assets)。
 

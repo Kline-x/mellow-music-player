@@ -1,0 +1,48 @@
+name: Mellow Music Continuous Integration (Quality Gate)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  code-quality-and-tests:
+    name: Code Quality & Comprehensive Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        working-directory: app
+        run: flutter pub get
+
+      - name: Static Code Analysis (0 Issues Gate)
+        working-directory: app
+        run: flutter analyze
+
+      - name: Run Full Test Suites (47/47 Suites)
+        working-directory: app
+        run: flutter test
+
+      - name: Build Web for E2E Verification
+        working-directory: app
+        run: flutter build web --release
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Root E2E Dependencies
+        run: npm ci || npm install
+
+      - name: Execute Real Product-level Puppeteer E2E Tests
+        run: node flutter_e2e_verify.mjs

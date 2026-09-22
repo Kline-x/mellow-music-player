@@ -1,0 +1,241 @@
+name: Mellow Music Release Pipeline (Multiplatform)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. Windows x64 桌面原生安装包编译
+  # ---------------------------------------------------------------------------
+  build-windows:
+    name: Build Windows x64
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        working-directory: app
+        run: flutter pub get
+
+      - name: Run Tests
+        working-directory: app
+        run: flutter test
+
+      - name: Build Windows Release
+        working-directory: app
+        run: flutter build windows --release
+
+      - name: Package Windows Binary
+        shell: pwsh
+        run: |
+          Compress-Archive -Path app/build/windows/x64/runner/Release/* -DestinationPath Mellow-Music-Windows-x64.zip
+
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mellow-Music-Windows-x64
+          path: Mellow-Music-Windows-x64.zip
+
+  # ---------------------------------------------------------------------------
+  # 2. macOS 桌面原生安装包编译 (Apple Silicon / Intel)
+  # ---------------------------------------------------------------------------
+  build-macos:
+    name: Build macOS Universal
+    runs-on: macos-14
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        working-directory: app
+        run: flutter pub get
+
+      - name: Run Tests
+        working-directory: app
+        run: flutter test
+
+      - name: Build macOS Release
+        working-directory: app
+        run: flutter build macos --release
+
+      - name: Package macOS Binary
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent app/build/macos/Build/Products/Release/mellow_music.app Mellow-Music-macOS.zip
+
+      - name: Upload macOS Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mellow-Music-macOS
+          path: Mellow-Music-macOS.zip
+
+  # ---------------------------------------------------------------------------
+  # 3. Linux x64 桌面原生二进制编译
+  # ---------------------------------------------------------------------------
+  build-linux:
+    name: Build Linux x64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Linux Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        working-directory: app
+        run: flutter pub get
+
+      - name: Run Tests
+        working-directory: app
+        run: flutter test
+
+      - name: Build Linux Release
+        working-directory: app
+        run: flutter build linux --release
+
+      - name: Package Linux Binary
+        run: |
+          tar -czvf Mellow-Music-Linux-x64.tar.gz -C app/build/linux/x64/release/bundle .
+
+      - name: Upload Linux Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mellow-Music-Linux-x64
+          path: Mellow-Music-Linux-x64.tar.gz
+
+  # ---------------------------------------------------------------------------
+  # 4. Android APK 移动端发布包编译
+  # ---------------------------------------------------------------------------
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        working-directory: app
+        run: flutter pub get
+
+      - name: Build Android APK
+        working-directory: app
+        run: flutter build apk --release
+
+      - name: Copy and Rename APK
+        run: |
+          cp app/build/app/outputs/flutter-apk/app-release.apk Mellow-Music-Android.apk
+
+      - name: Upload Android Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mellow-Music-Android
+          path: Mellow-Music-Android.apk
+
+  # ---------------------------------------------------------------------------
+  # 5. Web / PWA 生产产物编译与打包
+  # ---------------------------------------------------------------------------
+  build-web:
+    name: Build Web & PWA
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        working-directory: app
+        run: flutter pub get
+
+      - name: Build Web Release
+        working-directory: app
+        run: flutter build web --release
+
+      - name: Package Web Files
+        run: |
+          tar -czvf Mellow-Music-Web.tar.gz -C app/build/web .
+
+      - name: Upload Web Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mellow-Music-Web
+          path: Mellow-Music-Web.tar.gz
+
+  # ---------------------------------------------------------------------------
+  # 6. 全平台发布聚合 (Publish GitHub Release)
+  # ---------------------------------------------------------------------------
+  publish-release:
+    name: Publish GitHub Multiplatform Release
+    needs: [build-windows, build-macos, build-linux, build-android, build-web]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: List Release Assets
+        run: ls -lh release-assets
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Mellow Music · 润音 ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            release-assets/Mellow-Music-Windows-x64.zip
+            release-assets/Mellow-Music-macOS.zip
+            release-assets/Mellow-Music-Linux-x64.tar.gz
+            release-assets/Mellow-Music-Android.apk
+            release-assets/Mellow-Music-Web.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
