@@ -11,7 +11,7 @@
 | 里程碑 | 目标与交付物 | 计划周期 | 状态 | 交付物/参考文档 |
 | :--- | :--- | :---: | :---: | :--- |
 | **Phase 0** | **Modern Soft UI 双端高保真原型与 E2E 验收** | 已完成 | 🟢 **100%** | `index.html`、`mobile.html`、`e2e_test.js` (83/83 通过) |
-| **Phase 0.5** | **技术方案与零遗漏全页面矩阵规划** | 已完成 | 🟢 **100%** | `docs/ROADMAP.md`、`mellow_music_app_blueprint.md` |
+| **Phase 0.5** | **技术方案、零遗漏页面矩阵与技术规格书** | 已完成 | 🟢 **100%** | `docs/ROADMAP.md`、`docs/SPEC.md` |
 | **Phase 1** | **核心播放底座与 Modern Soft UI 组件库** | 进行中 | 🟡 **进行中** | `app/lib/design_system/`、`media_kit`、`audio_service` |
 | **Phase 2** | **QuickJS 音源脚本引擎与全网搜索** | 待启动 | ⚪ 待开始 | `flutter_js` 沙箱、LX 六音脚本导入与解析 |
 | **Phase 3** | **桌面端 12 视图 + 移动端 13 页面 1:1 落地** | 待启动 | ⚪ 待开始 | `app/lib/views/desktop/`、`app/lib/views/mobile/` |
@@ -42,6 +42,8 @@
   - 3. **独立悬浮歌词**：采用 `desktop_multi_window` 多窗口独立渲染 + Win32/macOS 鼠标透明穿透。
   - 4. **局域网同步**：100% 原生兼容 LX-Music 同步协议（端口 23332），支持与现有 LX-Music 双向扫码互通。
   - 5. **本地存储**：全面采纳工业级响应式数据库 `Drift` (SQLite3 FTS5)，杜绝跨平台编译冲突。
+- **[Completed] `/to-spec` 生产级系统工程规范说明书编制完成**：
+  - 编写并发布 [`docs/SPEC.md`](docs/SPEC.md)，全面规范：分层响应式架构、Modern Soft UI 完整设计 Token、双端 34 个路由页面/抽屉/弹窗的交互细节、media_kit 硬件 EQ 滤镜与双流机制、QuickJS 脚本沙箱 Dart 桥接契约、Drift 5 张核心数据表模型与 LX-Sync 同步报文结构。
 
 ---
 

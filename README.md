@@ -148,9 +148,12 @@ npm start
   - 桌面端 12 大核心主视图 + 4 大抽屉弹窗
   - 移动端 4 大主 Tab + 9 大二级跳转页 + 5 大底部抽屉/浮层
   - QuickJS 音源脚本沙箱、外部歌单链接解析、WebDAV/局域网扫码直连同步、透明穿透桌面歌词
+- 📋 **系统技术规格说明书 (System Specification)**：请查阅 [docs/SPEC.md](docs/SPEC.md)
+  - Modern Soft UI 设计 Token、双端 34 个路由交互规范
+  - media_kit 双流节流通信、QuickJS Dart Polyfill 注入协议、Drift 5 张核心表模型与 LX-Sync 报文定义
 - 📊 **研发里程碑与实时进度看板**：请查阅 [docs/PROGRESS.md](docs/PROGRESS.md)
   - Phase 0: Web 双端高保真原型与 83 项 E2E 自动化验收 (100% 完成)
-  - Phase 0.5: 零遗漏全页面矩阵规划与仓库架构初始化 (100% 完成)
+  - Phase 0.5: 零遗漏全页面矩阵规划与技术规格书编制 (100% 完成)
   - Phase 1: 核心播放底座与 Modern Soft UI 设计系统组件库 (进行中)
   - Phase 2 ~ 5: 音源引擎、全页面构建、动效歌词/EQ、多端同步 (排期中)
 
