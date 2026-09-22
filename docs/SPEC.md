@@ -463,6 +463,14 @@ mellow-music-player/
    - `P3 (轻微性)`：非核心文案瑕疵、微小圆角偏差；
 3. **闭环验收条件**：**必须实现 P0 与 P1 零遗留，P2 修复率 `>= 95%`，未捕获异常 (Uncaught Exceptions) 必须为 0**。
 
+### 9.4 本地桌面物理可执行产物 (Binary E2E) 进程级验收规范
+- **物理可执行二进制前置**：必须针对物理编译出的 `app/build/windows/x64/runner/Release/mellow_music.exe`（包含 `flutter_windows.dll`、`data/app.so`）执行实际进程级端到端启动验收；
+- **自动化探针驱动脚本**：运行 `windows_physical_client_e2e_verify.ps1`，自动化捕获：
+  1. 操作系统物理进程 PID 正常分配；
+  2. Win32 消息循环正常初始化，主窗口无静默崩溃，`$proc.Responding == true`；
+  3. 工作集内存分配稳定（常规常驻约 150MB 物理内存），无内存暴涨或泄漏；
+  4. 进程退出前支持平滑优雅终止，句柄正常释放。
+
 ---
 
 ## 10. 多端 CI/CD 自动化发版流水线规范 (GitHub Actions Pipeline)
@@ -473,8 +481,9 @@ mellow-music-player/
 - **触发时机**：每次对 `main` 分支的 Push 或 Pull Request；
 - **拦截规则**：
   1. `flutter analyze` 静态代码分析必须达到 **No issues found!**（0 错误、0 警告、0 提示）；
-  2. `flutter test` 全量单元与集成测试必须达到 **100% 全部通过**（当前基线 47/47 Suites）；
-  3. 自动编译 Web Release 产物并通过 Puppeteer 执行无头 Chrome 真实视觉与渲染挂载验收。
+  2. `flutter test` 全量单元与集成测试必须达到 **100% 全部通过**（包含客户端原生全链路 E2E 旅程测试，共 55/55 Suites）；
+  3. 并发触发 `build-windows-desktop-client` 在 `windows-latest` 上构建 Windows 原生 Release 可执行产物并上传归档；
+  4. 自动编译 Web Release 产物并通过跨平台自适应探针执行真实浏览器端到端渲染挂载验收。
 
 ### 10.2 多端并发发版流水线 (`.github/workflows/release.yml`)
 - **触发时机**：推送以 `v*` 开头的版本 Tag（如 `git push origin v1.0.0`）或在 Actions 面板手动派发；
