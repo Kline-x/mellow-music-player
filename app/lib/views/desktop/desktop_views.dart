@@ -58,9 +58,12 @@ class DesktopDiscoverView extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          '根据您常听的古风与经典流行智能漫游',
-                          style: TextStyle(fontSize: 12, color: theme.textMuted),
+                        Flexible(
+                          child: Text(
+                            '根据您常听的古风与经典流行智能漫游',
+                            style: TextStyle(fontSize: 12, color: theme.textMuted),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ],
                     ),
@@ -80,7 +83,9 @@ class DesktopDiscoverView extends StatelessWidget {
                       style: TextStyle(fontSize: 13.5, color: theme.textSecondary),
                     ),
                     const SizedBox(height: 20),
-                    Row(
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 10,
                       children: [
                         SoftButton(
                           label: '开启漫游播放',
@@ -94,7 +99,6 @@ class DesktopDiscoverView extends StatelessWidget {
                             }
                           },
                         ),
-                        const SizedBox(width: 12),
                         SoftButton(
                           label: '查看完整推荐',
                           icon: Icons.explore_outlined,
@@ -138,6 +142,7 @@ class DesktopDiscoverView extends StatelessWidget {
           crossAxisCount: 4,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
+          childAspectRatio: 0.82,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           children: [
@@ -198,7 +203,7 @@ class DesktopDiscoverView extends StatelessWidget {
   Widget _buildPlaylistCard(BuildContext context, String title, String sub, String img, VoidCallback onPlay) {
     final theme = context.watch<ThemeProvider>();
     return SoftCard(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       onTap: onPlay,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,30 +213,35 @@ class DesktopDiscoverView extends StatelessWidget {
               children: [
                 MellowImage(url: img, width: double.infinity, height: double.infinity, borderRadius: MellowRadii.borderR16),
                 Positioned(
-                  right: 8,
-                  bottom: 8,
+                  right: 6,
+                  bottom: 6,
                   child: Container(
-                    padding: const EdgeInsets.all(6),
+                    padding: const EdgeInsets.all(5),
                     decoration: BoxDecoration(
                       color: theme.accentColor,
                       shape: BoxShape.circle,
                       boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)],
                     ),
-                    child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 20),
+                    child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 18),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Text(
             title,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: theme.textPrimary),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.textPrimary),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 2),
-          Text(sub, style: TextStyle(fontSize: 11.5, color: theme.textMuted)),
+          Text(
+            sub,
+            style: TextStyle(fontSize: 11, color: theme.textMuted),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
@@ -1009,7 +1019,7 @@ class DesktopFavoriteView extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.favorite_rounded, color: Colors.pink, size: 20),
                     tooltip: '取消收藏',
-                    onPressed: () => player.toggleFavorite(t.id),
+                    onPressed: () => player.toggleFavorite(t.id, t),
                   ),
                 ],
               ),
@@ -1163,32 +1173,67 @@ class DesktopHistoryView extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('播放足迹历史', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-            Text('已记录最近 ${player.playHistory.length} 首曲目', style: TextStyle(fontSize: 13, color: theme.textMuted)),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('播放足迹历史', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                const SizedBox(height: 4),
+                Text('已记录最近 ${player.playHistory.length} 首曲目 · 真实本地存储', style: TextStyle(fontSize: 13, color: theme.textMuted)),
+              ],
+            ),
+            if (player.playHistory.isNotEmpty)
+              SoftButton(
+                label: '清空足迹',
+                icon: Icons.delete_sweep_rounded,
+                isPill: true,
+                onTap: () {
+                  player.clearPlayHistory();
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('已清空全部本地播放历史记录')),
+                  );
+                },
+              ),
           ],
         ),
         const SizedBox(height: 20),
-        ...player.playHistory.map((t) => SoftCard(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          onTap: () => player.playTrack(t),
-          child: Row(
-            children: [
-              MellowImage(url: t.coverUrl, width: 40, height: 40, borderRadius: MellowRadii.borderR8),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                    Text('${t.artist} · ${t.album}', style: TextStyle(fontSize: 12, color: theme.textMuted)),
-                  ],
-                ),
+        if (player.playHistory.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(48),
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(Icons.history_rounded, size: 56, color: theme.textMuted.withValues(alpha: 0.5)),
+                  const SizedBox(height: 16),
+                  Text('暂无播放历史', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                  const SizedBox(height: 6),
+                  Text('在发现页、榜单或搜索播放音乐，足迹将自动安全记录在此', style: TextStyle(fontSize: 13, color: theme.textMuted)),
+                ],
               ),
-              Text(t.formattedDuration, style: TextStyle(color: theme.textSecondary, fontSize: 12)),
-            ],
-          ),
-        )),
+            ),
+          )
+        else
+          ...player.playHistory.map((t) => SoftCard(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            onTap: () => player.playTrack(t),
+            child: Row(
+              children: [
+                MellowImage(url: t.coverUrl, width: 40, height: 40, borderRadius: MellowRadii.borderR8),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                      Text('${t.artist} · ${t.album}', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                    ],
+                  ),
+                ),
+                Text(t.formattedDuration, style: TextStyle(color: theme.textSecondary, fontSize: 12)),
+              ],
+            ),
+          )),
       ],
     );
   }
@@ -1357,7 +1402,77 @@ class DesktopSettingsView extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(height: 16),
+
+        // 4. 桌面全局键盘快捷键指南
+        SoftCard(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('桌面端全局键盘快捷键', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: theme.accentColor.withValues(alpha: 0.15),
+                      borderRadius: MellowRadii.borderPill,
+                    ),
+                    child: Text('全局就绪', style: TextStyle(color: theme.accentColor, fontSize: 11, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 10,
+                runSpacing: 8,
+                children: [
+                  _buildShortcutChip('空格 Space', '播放 / 暂停', theme),
+                  _buildShortcutChip('⌘/Ctrl + K', '全网即时搜索', theme),
+                  _buildShortcutChip('← / →', '快退 / 快进 5 秒', theme),
+                  _buildShortcutChip('↑ / ↓', '音量微调 ±5%', theme),
+                  _buildShortcutChip('M', '一键静音切换', theme),
+                  _buildShortcutChip('L', '巨幕动效歌词', theme),
+                  _buildShortcutChip('Q', '待播队列抽屉', theme),
+                  _buildShortcutChip('ESC', '退出全屏 / 关闭抽屉', theme),
+                ],
+              ),
+            ],
+          ),
+        ),
       ],
+    );
+  }
+
+  Widget _buildShortcutChip(String keyStr, String label, ThemeProvider theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.canvasColor.withValues(alpha: 0.7),
+        borderRadius: MellowRadii.borderR8,
+        border: Border.all(color: theme.borderColor.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: theme.cardColor,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: theme.borderColor),
+            ),
+            child: Text(
+              keyStr,
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.accentColor),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(label, style: TextStyle(fontSize: 11.5, color: theme.textSecondary)),
+        ],
+      ),
     );
   }
 }

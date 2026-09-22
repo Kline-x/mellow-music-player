@@ -24,7 +24,10 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
     with SingleTickerProviderStateMixin {
   late PageController _pageController;
   late AnimationController _turntableController;
+  final ScrollController _lyricScrollController = ScrollController();
   int _currentPage = 0; // 0: 黑胶大碟, 1: 全屏歌词
+  int _lastActiveIndex = -1;
+  double? _dragPositionMs;
 
   @override
   void initState() {
@@ -40,7 +43,20 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
   void dispose() {
     _pageController.dispose();
     _turntableController.dispose();
+    _lyricScrollController.dispose();
     super.dispose();
+  }
+
+  void _scrollToActiveLine(int index) {
+    if (index != _lastActiveIndex && _lyricScrollController.hasClients) {
+      _lastActiveIndex = index;
+      final targetOffset = max(0.0, index * 48.0 - 120.0);
+      _lyricScrollController.animateTo(
+        targetOffset,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
+    }
   }
 
   @override
@@ -54,6 +70,18 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
       if (!_turntableController.isAnimating) _turntableController.repeat();
     } else {
       if (_turntableController.isAnimating) _turntableController.stop();
+    }
+
+    int activeLineIndex = 0;
+    for (int i = 0; i < track.lyrics.length; i++) {
+      if (player.currentPosition >= track.lyrics[i].time) {
+        activeLineIndex = i;
+      }
+    }
+    if (_currentPage == 1) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToActiveLine(activeLineIndex);
+      });
     }
 
     return Scaffold(
@@ -148,11 +176,12 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
 
                       // 页面 2: 全屏动效歌词流
                       ListView.builder(
+                        controller: _lyricScrollController,
                         padding: const EdgeInsets.symmetric(vertical: 120, horizontal: 24),
                         itemCount: track.lyrics.length,
                         itemBuilder: (context, idx) {
                           final line = track.lyrics[idx];
-                          final isActive = player.currentPosition >= line.time;
+                          final isActive = idx == activeLineIndex;
                           return GestureDetector(
                             onTap: () => player.seek(line.time),
                             child: Padding(
@@ -189,9 +218,20 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
                           thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
                         ),
                         child: Slider(
-                          value: player.currentPosition.inMilliseconds.clamp(0, track.duration.inMilliseconds).toDouble(),
+                          value: (_dragPositionMs ?? player.currentPosition.inMilliseconds.toDouble())
+                              .clamp(0.0, max(1.0, track.duration.inMilliseconds.toDouble())),
                           max: max(1.0, track.duration.inMilliseconds.toDouble()),
-                          onChanged: (val) => player.seek(Duration(milliseconds: val.toInt())),
+                          onChanged: (val) {
+                            setState(() {
+                              _dragPositionMs = val;
+                            });
+                          },
+                          onChangeEnd: (val) {
+                            player.seek(Duration(milliseconds: val.toInt()));
+                            setState(() {
+                              _dragPositionMs = null;
+                            });
+                          },
                         ),
                       ),
                       Padding(
@@ -200,7 +240,10 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              '${(player.currentPosition.inSeconds ~/ 60).toString().padLeft(2, '0')}:${(player.currentPosition.inSeconds % 60).toString().padLeft(2, '0')}',
+                              () {
+                                final posSeconds = ((_dragPositionMs ?? player.currentPosition.inMilliseconds) / 1000).toInt();
+                                return '${(posSeconds ~/ 60).toString().padLeft(2, '0')}:${(posSeconds % 60).toString().padLeft(2, '0')}';
+                              }(),
                               style: TextStyle(fontSize: 11, color: theme.textMuted),
                             ),
                             Text(track.formattedDuration, style: TextStyle(fontSize: 11, color: theme.textMuted)),

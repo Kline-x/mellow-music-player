@@ -141,7 +141,7 @@ class _MobilePersonalFMPageState extends State<MobilePersonalFMPage>
     _rotationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 20),
-    )..repeat();
+    );
   }
 
   @override
@@ -155,6 +155,12 @@ class _MobilePersonalFMPageState extends State<MobilePersonalFMPage>
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
     final track = player.currentTrack ?? mockPresetTracks[0];
+
+    if (player.isPlaying) {
+      if (!_rotationController.isAnimating) _rotationController.repeat();
+    } else {
+      if (_rotationController.isAnimating) _rotationController.stop();
+    }
 
     return Scaffold(
       backgroundColor: theme.canvasColor,

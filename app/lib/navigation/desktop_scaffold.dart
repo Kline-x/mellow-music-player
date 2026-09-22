@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../design_system/tokens.dart';
 import '../design_system/theme_provider.dart';
@@ -26,19 +27,56 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
   String? _artistDetailParam;
   bool _isQueueOpen = false;
   bool _isFullscreenLyrics = false;
+  double? _dragPositionMs;
+
+  // 浏览器级真实导航历史栈
+  final List<Map<String, String?>> _history = [
+    {'view': 'discover', 'extra': null}
+  ];
+  int _historyIndex = 0;
 
   void _navigateTo(String viewId, [String? extra]) {
+    if (_activeView == viewId && _artistDetailParam == extra) return;
+    if (_historyIndex < _history.length - 1) {
+      _history.removeRange(_historyIndex + 1, _history.length);
+    }
+    _history.add({'view': viewId, 'extra': extra});
+    _historyIndex = _history.length - 1;
+
     setState(() {
       _activeView = viewId;
       if (viewId == 'artist_detail') {
-        _artistDetailParam = extra ?? '巫娜';
+        _artistDetailParam = extra ?? '周杰伦';
       }
     });
+  }
+
+  void _goBack() {
+    if (_historyIndex > 0) {
+      _historyIndex--;
+      final item = _history[_historyIndex];
+      setState(() {
+        _activeView = item['view']!;
+        _artistDetailParam = item['extra'];
+      });
+    }
+  }
+
+  void _goForward() {
+    if (_historyIndex < _history.length - 1) {
+      _historyIndex++;
+      final item = _history[_historyIndex];
+      setState(() {
+        _activeView = item['view']!;
+        _artistDetailParam = item['extra'];
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
+    final player = context.watch<AudioPlayerService>();
 
     if (_isFullscreenLyrics) {
       return DesktopFullscreenLyricsView(
@@ -46,223 +84,325 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: theme.canvasColor,
-      body: Stack(
-        children: [
-          // 1. 全局声学弥散流体光晕背景
-          const Positioned.fill(child: AcousticMeshGlow()),
+    final shortcuts = <ShortcutActivator, VoidCallback>{
+      // 1. 空格播放 / 暂停
+      const SingleActivator(LogicalKeyboardKey.space): () => player.togglePlay(),
+      // 2. 全局搜索 (Ctrl+K / Cmd+K)
+      const SingleActivator(LogicalKeyboardKey.keyK, control: true): () {
+        showDialog(context: context, builder: (_) => const QuickSearchOverlay());
+      },
+      const SingleActivator(LogicalKeyboardKey.keyK, meta: true): () {
+        showDialog(context: context, builder: (_) => const QuickSearchOverlay());
+      },
+      // 3. 快退 5 秒 / 快进 5 秒
+      const SingleActivator(LogicalKeyboardKey.arrowLeft): () {
+        player.seek(player.currentPosition - const Duration(seconds: 5));
+      },
+      const SingleActivator(LogicalKeyboardKey.arrowRight): () {
+        player.seek(player.currentPosition + const Duration(seconds: 5));
+      },
+      // 4. 音量调节
+      const SingleActivator(LogicalKeyboardKey.arrowUp): () => player.setVolume(player.volume + 0.05),
+      const SingleActivator(LogicalKeyboardKey.arrowDown): () => player.setVolume(player.volume - 0.05),
+      // 5. 静音切换
+      const SingleActivator(LogicalKeyboardKey.keyM): () => player.toggleMute(),
+      // 6. 巨幕全屏歌词
+      const SingleActivator(LogicalKeyboardKey.keyL): () {
+        setState(() => _isFullscreenLyrics = !_isFullscreenLyrics);
+      },
+      // 7. 待播队列抽屉
+      const SingleActivator(LogicalKeyboardKey.keyQ): () {
+        setState(() => _isQueueOpen = !_isQueueOpen);
+      },
+      // 8. ESC 退出全屏或抽屉
+      const SingleActivator(LogicalKeyboardKey.escape): () {
+        if (_isFullscreenLyrics) {
+          setState(() => _isFullscreenLyrics = false);
+        } else if (_isQueueOpen) {
+          setState(() => _isQueueOpen = false);
+        }
+      },
+    };
 
-          // 2. 主体工作台三栏布局
-          Positioned.fill(
-            child: Column(
-              children: [
-                // 顶部拟物标题栏 (TitleBar)
-                _buildTitleBar(context),
+    return CallbackShortcuts(
+      bindings: shortcuts,
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
+          backgroundColor: theme.canvasColor,
+          body: Stack(
+            children: [
+              // 1. 全局声学弥散流体光晕背景
+              const Positioned.fill(child: AcousticMeshGlow()),
 
-                // 主体区域：左侧微凹胶囊侧边栏 + 中央页面插槽
-                Expanded(
-                  child: Row(
-                    children: [
-                      // 左侧侧边栏
-                      _buildSidebar(context),
+              // 2. 主体工作台三栏布局
+              Positioned.fill(
+                child: Column(
+                  children: [
+                    // 顶部拟物标题栏 (TitleBar)
+                    _buildTitleBar(context),
 
-                      // 中央工作区
-                      Expanded(
-                        child: ClipRRect(
-                          child: _buildCurrentView(),
-                        ),
+                    // 主体区域：左侧微凹胶囊侧边栏 + 中央页面插槽
+                    Expanded(
+                      child: Row(
+                        children: [
+                          // 左侧侧边栏
+                          _buildSidebar(context),
+
+                          // 中央工作区
+                          Expanded(
+                            child: ClipRRect(
+                              child: _buildCurrentView(),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
+
+                    // 底部签名级悬浮播放底栏 (Pill Dock Player)
+                    _buildBottomPlayerDock(context),
+                  ],
+                ),
+              ),
+
+              // 3. 右侧滑出的待播队列抽屉
+              if (_isQueueOpen)
+                Positioned(
+                  top: 54,
+                  bottom: 96,
+                  right: 16,
+                  child: PlaybackQueueView(
+                    onClose: () => setState(() => _isQueueOpen = false),
                   ),
                 ),
 
-                // 底部签名级悬浮播放底栏 (Pill Dock Player)
-                _buildBottomPlayerDock(context),
-              ],
-            ),
+              // 4. 异常提示横幅 (ISSUE-09 友好容错)
+              if (player.playbackNotice != null)
+                Positioned(
+                  top: 58,
+                  left: 236,
+                  right: 24,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade900.withValues(alpha: 0.92),
+                        borderRadius: MellowRadii.borderPill,
+                        boxShadow: [
+                          BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 12, offset: const Offset(0, 4)),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.info_outline_rounded, color: Colors.white, size: 17),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              player.playbackNotice!,
+                              style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w500),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          GestureDetector(
+                            onTap: () => player.clearPlaybackNotice(),
+                            child: const Icon(Icons.close_rounded, color: Colors.white70, size: 16),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
-
-          // 3. 右侧滑出的待播队列抽屉
-          if (_isQueueOpen)
-            Positioned(
-              top: 54,
-              bottom: 96,
-              right: 16,
-              child: PlaybackQueueView(
-                onClose: () => setState(() => _isQueueOpen = false),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
 
-  // 顶部现代桌面沉浸应用栏
+  // 顶部现代桌面沉浸应用栏  // 顶部沉浸式拟物风格导航条 (集成标题、窗口控制区对齐与即时全局搜索)
   Widget _buildTitleBar(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final isDark = theme.isDarkMode;
 
-    return Container(
-      height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: MellowColors.canvas(isDark).withValues(alpha: 0.85),
-        border: Border(bottom: BorderSide(color: theme.borderColor.withValues(alpha: 0.6), width: 0.8)),
-      ),
-      child: Row(
-        children: [
-          // 品牌与路由导航
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 960;
+        return Container(
+          height: 56,
+          padding: EdgeInsets.symmetric(horizontal: isCompact ? 12 : 20),
+          decoration: BoxDecoration(
+            color: MellowColors.canvas(isDark).withValues(alpha: 0.85),
+            border: Border(bottom: BorderSide(color: theme.borderColor.withValues(alpha: 0.6), width: 0.8)),
+          ),
+          child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(7),
-                decoration: BoxDecoration(
-                  color: theme.accentColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.graphic_eq_rounded, color: theme.accentColor, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'Mellow Music · 润音',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 15,
-                  color: theme.textPrimary,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(width: 18),
-              // 路由前进后退按钮
+              // 品牌与路由导航
               Row(
                 children: [
-                  SoftButton(
-                    icon: Icons.chevron_left_rounded,
-                    iconSize: 20,
-                    isCircle: true,
-                    padding: const EdgeInsets.all(6),
-                    onTap: () => _navigateTo('discover'),
-                  ),
-                  const SizedBox(width: 6),
-                  SoftButton(
-                    icon: Icons.chevron_right_rounded,
-                    iconSize: 20,
-                    isCircle: true,
-                    padding: const EdgeInsets.all(6),
-                    onTap: null,
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const Spacer(),
-
-          // 居中/全局全网即时搜索栏 (Ctrl+K)
-          GestureDetector(
-            onTap: () => showDialog(context: context, builder: (_) => const QuickSearchOverlay()),
-            child: RecessedWell(
-              width: 380,
-              height: 38,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              borderRadius: MellowRadii.borderPill,
-              child: Row(
-                children: [
-                  Icon(Icons.search_rounded, size: 18, color: theme.accentColor),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '即时搜索全网歌曲、歌手、专辑...',
-                      style: TextStyle(fontSize: 12.5, color: theme.textMuted),
-                    ),
-                  ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                    padding: const EdgeInsets.all(7),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
-                      borderRadius: MellowRadii.borderR8,
+                      color: theme.accentColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Text(
-                      'Ctrl K',
-                      style: TextStyle(fontSize: 10, color: theme.textSecondary, fontWeight: FontWeight.bold),
+                    child: Icon(Icons.graphic_eq_rounded, color: theme.accentColor, size: 20),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    isCompact ? '润音' : 'Mellow Music · 润音',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                      color: theme.textPrimary,
+                      letterSpacing: 0.5,
                     ),
+                  ),
+                  SizedBox(width: isCompact ? 10 : 18),
+                  // 路由前进后退按钮 (真实多级导航栈)
+                  Row(
+                    children: [
+                      SoftButton(
+                        icon: Icons.chevron_left_rounded,
+                        iconSize: 20,
+                        tooltip: _historyIndex > 0 ? '后退' : '无更早历史',
+                        isCircle: true,
+                        padding: const EdgeInsets.all(6),
+                        onTap: _historyIndex > 0 ? _goBack : null,
+                      ),
+                      const SizedBox(width: 4),
+                      SoftButton(
+                        icon: Icons.chevron_right_rounded,
+                        iconSize: 20,
+                        tooltip: _historyIndex < _history.length - 1 ? '前进' : '无前进历史',
+                        isCircle: true,
+                        padding: const EdgeInsets.all(6),
+                        onTap: _historyIndex < _history.length - 1 ? _goForward : null,
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ),
-          ),
-          const Spacer(),
+              const SizedBox(width: 10),
 
-          // 右侧专业工具集 (对标 AlgerMusicPlayer)
-          Row(
-            children: [
-              // 1. 导入外部歌单
-              SoftButton(
-                icon: Icons.queue_music_rounded,
-                label: '导入歌单',
-                isPill: true,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                onTap: () => showDialog(
-                  context: context,
-                  builder: (_) => const ImportPlaylistModal(),
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // 2. 5大声学强调色调色盘选择微胶囊
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
-                  borderRadius: MellowRadii.borderPill,
-                  border: Border.all(color: theme.borderColor.withValues(alpha: 0.5)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: AccentColorType.values.map((type) {
-                    final isCurrent = theme.accentType == type;
-                    final color = type.getColor(isDark);
-                    return GestureDetector(
-                      onTap: () => theme.setAccentType(type),
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: isCurrent ? 16 : 11,
-                        height: isCurrent ? 16 : 11,
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                          border: isCurrent ? Border.all(color: Colors.white, width: 2) : null,
-                          boxShadow: isCurrent
-                              ? [BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 6)]
-                              : null,
+              // 居中/全局全网即时搜索栏 (弹性自适应防溢出，Ctrl/Cmd+K)
+              Expanded(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 380),
+                    child: GestureDetector(
+                      onTap: () => showDialog(context: context, builder: (_) => const QuickSearchOverlay()),
+                      child: RecessedWell(
+                        height: 38,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        borderRadius: MellowRadii.borderPill,
+                        child: Row(
+                          children: [
+                            Icon(Icons.search_rounded, size: 18, color: theme.accentColor),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                isCompact ? '搜索歌曲/歌手...' : '即时搜索全网歌曲、歌手、专辑...',
+                                style: TextStyle(fontSize: 12.5, color: theme.textMuted),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+                                borderRadius: MellowRadii.borderR8,
+                              ),
+                              child: Text(
+                                '⌘K',
+                                style: TextStyle(fontSize: 10, color: theme.textSecondary, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    );
-                  }).toList(),
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
 
-              // 3. 主题明暗切换
-              SoftButton(
-                icon: isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                tooltip: isDark ? '切换温润白瓷模式' : '切换深石墨夜间模式',
-                isCircle: true,
-                onTap: () => theme.toggleTheme(),
-              ),
-              const SizedBox(width: 8),
+              // 右侧专业工具集 (对标 AlgerMusicPlayer)
+              Row(
+                children: [
+                  // 1. 导入外部歌单
+                  SoftButton(
+                    icon: Icons.queue_music_rounded,
+                    label: isCompact ? null : '导入歌单',
+                    tooltip: '导入外部歌单',
+                    isPill: !isCompact,
+                    isCircle: isCompact,
+                    padding: EdgeInsets.symmetric(horizontal: isCompact ? 8 : 12, vertical: 7),
+                    onTap: () => showDialog(
+                      context: context,
+                      builder: (_) => const ImportPlaylistModal(),
+                    ),
+                  ),
+                  if (!isCompact) ...[
+                    const SizedBox(width: 10),
+                    // 2. 5大声学强调色调色盘选择微胶囊
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
+                        borderRadius: MellowRadii.borderPill,
+                        border: Border.all(color: theme.borderColor.withValues(alpha: 0.5)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: AccentColorType.values.map((type) {
+                          final isCurrent = theme.accentType == type;
+                          final color = type.getColor(isDark);
+                          return GestureDetector(
+                            onTap: () => theme.setAccentType(type),
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 3),
+                              width: isCurrent ? 15 : 10,
+                              height: isCurrent ? 15 : 10,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                                border: isCurrent ? Border.all(color: Colors.white, width: 2) : null,
+                                boxShadow: isCurrent
+                                    ? [BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 6)]
+                                    : null,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(width: 8),
 
-              // 4. 设置中心
-              SoftButton(
-                icon: Icons.settings_rounded,
-                tooltip: '设置与多端同步',
-                isCircle: true,
-                onTap: () => _navigateTo('settings'),
+                  // 3. 主题明暗切换
+                  SoftButton(
+                    icon: isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                    tooltip: isDark ? '切换温润白瓷模式' : '切换深石墨夜间模式',
+                    isCircle: true,
+                    onTap: () => theme.toggleTheme(),
+                  ),
+                  const SizedBox(width: 6),
+
+                  // 4. 设置中心
+                  SoftButton(
+                    icon: Icons.settings_rounded,
+                    tooltip: '设置与多端同步',
+                    isCircle: true,
+                    onTap: () => _navigateTo('settings'),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -524,11 +664,11 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                       ),
                     ],
                   ),
-                  // 进度条行
+                  // 进度条行 (带拖拽防抖保护，松手再 seek)
                   Row(
                     children: [
                       Text(
-                        '${(player.currentPosition.inSeconds ~/ 60).toString().padLeft(2, '0')}:${(player.currentPosition.inSeconds % 60).toString().padLeft(2, '0')}',
+                        _formatSeconds(((_dragPositionMs ?? player.currentPosition.inMilliseconds) / 1000).toInt()),
                         style: TextStyle(fontSize: 10.5, color: theme.textMuted, fontFeatures: const [FontFeature.tabularFigures()]),
                       ),
                       const SizedBox(width: 8),
@@ -545,9 +685,16 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                               overlayShape: const RoundSliderOverlayShape(overlayRadius: 8),
                             ),
                             child: Slider(
-                              value: player.currentPosition.inMilliseconds.clamp(0, track.duration.inMilliseconds).toDouble(),
+                              value: (_dragPositionMs ?? player.currentPosition.inMilliseconds.toDouble())
+                                  .clamp(0.0, max(1.0, track.duration.inMilliseconds.toDouble())),
                               max: max(1.0, track.duration.inMilliseconds.toDouble()),
-                              onChanged: (val) => player.seek(Duration(milliseconds: val.toInt())),
+                              onChanged: (val) {
+                                setState(() => _dragPositionMs = val);
+                              },
+                              onChangeEnd: (val) {
+                                player.seek(Duration(milliseconds: val.toInt()));
+                                setState(() => _dragPositionMs = null);
+                              },
                             ),
                           ),
                         ),
@@ -594,20 +741,14 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
               IconButton(
                 icon: const Icon(Icons.queue_music_rounded, size: 18),
                 color: _isQueueOpen ? theme.accentColor : theme.textSecondary,
-                tooltip: '当前待播队列',
+                tooltip: '待播队列 (Q)',
                 visualDensity: VisualDensity.compact,
                 onPressed: () => setState(() => _isQueueOpen = !_isQueueOpen),
               ),
               const SizedBox(width: 4),
-              // 音量图标 (点击静音/恢复)
+              // 音量图标 (点击静音/记忆恢复)
               GestureDetector(
-                onTap: () {
-                  if (player.volume > 0) {
-                    player.setVolume(0);
-                  } else {
-                    player.setVolume(0.8);
-                  }
-                },
+                onTap: () => player.toggleMute(),
                 child: Icon(
                   player.volume == 0 ? Icons.volume_off_rounded : Icons.volume_up_rounded,
                   size: 18,
@@ -636,5 +777,11 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
         ],
       ),
     );
+  }
+
+  String _formatSeconds(int totalSec) {
+    final m = (totalSec ~/ 60).toString().padLeft(2, '0');
+    final s = (totalSec % 60).toString().padLeft(2, '0');
+    return '$m:$s';
   }
 }

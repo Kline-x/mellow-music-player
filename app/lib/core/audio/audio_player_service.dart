@@ -27,6 +27,7 @@ class AudioPlayerService extends ChangeNotifier {
   final List<Track> _playlist = List.from(mockPresetTracks);
   final List<Track> _playHistory = [];
   final Set<String> _favoriteIds = {'track-1', 'track-3', 'track-5', 'track-6'};
+  final Map<String, Track> _cachedFavoriteTracks = {};
   final List<ImportedPlaylist> _importedPlaylists = [];
 
   int _currentIndex = 0;
@@ -40,35 +41,55 @@ class AudioPlayerService extends ChangeNotifier {
   int? _sleepTimerMinutes;
   int _sleepTimerRemainingSeconds = 0;
   bool _pauseAfterCurrent = false;
+  String? _playbackNotice;
 
   // Getters
   List<Track> get playlist => List.unmodifiable(_playlist);
   List<Track> get playHistory => List.unmodifiable(_playHistory);
   Set<String> get favoriteIds => Set.unmodifiable(_favoriteIds);
   int get currentIndex => _currentIndex;
-  bool get isPlaying => _isPlaying;
-  Duration get currentPosition => _position;
   Duration get position => _position;
+  Duration get currentPosition => _position;
   Duration get duration => _duration > Duration.zero ? _duration : (currentTrack?.duration ?? Duration.zero);
+  bool get isPlaying => _isPlaying;
   PlaybackMode get playbackMode => _mode;
   double get volume => _volume;
   int? get sleepTimerMinutes => _sleepTimerMinutes;
   int get sleepTimerRemainingSeconds => _sleepTimerRemainingSeconds;
   bool get pauseAfterCurrent => _pauseAfterCurrent;
+  String? get playbackNotice => _playbackNotice;
+
+  void clearPlaybackNotice() {
+    if (_playbackNotice != null) {
+      _playbackNotice = null;
+      notifyListeners();
+    }
+  }
 
   List<ImportedPlaylist> get importedPlaylists => List.unmodifiable(_importedPlaylists);
 
   List<Track> get favoriteTracks {
     final list = <Track>[];
     final addedIds = <String>{};
-    for (final t in _playlist) {
-      if (_favoriteIds.contains(t.id) && addedIds.add(t.id)) {
-        list.add(t.copyWith(isFavorite: true));
+    for (final id in _favoriteIds) {
+      if (!addedIds.add(id)) continue;
+      // 1. 优先从缓存实体中取
+      if (_cachedFavoriteTracks.containsKey(id)) {
+        list.add(_cachedFavoriteTracks[id]!.copyWith(isFavorite: true));
+        continue;
       }
-    }
-    for (final t in mockPresetTracks) {
-      if (_favoriteIds.contains(t.id) && addedIds.add(t.id)) {
-        list.add(t.copyWith(isFavorite: true));
+      // 2. 从当前待播列表中取
+      final fromPl = _playlist.where((t) => t.id == id).firstOrNull;
+      if (fromPl != null) {
+        _cachedFavoriteTracks[id] = fromPl;
+        list.add(fromPl.copyWith(isFavorite: true));
+        continue;
+      }
+      // 3. 从全局已知曲库中查找
+      final known = findKnownTrackById(id);
+      if (known != null) {
+        _cachedFavoriteTracks[id] = known;
+        list.add(known.copyWith(isFavorite: true));
       }
     }
     return list;
@@ -81,13 +102,12 @@ class AudioPlayerService extends ChangeNotifier {
     );
   }
 
+  double _lastNonZeroVolume = 0.8;
+
   AudioPlayerService({AudioPlayerBackend? backend})
       : _backend = backend ?? AudioPlayerBackendFactory.create() {
     _loadFromStorage();
     _initAudioListeners();
-    if (_playlist.isNotEmpty) {
-      _recordHistory(_playlist[0]);
-    }
   }
 
   void _loadFromStorage() {
@@ -97,6 +117,7 @@ class AudioPlayerService extends ChangeNotifier {
     final savedVolume = storage.getVolume();
     if (savedVolume != null) {
       _volume = savedVolume.clamp(0.0, 1.0);
+      if (_volume > 0) _lastNonZeroVolume = _volume;
       _backend.setVolume(_volume);
     }
 
@@ -111,11 +132,17 @@ class AudioPlayerService extends ChangeNotifier {
       }
     }
 
-    // 3. 恢复红心收藏
+    // 3. 恢复红心收藏与实体
     final savedFavs = storage.getFavoriteIds();
     if (savedFavs != null) {
       _favoriteIds.clear();
       _favoriteIds.addAll(savedFavs);
+    }
+    final savedFavTracks = storage.getFavoriteTracks();
+    if (savedFavTracks != null) {
+      for (final t in savedFavTracks) {
+        _cachedFavoriteTracks[t.id] = t;
+      }
     }
 
     // 4. 恢复历史记录
@@ -123,6 +150,13 @@ class AudioPlayerService extends ChangeNotifier {
     if (savedHistory != null && savedHistory.isNotEmpty) {
       _playHistory.clear();
       _playHistory.addAll(savedHistory);
+    }
+
+    // 5. 恢复导入歌单
+    final savedPlaylists = storage.getImportedPlaylists();
+    if (savedPlaylists != null && savedPlaylists.isNotEmpty) {
+      _importedPlaylists.clear();
+      _importedPlaylists.addAll(savedPlaylists);
     }
   }
 
@@ -174,6 +208,7 @@ class AudioPlayerService extends ChangeNotifier {
         _playlist.add(t);
       }
     }
+    StorageService.instance.saveImportedPlaylists(_importedPlaylists);
     notifyListeners();
   }
 
@@ -246,6 +281,7 @@ class AudioPlayerService extends ChangeNotifier {
 
   Future<void> _executeRealPlay(Track track) async {
     try {
+      _playbackNotice = null;
       if (track.audioUrl != null && track.audioUrl!.isNotEmpty) {
         await _backend.play(track.audioUrl!);
       } else if (track.localPath != null && track.localPath!.isNotEmpty) {
@@ -256,6 +292,8 @@ class AudioPlayerService extends ChangeNotifier {
       await _backend.setVolume(_volume);
     } catch (e) {
       debugPrint('[AudioPlayerService] 真实音频播放调度异常: $e');
+      _playbackNotice = '歌曲「${track.title}」音频资源加载失败，可能需要专属授权或网络受限';
+      notifyListeners();
     }
   }
 
@@ -308,15 +346,25 @@ class AudioPlayerService extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleFavorite([String? trackId]) {
-    final id = trackId ?? currentTrack?.id;
+  void toggleFavorite([String? trackId, Track? trackModel]) {
+    final id = trackId ?? trackModel?.id ?? currentTrack?.id;
     if (id == null) return;
     if (_favoriteIds.contains(id)) {
       _favoriteIds.remove(id);
+      _cachedFavoriteTracks.remove(id);
     } else {
       _favoriteIds.add(id);
+      // 捕获实体并缓存持久化
+      final targetTrack = trackModel ??
+          (currentTrack?.id == id ? currentTrack : null) ??
+          _playlist.where((t) => t.id == id).firstOrNull ??
+          findKnownTrackById(id);
+      if (targetTrack != null) {
+        _cachedFavoriteTracks[id] = targetTrack;
+      }
     }
     StorageService.instance.saveFavoriteIds(_favoriteIds);
+    StorageService.instance.saveFavoriteTracks(_cachedFavoriteTracks.values.toList());
     notifyListeners();
   }
 
@@ -324,8 +372,23 @@ class AudioPlayerService extends ChangeNotifier {
 
   void setVolume(double val) {
     _volume = val.clamp(0.0, 1.0);
+    if (_volume > 0) _lastNonZeroVolume = _volume;
     _backend.setVolume(_volume);
     StorageService.instance.saveVolume(_volume);
+    notifyListeners();
+  }
+
+  void toggleMute() {
+    if (_volume > 0) {
+      setVolume(0);
+    } else {
+      setVolume(_lastNonZeroVolume);
+    }
+  }
+
+  void clearPlayHistory() {
+    _playHistory.clear();
+    StorageService.instance.clearPlayHistory();
     notifyListeners();
   }
 

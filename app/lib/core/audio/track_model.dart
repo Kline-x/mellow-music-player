@@ -117,6 +117,7 @@ final List<Track> mockPresetTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80',
     duration: const Duration(minutes: 4, seconds: 28),
     source: 'preset-flac',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
     isFavorite: true,
     lyrics: [
       LyricLine(time: Duration.zero, text: '云水禅心 - 巫娜'),
@@ -138,6 +139,7 @@ final List<Track> mockPresetTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
     duration: const Duration(minutes: 3, seconds: 45),
     source: 'preset-320k',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
     isFavorite: false,
     lyrics: [
       LyricLine(time: Duration.zero, text: '晚风告白 - 伯远'),
@@ -157,6 +159,7 @@ final List<Track> mockPresetTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80',
     duration: const Duration(minutes: 5, seconds: 24),
     source: 'preset-flac',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
     isFavorite: true,
     lyrics: [
       LyricLine(time: Duration.zero, text: '海阔天空 - Beyond'),
@@ -178,6 +181,7 @@ final List<Track> mockPresetTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=500&q=80',
     duration: const Duration(minutes: 4, seconds: 36),
     source: 'preset-flac',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
     isFavorite: false,
     lyrics: [
       LyricLine(time: Duration.zero, text: '夜的第七章 - 周杰伦'),
@@ -197,6 +201,7 @@ final List<Track> mockPresetTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80',
     duration: const Duration(minutes: 2, seconds: 58),
     source: 'preset-320k',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
     isFavorite: true,
     lyrics: [
       LyricLine(time: Duration.zero, text: 'City of Stars - La La Land'),
@@ -214,6 +219,7 @@ final List<Track> mockPresetTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&q=80',
     duration: const Duration(minutes: 5, seconds: 12),
     source: 'preset-flac',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3',
     isFavorite: true,
     lyrics: [
       LyricLine(time: Duration.zero, text: '起风了 - 买辣椒也用券'),
@@ -257,6 +263,7 @@ final List<Track> mockJayChouTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&q=80',
     duration: const Duration(minutes: 4, seconds: 29),
     source: 'preset-flac',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3',
     lyrics: [
       LyricLine(time: Duration.zero, text: '晴天 - 周杰伦'),
       LyricLine(time: const Duration(seconds: 15), text: '故事的小黄花 从出生那年就飘着'),
@@ -274,6 +281,7 @@ final List<Track> mockJayChouTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=500&q=80',
     duration: const Duration(minutes: 4, seconds: 24),
     source: 'preset-flac',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3',
     lyrics: [
       LyricLine(time: Duration.zero, text: '花海 - 周杰伦'),
       LyricLine(time: const Duration(seconds: 16), text: '静止了 所有的花开'),
@@ -290,6 +298,7 @@ final List<Track> mockJayChouTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
     duration: const Duration(minutes: 3, seconds: 54),
     source: 'preset-flac',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3',
     lyrics: [
       LyricLine(time: Duration.zero, text: '爱在西元前 - 周杰伦'),
       LyricLine(time: const Duration(seconds: 12), text: '古巴比伦王颁布了汉谟拉比法典'),
@@ -311,6 +320,7 @@ final List<Track> mockBeyondTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80',
     duration: const Duration(minutes: 5, seconds: 3),
     source: 'preset-flac',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3',
     lyrics: [
       LyricLine(time: Duration.zero, text: '光辉岁月 - Beyond'),
       LyricLine(time: const Duration(seconds: 15), text: '钟声响起归家的讯号 在他生命里'),
@@ -328,6 +338,7 @@ final List<Track> mockBeyondTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=500&q=80',
     duration: const Duration(minutes: 4, seconds: 36),
     source: 'preset-320k',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3',
     lyrics: [
       LyricLine(time: Duration.zero, text: '真的爱你 - Beyond'),
       LyricLine(time: const Duration(seconds: 12), text: '无法可修饰的一对手 带出温暖永远在背后'),
@@ -344,6 +355,7 @@ final List<Track> mockBeyondTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80',
     duration: const Duration(minutes: 4, seconds: 34),
     source: 'preset-flac',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3',
     lyrics: [
       LyricLine(time: Duration.zero, text: '喜欢你 - Beyond'),
       LyricLine(time: const Duration(seconds: 18), text: '细雨带风湿透黄昏的街道 抹去雨水双眼无故地仰望'),
@@ -365,6 +377,7 @@ final List<Track> mockWuNaTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80',
     duration: const Duration(minutes: 5, seconds: 8),
     source: 'preset-flac',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3',
     lyrics: [
       LyricLine(time: Duration.zero, text: '七弦清音 - 巫娜'),
       LyricLine(time: const Duration(seconds: 16), text: '古琴七弦，空灵超尘'),
@@ -380,6 +393,7 @@ final List<Track> mockWuNaTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&q=80',
     duration: const Duration(minutes: 4, seconds: 45),
     source: 'preset-flac',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3',
     lyrics: [
       LyricLine(time: Duration.zero, text: '流水行云 - 巫娜'),
       LyricLine(time: const Duration(seconds: 14), text: '山泉汩汩，云卷云舒'),
@@ -395,6 +409,7 @@ final List<Track> mockWuNaTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=500&q=80',
     duration: const Duration(minutes: 5, seconds: 32),
     source: 'preset-flac',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3',
     lyrics: [
       LyricLine(time: Duration.zero, text: '秋江夜泊 - 巫娜'),
       LyricLine(time: const Duration(seconds: 20), text: '月落乌啼霜满天，江枫渔火对愁眠'),
@@ -414,6 +429,7 @@ final List<Track> mockBoYuanTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&q=80',
     duration: const Duration(minutes: 3, seconds: 38),
     source: 'preset-flac',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3',
     lyrics: [
       LyricLine(time: Duration.zero, text: '起跑线 - 伯远'),
       LyricLine(time: const Duration(seconds: 12), text: '站在晨光里的起跑线'),
@@ -429,6 +445,7 @@ final List<Track> mockBoYuanTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
     duration: const Duration(minutes: 4, seconds: 15),
     source: 'preset-320k',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
     lyrics: [
       LyricLine(time: Duration.zero, text: '冬日之光 - 伯远'),
       LyricLine(time: const Duration(seconds: 15), text: '白雪落下的时候，想起你的微笑'),
@@ -443,6 +460,7 @@ final List<Track> mockBoYuanTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=500&q=80',
     duration: const Duration(minutes: 3, seconds: 50),
     source: 'preset-flac',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
     lyrics: [
       LyricLine(time: Duration.zero, text: '巡光之旅 - 伯远'),
       LyricLine(time: const Duration(seconds: 14), text: '跟随心中的光芒不断前行'),
@@ -515,6 +533,7 @@ final List<Track> toplistSurgeTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
     duration: const Duration(minutes: 3, seconds: 35),
     source: 'preset-flac',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
     lyrics: [
       LyricLine(time: Duration.zero, text: '乌梅子酱 - 李荣浩'),
       LyricLine(time: const Duration(seconds: 14), text: '背对背默默许下心愿'),
@@ -531,6 +550,7 @@ final List<Track> toplistSurgeTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80',
     duration: const Duration(minutes: 3, seconds: 48),
     source: 'preset-320k',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
     lyrics: [
       LyricLine(time: Duration.zero, text: '如果呢 - 郑润泽'),
       LyricLine(time: const Duration(seconds: 12), text: '如果那天的风没有吹向你'),
@@ -546,6 +566,7 @@ final List<Track> toplistSurgeTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&q=80',
     duration: const Duration(minutes: 4, seconds: 12),
     source: 'preset-flac',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
     lyrics: [
       LyricLine(time: Duration.zero, text: '想去海边 - 夏日入侵企画'),
       LyricLine(time: const Duration(seconds: 16), text: '穿过长长隧道 奔向无垠蓝天'),
@@ -568,6 +589,7 @@ final List<Track> toplistHotTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80',
     duration: const Duration(minutes: 3, seconds: 25),
     source: 'preset-flac',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3',
     lyrics: [
       LyricLine(time: Duration.zero, text: '十年 - 陈奕迅'),
       LyricLine(time: const Duration(seconds: 12), text: '如果那两个字没有颤抖 我不会发现 我难受'),
@@ -588,6 +610,7 @@ final List<Track> toplistNewTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=500&q=80',
     duration: const Duration(minutes: 3, seconds: 58),
     source: 'preset-flac',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3',
     lyrics: [
       LyricLine(time: Duration.zero, text: '瞬 - 郑润泽'),
       LyricLine(time: const Duration(seconds: 15), text: '当光线穿过这片迷雾'),
@@ -602,6 +625,7 @@ final List<Track> toplistNewTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&q=80',
     duration: const Duration(minutes: 4, seconds: 28),
     source: 'preset-320k',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3',
     lyrics: [
       LyricLine(time: Duration.zero, text: '漠河舞厅 - 柳爽'),
       LyricLine(time: const Duration(seconds: 16), text: '我从没有见过极光出现的村落'),
@@ -619,6 +643,7 @@ final List<Track> toplistNewTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&q=80',
     duration: const Duration(minutes: 4, seconds: 16),
     source: 'preset-flac',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3',
     lyrics: [
       LyricLine(time: Duration.zero, text: '海底 - 一支榴莲'),
       LyricLine(time: const Duration(seconds: 15), text: '散落的月光穿过了云'),
@@ -639,6 +664,7 @@ final List<Track> toplistOriginTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=500&q=80',
     duration: const Duration(minutes: 4, seconds: 35),
     source: 'preset-flac',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3',
     lyrics: [
       LyricLine(time: Duration.zero, text: '米店 - 张玮玮'),
       LyricLine(time: const Duration(seconds: 18), text: '三月的烟雨 飘摇的南方'),
@@ -655,6 +681,7 @@ final List<Track> toplistOriginTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80',
     duration: const Duration(minutes: 4, seconds: 12),
     source: 'preset-320k',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3',
     lyrics: [
       LyricLine(time: Duration.zero, text: '安和桥 - 宋冬野'),
       LyricLine(time: const Duration(seconds: 20), text: '让我再看你一眼 从南到北'),
@@ -671,6 +698,7 @@ final List<Track> toplistOriginTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=500&q=80',
     duration: const Duration(minutes: 3, seconds: 46),
     source: 'preset-flac',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3',
     lyrics: [
       LyricLine(time: Duration.zero, text: '理想三旬 - 陈鸿宇'),
       LyricLine(time: const Duration(seconds: 15), text: '雨后有车驶来 驶过暮色苍白'),
@@ -686,6 +714,7 @@ final List<Track> toplistOriginTracks = [
     coverUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80',
     duration: const Duration(minutes: 5, seconds: 24),
     source: 'preset-flac',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3',
     lyrics: [
       LyricLine(time: Duration.zero, text: '南山南 - 马頔'),
       LyricLine(time: const Duration(seconds: 22), text: '你在南方的艳阳里 大雪纷飞'),
@@ -752,6 +781,7 @@ final List<RadioStation> mockRadioStations = [
       coverUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80',
       duration: const Duration(minutes: 6, seconds: 12),
       source: 'podcast-station',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3',
       lyrics: [
         LyricLine(time: Duration.zero, text: '伴月入眠 · 晚安夜读 - 深夜治愈故事馆'),
         LyricLine(time: const Duration(seconds: 10), text: '今晚无论你经历过什么，都请在这一刻卸下行囊'),
@@ -775,6 +805,7 @@ final List<RadioStation> mockRadioStations = [
       coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
       duration: const Duration(minutes: 8, seconds: 20),
       source: 'podcast-station',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3',
       lyrics: [
         LyricLine(time: Duration.zero, text: '松针夜雨 · 深林空溪 - 自然声学实验室'),
         LyricLine(time: const Duration(seconds: 15), text: '【环境声学】细雨穿过针叶林，微风拂动树影'),
@@ -797,6 +828,7 @@ final List<RadioStation> mockRadioStations = [
       coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80',
       duration: const Duration(minutes: 7, seconds: 15),
       source: 'podcast-station',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3',
       lyrics: [
         LyricLine(time: Duration.zero, text: '时代的回响 · 殿堂级摇滚溯源 - 乐话人文专栏'),
         LyricLine(time: const Duration(seconds: 14), text: '上世纪八十年代末，香港的霓虹灯火与地下录音棚'),
@@ -819,6 +851,7 @@ final List<RadioStation> mockRadioStations = [
       coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80',
       duration: const Duration(minutes: 6, seconds: 45),
       source: 'podcast-station',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
       lyrics: [
         LyricLine(time: Duration.zero, text: '先锋访谈 · 声学算法与智能重塑 - 未来声音播客'),
         LyricLine(time: const Duration(seconds: 12), text: '当神经渲染与物理声卡发生碰撞'),
@@ -933,3 +966,38 @@ List<SquarePlaylist> getPlaylistsByTag(String tag) {
 }
 
 
+
+/// 获取全局所有已知曲目（去重）
+List<Track> getAllKnownTracks() {
+  final map = <String, Track>{};
+  for (final t in mockPresetTracks) {
+    map[t.id] = t;
+  }
+  for (final list in toplistTracksMap.values) {
+    for (final t in list) {
+      map[t.id] = t;
+    }
+  }
+  for (final a in mockArtistsProfiles) {
+    for (final t in a.tracks) {
+      map[t.id] = t;
+    }
+  }
+  for (final r in mockRadioStations) {
+    map[r.track.id] = r.track;
+  }
+  for (final pl in mockSquarePlaylists) {
+    for (final t in pl.tracks) {
+      map[t.id] = t;
+    }
+  }
+  return map.values.toList();
+}
+
+/// 全局已知曲库寻轨辅助函数 (解决收藏与历史跨列表检索)
+Track? findKnownTrackById(String id) {
+  for (final t in getAllKnownTracks()) {
+    if (t.id == id) return t;
+  }
+  return null;
+}
