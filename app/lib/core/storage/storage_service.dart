@@ -38,6 +38,17 @@ class StorageService {
   static const _keyFavoriteTracks = 'mellow_audio_favorite_tracks';
   static const _keyPlayHistory = 'mellow_audio_play_history';
   static const _keyImportedPlaylists = 'mellow_audio_imported_playlists';
+  static const _keyFloatingLyricEnabled = 'mellow_floating_lyric_enabled';
+  static const _keyFloatingLyricLocked = 'mellow_floating_lyric_locked';
+
+  // --- 桌面悬浮歌词偏好 ---
+  bool? getFloatingLyricEnabled() => _prefs?.getBool(_keyFloatingLyricEnabled);
+  Future<bool> saveFloatingLyricEnabled(bool value) async =>
+      (await _prefs?.setBool(_keyFloatingLyricEnabled, value)) ?? false;
+
+  bool? getFloatingLyricLocked() => _prefs?.getBool(_keyFloatingLyricLocked);
+  Future<bool> saveFloatingLyricLocked(bool value) async =>
+      (await _prefs?.setBool(_keyFloatingLyricLocked, value)) ?? false;
 
   // --- 主题偏好 ---
 

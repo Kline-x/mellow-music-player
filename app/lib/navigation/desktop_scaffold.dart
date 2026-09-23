@@ -10,8 +10,10 @@ import '../design_system/acoustic_mesh_glow.dart';
 import '../design_system/mellow_image.dart';
 import '../core/audio/audio_player_service.dart';
 import '../core/audio/track_model.dart';
+import '../core/storage/storage_service.dart';
 import '../views/desktop/desktop_views.dart';
 import '../views/desktop/fullscreen_lyrics_view.dart';
+import '../views/desktop/desktop_floating_lyric_bar.dart';
 import '../views/common/modals.dart';
 
 /// 桌面端完整工作台脚手架 (DesktopScaffold)
@@ -27,12 +29,21 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
   String? _artistDetailParam;
   bool _isQueueOpen = false;
   bool _isFullscreenLyrics = false;
+  bool _isFloatingLyricEnabled = false;
   double? _dragPositionMs;
 
   @override
   void initState() {
     super.initState();
+    _isFloatingLyricEnabled = StorageService.instance.getFloatingLyricEnabled() ?? false;
     HardwareKeyboard.instance.addHandler(_handleGlobalHardwareKeyEvent);
+  }
+
+  void _toggleFloatingLyric() {
+    setState(() {
+      _isFloatingLyricEnabled = !_isFloatingLyricEnabled;
+    });
+    StorageService.instance.saveFloatingLyricEnabled(_isFloatingLyricEnabled);
   }
 
   @override
@@ -171,6 +182,9 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
       const SingleActivator(LogicalKeyboardKey.audioVolumeMute): () => player.toggleMute(),
       const SingleActivator(LogicalKeyboardKey.audioVolumeUp): () => player.setVolume(player.volume + 0.05),
       const SingleActivator(LogicalKeyboardKey.audioVolumeDown): () => player.setVolume(player.volume - 0.05),
+      // 10. 桌面悬浮动效歌词显隐切换 (Ctrl+D / Cmd+D)
+      const SingleActivator(LogicalKeyboardKey.keyD, control: true): _toggleFloatingLyric,
+      const SingleActivator(LogicalKeyboardKey.keyD, meta: true): _toggleFloatingLyric,
     };
 
     return CallbackShortcuts(
@@ -262,6 +276,12 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                       ),
                     ),
                   ),
+                ),
+
+              // 5. 桌面悬浮动效歌词小组件 (Desktop Floating Lyric Bar)
+              if (_isFloatingLyricEnabled)
+                DesktopFloatingLyricBar(
+                  onClose: _toggleFloatingLyric,
                 ),
             ],
           ),
@@ -786,6 +806,13 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                 tooltip: '展开巨幕全屏歌词',
                 visualDensity: VisualDensity.compact,
                 onPressed: () => setState(() => _isFullscreenLyrics = true),
+              ),
+              IconButton(
+                icon: const Icon(Icons.subtitles_rounded, size: 18),
+                color: _isFloatingLyricEnabled ? theme.accentColor : theme.textSecondary,
+                tooltip: _isFloatingLyricEnabled ? '关闭桌面歌词 (Ctrl+D)' : '开启桌面歌词 (Ctrl+D)',
+                visualDensity: VisualDensity.compact,
+                onPressed: _toggleFloatingLyric,
               ),
               IconButton(
                 icon: const Icon(Icons.queue_music_rounded, size: 18),
