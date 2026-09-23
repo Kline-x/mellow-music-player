@@ -278,12 +278,13 @@ proc.exec('calc.exe');
       expect(find.text('沙箱防御机制运行中'), findsOneWidget);
       expect(find.text('导入自定义脚本'), findsOneWidget);
 
-      // 验证官方六维音源卡片渲染 (主音源指示器与卡片标题均展示)
+      // 验证官方六维音源卡片与方案 A 默认落雪聚合音源卡片渲染
       expect(find.textContaining('官方预设与六维音源'), findsOneWidget);
-      expect(find.text('润音官方高保真源'), findsNWidgets(2));
+      expect(find.text('润音官方高保真源'), findsOneWidget);
       expect(find.text('酷我音乐'), findsOneWidget);
       expect(find.text('QQ音乐'), findsOneWidget);
       expect(find.text('网易云音乐'), findsOneWidget);
+      expect(find.text('默认落雪聚合音源'), findsNWidgets(2)); // 当前主音源指示器与扩展音源卡片
 
       // 点击切换全局音质偏好至 320K
       final chip320 = find.text('320K · 高品质');
@@ -300,6 +301,34 @@ proc.exec('calc.exe');
       await tester.pumpAndSettle();
 
       expect(LxSourceEngine.instance.preferredQuality, equals(AudioQuality.flac24bit));
+    });
+  });
+
+  group('5. 落雪音源方案 A（开箱即用内置默认源）专项验证', () {
+    test('未导入任何脚本时冷启动自动挂载默认落雪音源且默认激活', () async {
+      SharedPreferences.setMockInitialValues({});
+      await StorageService.instance.init();
+      final engine = LxSourceEngine.instance;
+      await engine.initFromStorage();
+
+      // 验证已自动装载默认落雪音源
+      expect(engine.drivers.containsKey('lx_default_aggregate'), isTrue);
+      final defaultDriver = engine.getDriver('lx_default_aggregate');
+      expect(defaultDriver, isNotNull);
+      expect(defaultDriver!.metadata.name, equals('默认落雪聚合音源'));
+      expect(defaultDriver.metadata.version, equals('2.0.0'));
+      expect(defaultDriver.metadata.author, equals('MellowLxCommunity'));
+      expect(defaultDriver.metadata.isEnabled, isTrue);
+      expect(defaultDriver.metadata.isBuiltIn, isFalse);
+
+      // 验证主音源自动设为落雪默认聚合源
+      expect(engine.activeSourceId, equals('lx_default_aggregate'));
+
+      // 验证支持的音质覆盖全档位
+      expect(
+        defaultDriver.metadata.supportedQualities,
+        containsAll([AudioQuality.k128k, AudioQuality.k320k, AudioQuality.flac, AudioQuality.flac24bit]),
+      );
     });
   });
 }

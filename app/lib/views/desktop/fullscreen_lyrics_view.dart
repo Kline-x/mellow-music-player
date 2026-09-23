@@ -19,8 +19,9 @@ class DesktopFullscreenLyricsView extends StatefulWidget {
 }
 
 class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsView>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _vinylController;
+  late AnimationController _armController;
   final ScrollController _lyricScrollController = ScrollController();
   int _lastActiveIndex = -1;
 
@@ -31,11 +32,16 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
       vsync: this,
       duration: const Duration(seconds: 24),
     );
+    _armController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
   }
 
   @override
   void dispose() {
     _vinylController.dispose();
+    _armController.dispose();
     _lyricScrollController.dispose();
     super.dispose();
   }
@@ -61,8 +67,10 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
 
     if (player.isPlaying) {
       if (!_vinylController.isAnimating) _vinylController.repeat();
+      if (!_armController.isAnimating && _armController.value < 1.0) _armController.forward();
     } else {
       if (_vinylController.isAnimating) _vinylController.stop();
+      if (!_armController.isAnimating && _armController.value > 0.0) _armController.reverse();
     }
 
     // 计算当前歌词激活行
@@ -114,51 +122,129 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
               padding: const EdgeInsets.symmetric(horizontal: 64, vertical: 48),
               child: Row(
                 children: [
-                  // 左栏：微凹黑胶大碟唱机与转动唱片
+                  // 左栏：微拟物黑胶大碟唱机与旋转唱针
                   Expanded(
                     flex: 5,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // 黑胶大碟
-                        AnimatedBuilder(
-                          animation: _vinylController,
-                          builder: (context, child) {
-                            return Transform.rotate(
-                              angle: _vinylController.value * 2 * pi,
-                              child: child,
-                            );
-                          },
-                          child: Container(
-                            width: 320,
-                            height: 320,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: const Color(0xFF111111),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.55),
-                                  blurRadius: 36,
-                                  offset: const Offset(0, 16),
+                        // 黑胶唱机与动态唱针
+                        SizedBox(
+                          width: 340,
+                          height: 330,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // 1. 黑胶转动大碟
+                              AnimatedBuilder(
+                                animation: _vinylController,
+                                builder: (context, child) {
+                                  return Transform.rotate(
+                                    angle: _vinylController.value * 2 * pi,
+                                    child: child,
+                                  );
+                                },
+                                child: Container(
+                                  width: 290,
+                                  height: 290,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: const Color(0xFF141416),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: theme.accentColor.withValues(alpha: 0.28),
+                                        blurRadius: 48,
+                                        spreadRadius: 4,
+                                      ),
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.6),
+                                        blurRadius: 36,
+                                        offset: const Offset(0, 16),
+                                      ),
+                                    ],
+                                    border: Border.all(
+                                      color: Colors.white.withValues(alpha: 0.1),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      // 同心环光栅纹理 1
+                                      Container(
+                                        width: 250,
+                                        height: 250,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(color: Colors.white.withValues(alpha: 0.05), width: 1.2),
+                                        ),
+                                      ),
+                                      // 同心环光栅纹理 2
+                                      Container(
+                                        width: 200,
+                                        height: 200,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(color: Colors.white.withValues(alpha: 0.06), width: 1.2),
+                                        ),
+                                      ),
+                                      // 中心唱片封面
+                                      Container(
+                                        width: 126,
+                                        height: 126,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(color: Colors.black87, width: 3),
+                                        ),
+                                        child: ClipOval(
+                                          child: MellowImage(
+                                            url: track.coverUrl,
+                                            width: 126,
+                                            height: 126,
+                                          ),
+                                        ),
+                                      ),
+                                      // 轴心小金属转心
+                                      Container(
+                                        width: 14,
+                                        height: 14,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: Colors.white.withValues(alpha: 0.9),
+                                          border: Border.all(color: Colors.black54, width: 2),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ],
-                              border: Border.all(color: const Color(0xFF282828), width: 6),
-                            ),
-                            child: Center(
-                              child: MellowImage(
-                                url: track.coverUrl,
-                                width: 130,
-                                height: 130,
-                                borderRadius: MellowRadii.borderPill,
                               ),
-                            ),
+
+                              // 2. 真实旋转黑胶唱针 (Tonearm)
+                              Positioned(
+                                top: 0,
+                                right: 30,
+                                child: AnimatedBuilder(
+                                  animation: _armController,
+                                  builder: (context, child) {
+                                    // 抬起状态为 -0.38 弧度 (~ -22 度)，搭在唱片状态为 0 弧度
+                                    final angle = -0.38 * (1.0 - _armController.value);
+                                    return Transform(
+                                      alignment: Alignment.topRight,
+                                      transform: Matrix4.rotationZ(angle),
+                                      child: child,
+                                    );
+                                  },
+                                  child: _TonearmWidget(accentColor: theme.accentColor),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 24),
                         Text(
                           track.title,
                           style: TextStyle(
-                            fontSize: 26,
+                            fontSize: 24,
                             fontWeight: FontWeight.bold,
                             color: theme.textPrimary,
                             letterSpacing: -0.5,
@@ -169,32 +255,69 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
                         Text(
                           '${track.artist} · ${track.album}',
                           style: TextStyle(
-                            fontSize: 14.5,
+                            fontSize: 14,
                             color: theme.textSecondary,
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        // 迷你进度指示
-                        SizedBox(
-                          width: 280,
-                          child: SliderTheme(
-                            data: SliderTheme.of(context).copyWith(
-                              trackHeight: 4,
-                              activeTrackColor: theme.accentColor,
-                              inactiveTrackColor: isDark ? Colors.white12 : Colors.black12,
-                              thumbColor: theme.accentColor,
-                              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                            ),
-                            child: Slider(
-                              value: player.currentPosition.inMilliseconds.clamp(0, track.duration.inMilliseconds).toDouble(),
-                              max: max(1.0, track.duration.inMilliseconds.toDouble()),
-                              onChanged: (val) => player.seek(Duration(milliseconds: val.toInt())),
-                            ),
-                          ),
-                        ),
+                        const SizedBox(height: 18),
+                        // 进度条行 (带两端时间)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
+                            Text(
+                              _formatDuration(player.currentPosition),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: theme.textMuted,
+                                fontFeatures: const [FontFeature.tabularFigures()],
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            SizedBox(
+                              width: 320,
+                              child: SliderTheme(
+                                data: SliderTheme.of(context).copyWith(
+                                  trackHeight: 3.5,
+                                  activeTrackColor: theme.accentColor,
+                                  inactiveTrackColor: isDark ? Colors.white12 : Colors.black12,
+                                  thumbColor: theme.accentColor,
+                                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
+                                ),
+                                child: Slider(
+                                  value: player.currentPosition.inMilliseconds.clamp(0, track.duration.inMilliseconds).toDouble(),
+                                  max: max(1.0, track.duration.inMilliseconds.toDouble()),
+                                  onChanged: (val) => player.seek(Duration(milliseconds: val.toInt())),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              track.formattedDuration,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: theme.textMuted,
+                                fontFeatures: const [FontFeature.tabularFigures()],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        // 控制按键行
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SoftButton(
+                              icon: player.playbackMode == PlaybackMode.singleLoop
+                                  ? Icons.repeat_one_rounded
+                                  : (player.playbackMode == PlaybackMode.shuffle
+                                      ? Icons.shuffle_rounded
+                                      : Icons.repeat_rounded),
+                              iconSize: 18,
+                              isCircle: true,
+                              tooltip: player.playbackMode.label,
+                              onTap: () => player.cyclePlaybackMode(),
+                            ),
+                            const SizedBox(width: 16),
                             SoftButton(
                               icon: Icons.skip_previous_rounded,
                               isCircle: true,
@@ -214,6 +337,14 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
                               icon: Icons.skip_next_rounded,
                               isCircle: true,
                               onTap: () => player.next(),
+                            ),
+                            const SizedBox(width: 16),
+                            SoftButton(
+                              icon: Icons.lyrics_outlined,
+                              iconSize: 18,
+                              isCircle: true,
+                              tooltip: '歌词全屏',
+                              onTap: () {},
                             ),
                           ],
                         ),
@@ -272,4 +403,107 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
       ),
     );
   }
+
+  String _formatDuration(Duration d) {
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
 }
+
+/// 拟物黑胶唱针微组件 (Tonearm - 支持旋转摆动物理质感)
+class _TonearmWidget extends StatelessWidget {
+  final Color accentColor;
+  const _TonearmWidget({required this.accentColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        // 顶部转轴金属圆座
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              colors: [Color(0xFFE2E8F0), Color(0xFF94A3B8)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.35),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+            border: Border.all(color: Colors.white, width: 1.5),
+          ),
+          child: Center(
+            child: Container(
+              width: 12,
+              height: 12,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFF475569),
+              ),
+            ),
+          ),
+        ),
+        // 银色唱臂连杆
+        Container(
+          width: 5,
+          height: 86,
+          margin: const EdgeInsets.only(right: 13),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFCBD5E1), Color(0xFF64748B)],
+            ),
+            borderRadius: BorderRadius.circular(2.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 4,
+                offset: const Offset(1, 2),
+              ),
+            ],
+          ),
+        ),
+        // 黑色唱头 (Stylus)
+        Container(
+          width: 16,
+          height: 22,
+          margin: const EdgeInsets.only(right: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E293B),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: const Color(0xFF94A3B8), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              width: 4,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 2),
+              decoration: BoxDecoration(
+                color: accentColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+

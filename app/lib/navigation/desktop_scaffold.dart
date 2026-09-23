@@ -196,6 +196,8 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
       const SingleActivator(LogicalKeyboardKey.keyD, meta: true): _toggleFloatingLyric,
     };
 
+    // ignore: avoid_print
+    print('>>> [STEP 9] DesktopScaffold build executed, theme: isDark=${theme.isDarkMode}, canvasColor=${theme.canvasColor}');
     return CallbackShortcuts(
       bindings: shortcuts,
       child: Focus(
@@ -299,20 +301,27 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
     );
   }
 
-  // 顶部现代桌面沉浸应用栏  // 顶部沉浸式拟物风格导航条 (集成标题、窗口控制区对齐与即时全局搜索)
+  // 顶部现代桌面沉浸应用栏 (集成交通灯避让、品牌标识、路由导航栈与全局即时搜索)
   Widget _buildTitleBar(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final isDark = theme.isDarkMode;
+    final isMac = Theme.of(context).platform == TargetPlatform.macOS;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final isCompact = constraints.maxWidth < 960;
+        final leftPadding = isMac ? 78.0 : (isCompact ? 12.0 : 20.0);
         return Container(
           height: 56,
-          padding: EdgeInsets.symmetric(horizontal: isCompact ? 12 : 20),
+          padding: EdgeInsets.only(left: leftPadding, right: isCompact ? 12 : 20),
           decoration: BoxDecoration(
             color: MellowColors.canvas(isDark).withValues(alpha: 0.85),
-            border: Border(bottom: BorderSide(color: theme.borderColor.withValues(alpha: 0.6), width: 0.8)),
+            border: Border(
+              bottom: BorderSide(
+                color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04),
+                width: 0.5,
+              ),
+            ),
           ),
           child: Row(
             children: [
@@ -430,26 +439,33 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                       decoration: BoxDecoration(
                         color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
                         borderRadius: MellowRadii.borderPill,
-                        border: Border.all(color: theme.borderColor.withValues(alpha: 0.5)),
+                        border: Border.all(
+                          color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.04),
+                          width: 0.5,
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: AccentColorType.values.map((type) {
                           final isCurrent = theme.accentType == type;
                           final color = type.getColor(isDark);
-                          return GestureDetector(
-                            onTap: () => theme.setAccentType(type),
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 3),
-                              width: isCurrent ? 15 : 10,
-                              height: isCurrent ? 15 : 10,
-                              decoration: BoxDecoration(
-                                color: color,
-                                shape: BoxShape.circle,
-                                border: isCurrent ? Border.all(color: Colors.white, width: 2) : null,
-                                boxShadow: isCurrent
-                                    ? [BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 6)]
-                                    : null,
+                          return MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: GestureDetector(
+                              onTap: () => theme.setAccentType(type),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                margin: const EdgeInsets.symmetric(horizontal: 4),
+                                width: isCurrent ? 16 : 12,
+                                height: isCurrent ? 16 : 12,
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  shape: BoxShape.circle,
+                                  border: isCurrent ? Border.all(color: Colors.white, width: 2) : null,
+                                  boxShadow: isCurrent
+                                      ? [BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 6, offset: const Offset(0, 1))]
+                                      : null,
+                                ),
                               ),
                             ),
                           );
@@ -457,7 +473,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                       ),
                     ),
                   ],
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
 
                   // 3. 主题明暗切换
                   SoftButton(
@@ -484,16 +500,23 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
     );
   }
 
-  // 左侧现代化自适应侧边栏 (支持完整滚动，避让底栏)
+  // 左侧现代化自适应侧边栏 (轻灵优雅透明底，支持完整呈现，消除白色药丸堆积)
   Widget _buildSidebar(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
+    final isDark = theme.isDarkMode;
     return Container(
       width: 220,
       decoration: BoxDecoration(
-        border: Border(right: BorderSide(color: theme.borderColor.withValues(alpha: 0.5), width: 0.8)),
+        color: MellowColors.card(isDark).withValues(alpha: 0.35),
+        border: Border(
+          right: BorderSide(
+            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
+            width: 0.5,
+          ),
+        ),
       ),
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(14, 16, 14, 28),
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 20),
         children: [
           _buildNavGroupTitle('在线音乐'),
           _buildNavItem('discover', '发现音乐', Icons.explore_rounded),
@@ -502,14 +525,14 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
           _buildNavItem('toplist', '巅峰榜单', Icons.leaderboard_rounded),
           _buildNavItem('artists', '热门歌手', Icons.people_alt_rounded),
           _buildNavItem('podcast', '声音电台', Icons.radio_rounded),
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
 
           _buildNavGroupTitle('我的资料库'),
           _buildNavItem('favorite', '我喜欢的音乐', Icons.favorite_rounded),
           _buildNavItem('imported', '导入与自建歌单', Icons.library_music_rounded),
           _buildNavItem('history', '播放历史', Icons.history_rounded),
           _buildNavItem('local', '本地与下载', Icons.folder_special_rounded),
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
 
           _buildNavGroupTitle('系统与生态'),
           _buildNavItem('sync', '多端同步中心', Icons.cloud_sync_rounded),
@@ -522,28 +545,29 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
 
   Widget _buildNavGroupTitle(String title) {
     final theme = context.watch<ThemeProvider>();
+    final isDark = theme.isDarkMode;
     return Padding(
-      padding: const EdgeInsets.only(left: 12, bottom: 8),
+      padding: const EdgeInsets.only(left: 14, top: 4, bottom: 6),
       child: Text(
         title,
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.textMuted, letterSpacing: 0.5),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: isDark ? Colors.white54 : const Color(0xFF64748B),
+          letterSpacing: 0.6,
+        ),
       ),
     );
   }
 
   Widget _buildNavItem(String id, String label, IconData icon) {
     final isSelected = _activeView == id;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: SoftButton(
-        label: label,
-        icon: icon,
-        isActive: isSelected,
-        isPill: true,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        onTap: () => _navigateTo(id),
-      ),
+    return _DesktopSidebarNavItem(
+      id: id,
+      label: label,
+      icon: icon,
+      isSelected: isSelected,
+      onTap: () => _navigateTo(id),
     );
   }
 
@@ -595,19 +619,25 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
       height: 78,
       padding: EdgeInsets.symmetric(horizontal: screenWidth < 900 ? 12 : 24, vertical: 6),
       decoration: BoxDecoration(
-        color: MellowColors.card(isDark).withValues(alpha: 0.94),
+        color: MellowColors.card(isDark).withValues(alpha: 0.96),
         border: Border(
           top: BorderSide(
-            color: theme.borderColor.withValues(alpha: 0.6),
-            width: 0.8,
+            color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white,
+            width: 0.6,
           ),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
-            blurRadius: 16,
-            offset: const Offset(0, -3),
+            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
           ),
+          if (!isDark)
+            BoxShadow(
+              color: Colors.white.withValues(alpha: 0.8),
+              blurRadius: 0,
+              offset: const Offset(0, -1),
+            ),
         ],
       ),
       child: Row(
@@ -732,14 +762,14 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                   ),
           ),
 
-          // 2. 中央：核心播放控制器与微细平滑进度条
+          // 2. 中央：核心播放控制器与微细平滑进度条 (优雅呼吸感布局)
           Expanded(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: screenWidth < 900 ? 6 : 18),
+              padding: EdgeInsets.symmetric(horizontal: screenWidth < 900 ? 6 : 20),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // 控制按键行 (自适应缩放防溢出)
+                  // 控制按键行 (自适应居中与触感微光)
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Row(
@@ -752,7 +782,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                                 : (player.playbackMode == PlaybackMode.shuffle
                                     ? Icons.shuffle_rounded
                                     : Icons.repeat_rounded),
-                            size: 19,
+                            size: 18,
                           ),
                           color: player.playbackMode == PlaybackMode.sequence
                               ? theme.textMuted
@@ -761,7 +791,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                           onPressed: () => player.cyclePlaybackMode(),
                           visualDensity: VisualDensity.compact,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 10),
                         IconButton(
                           icon: const Icon(Icons.skip_previous_rounded, size: 22),
                           color: theme.textPrimary,
@@ -769,31 +799,40 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                           onPressed: () => player.previous(),
                           visualDensity: VisualDensity.compact,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 10),
+                        // 呼吸质感主播放键
                         GestureDetector(
                           onTap: () => player.togglePlay(),
-                          child: Container(
-                            width: 36,
-                            height: 36,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            width: 38,
+                            height: 38,
                             decoration: BoxDecoration(
-                              color: theme.accentColor,
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  theme.accentColor,
+                                  theme.accentColor.withValues(alpha: 0.88),
+                                ],
+                              ),
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: theme.accentColor.withValues(alpha: 0.4),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
+                                  color: theme.accentColor.withValues(alpha: 0.42),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 3),
                                 ),
                               ],
                             ),
                             child: Icon(
                               player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                               color: Colors.white,
-                              size: 22,
+                              size: 23,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 10),
                         IconButton(
                           icon: const Icon(Icons.skip_next_rounded, size: 22),
                           color: theme.textPrimary,
@@ -804,24 +843,29 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 2),
                   // 进度条行 (带拖拽防抖保护，松手再 seek)
                   Row(
                     children: [
                       Text(
                         _formatSeconds(((_dragPositionMs ?? player.currentPosition.inMilliseconds) / 1000).toInt()),
-                        style: TextStyle(fontSize: 10.5, color: theme.textMuted, fontFeatures: const [FontFeature.tabularFigures()]),
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: theme.textMuted,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: SizedBox(
-                          height: 18,
+                          height: 16,
                           child: SliderTheme(
                             data: SliderTheme.of(context).copyWith(
-                              trackHeight: 3.5,
+                              trackHeight: 3.0,
                               activeTrackColor: theme.accentColor,
                               inactiveTrackColor: isDark ? Colors.white12 : Colors.black12,
                               thumbColor: theme.accentColor,
-                              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
+                              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 4.5),
                               overlayShape: const RoundSliderOverlayShape(overlayRadius: 8),
                             ),
                             child: Slider(
@@ -845,10 +889,14 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 10),
                       Text(
                         track?.formattedDuration ?? '00:00',
-                        style: TextStyle(fontSize: 10.5, color: theme.textMuted, fontFeatures: const [FontFeature.tabularFigures()]),
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: theme.textMuted,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
                       ),
                     ],
                   ),
@@ -857,19 +905,20 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
             ),
           ),
 
-          // 3. 右侧：专业音效工具与音量调节
+          // 3. 右侧：专业音效工具与音量调节 (规范分组分区容器)
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // 群组 A：声学与定时
               IconButton(
-                icon: const Icon(Icons.tune_rounded, size: 18),
+                icon: const Icon(Icons.tune_rounded, size: 17),
                 color: theme.textSecondary,
                 tooltip: '10 频段专业声学 EQ',
                 visualDensity: VisualDensity.compact,
                 onPressed: () => showDialog(context: context, builder: (_) => const EqualizerModal()),
               ),
               IconButton(
-                icon: const Icon(Icons.hourglass_bottom_rounded, size: 18),
+                icon: const Icon(Icons.hourglass_bottom_rounded, size: 17),
                 color: player.sleepTimerMinutes != null ? theme.accentColor : theme.textSecondary,
                 tooltip: player.sleepTimerMinutes != null
                     ? '睡眠定时进行中 (${player.sleepTimerRemainingSeconds ~/ 60}分)'
@@ -877,47 +926,70 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                 visualDensity: VisualDensity.compact,
                 onPressed: () => showDialog(context: context, builder: (_) => const SleepTimerModal()),
               ),
+
+              // 优雅微细分隔线
+              Container(
+                width: 0.8,
+                height: 14,
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                color: isDark ? Colors.white12 : Colors.black12,
+              ),
+
+              // 群组 B：视界与队列
               IconButton(
-                icon: const Icon(Icons.lyrics_rounded, size: 18),
+                icon: const Icon(Icons.lyrics_rounded, size: 17),
                 color: _isFullscreenLyrics ? theme.accentColor : theme.textSecondary,
                 tooltip: '展开巨幕全屏歌词',
                 visualDensity: VisualDensity.compact,
                 onPressed: () => setState(() => _isFullscreenLyrics = true),
               ),
-              IconButton(
-                icon: const Icon(Icons.subtitles_rounded, size: 18),
-                color: _isFloatingLyricEnabled ? theme.accentColor : theme.textSecondary,
-                tooltip: _isFloatingLyricEnabled ? '关闭桌面歌词 (Ctrl+D)' : '开启桌面歌词 (Ctrl+D)',
-                visualDensity: VisualDensity.compact,
-                onPressed: _toggleFloatingLyric,
+              Builder(
+                builder: (context) {
+                  final shortcutKey = Theme.of(context).platform == TargetPlatform.macOS ? '⌘D' : 'Ctrl+D';
+                  return IconButton(
+                    icon: const Icon(Icons.subtitles_rounded, size: 17),
+                    color: _isFloatingLyricEnabled ? theme.accentColor : theme.textSecondary,
+                    tooltip: _isFloatingLyricEnabled ? '关闭桌面歌词 ($shortcutKey)' : '开启桌面歌词 ($shortcutKey)',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: _toggleFloatingLyric,
+                  );
+                },
               ),
               IconButton(
-                icon: const Icon(Icons.queue_music_rounded, size: 18),
+                icon: const Icon(Icons.queue_music_rounded, size: 17),
                 color: _isQueueOpen ? theme.accentColor : theme.textSecondary,
                 tooltip: '待播队列 (Q)',
                 visualDensity: VisualDensity.compact,
                 onPressed: () => setState(() => _isQueueOpen = !_isQueueOpen),
               ),
-              const SizedBox(width: 4),
-              // 音量图标 (点击静音/记忆恢复)
+
+              // 优雅微细分隔线
+              Container(
+                width: 0.8,
+                height: 14,
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                color: isDark ? Colors.white12 : Colors.black12,
+              ),
+
+              // 群组 C：音量调节微胶囊
               GestureDetector(
                 onTap: () => player.toggleMute(),
                 child: Icon(
                   player.volume == 0 ? Icons.volume_off_rounded : Icons.volume_up_rounded,
-                  size: 18,
+                  size: 17,
                   color: theme.textSecondary,
                 ),
               ),
               const SizedBox(width: 4),
               SizedBox(
-                width: 70,
+                width: 76,
                 child: SliderTheme(
                   data: SliderTheme.of(context).copyWith(
-                    trackHeight: 3,
+                    trackHeight: 2.8,
                     activeTrackColor: theme.accentColor,
                     inactiveTrackColor: isDark ? Colors.white12 : Colors.black12,
                     thumbColor: theme.accentColor,
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 4.5),
+                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 4.0),
                   ),
                   child: Slider(
                     value: player.volume,
@@ -938,3 +1010,103 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
     return '$m:$s';
   }
 }
+
+/// 专为桌面端打造的轻灵现代侧栏导航项 (告别白色药丸堆积，支持极简透明/微浅浮动/高亮激活)
+class _DesktopSidebarNavItem extends StatefulWidget {
+  final String id;
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _DesktopSidebarNavItem({
+    required this.id,
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  State<_DesktopSidebarNavItem> createState() => _DesktopSidebarNavItemState();
+}
+
+class _DesktopSidebarNavItemState extends State<_DesktopSidebarNavItem> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.watch<ThemeProvider>();
+    final isDark = theme.isDarkMode;
+
+    Color bgColor;
+    Color fgColor;
+    List<BoxShadow>? shadows;
+
+    if (widget.isSelected) {
+      bgColor = theme.accentColor;
+      fgColor = Colors.white;
+      shadows = [
+        BoxShadow(
+          color: theme.accentColor.withValues(alpha: 0.35),
+          offset: const Offset(0, 3),
+          blurRadius: 10,
+        ),
+      ];
+    } else if (_isHovered) {
+      bgColor = isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.04);
+      fgColor = theme.textPrimary;
+      shadows = null;
+    } else {
+      bgColor = Colors.transparent;
+      fgColor = isDark ? Colors.white70 : const Color(0xFF475569);
+      shadows = null;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8.5),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: MellowRadii.borderPill,
+              boxShadow: shadows,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  widget.icon,
+                  size: 18,
+                  color: fgColor,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    widget.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.w500,
+                      color: fgColor,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+

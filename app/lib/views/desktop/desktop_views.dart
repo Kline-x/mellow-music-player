@@ -32,7 +32,7 @@ class DesktopDiscoverView extends StatelessWidget {
     final player = context.watch<AudioPlayerService>();
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
       children: [
         // Bento Hero 席位 - 今日私享雷达
         SoftCard(
@@ -304,7 +304,7 @@ class _DesktopPlaylistSquareViewState extends State<DesktopPlaylistSquareView> {
     final playlists = getPlaylistsByTag(_activeTag);
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -483,7 +483,7 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
     ];
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -705,21 +705,70 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
   }
 }
 
-/// 4. 热门歌手库与歌手详情 (Artists & ArtistDetail)
-class DesktopArtistsView extends StatelessWidget {
+/// 4. 热门歌手库 (ArtistsView - 支持流派标签多维过滤与丰富生态)
+class DesktopArtistsView extends StatefulWidget {
   final Function(String viewId, [String? extra]) onNavigate;
   const DesktopArtistsView({super.key, required this.onNavigate});
 
   @override
+  State<DesktopArtistsView> createState() => _DesktopArtistsViewState();
+}
+
+class _DesktopArtistsViewState extends State<DesktopArtistsView> {
+  String _selectedGenre = '全部';
+  final List<String> _genres = ['全部', '华语流行', '殿堂摇滚', '东方雅乐', '潮水新声'];
+
+  @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
-    final artists = mockArtistsProfiles;
+    final allArtists = mockArtistsProfiles;
+
+    final filtered = _selectedGenre == '全部'
+        ? allArtists
+        : allArtists.where((a) {
+            if (_selectedGenre == '华语流行') return a.name == '周杰伦' || a.name == '陈奕迅' || a.name == '孙燕姿' || a.name == '林俊杰' || a.name == '伯远';
+            if (_selectedGenre == '殿堂摇滚') return a.name == 'Beyond' || a.name == '告五人';
+            if (_selectedGenre == '东方雅乐') return a.name == '巫娜';
+            if (_selectedGenre == '潮水新声') return a.name == '告五人' || a.name == '伯远';
+            return true;
+          }).toList();
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
       children: [
-        Text('热门歌手库', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-        const SizedBox(height: 20),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('热门歌手库', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                const SizedBox(height: 4),
+                Text('汇聚华语乐坛殿堂名宿与独立原创先锋', style: TextStyle(fontSize: 13, color: theme.textMuted)),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        // 流派分类 Tab 栏
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: _genres.map((g) {
+              final isSel = _selectedGenre == g;
+              return Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: SoftButton(
+                  label: g,
+                  isActive: isSel,
+                  isPill: true,
+                  onTap: () => setState(() => _selectedGenre = g),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 24),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -729,12 +778,12 @@ class DesktopArtistsView extends StatelessWidget {
             mainAxisSpacing: 16,
             childAspectRatio: 0.85,
           ),
-          itemCount: artists.length,
+          itemCount: filtered.length,
           itemBuilder: (context, idx) {
-            final a = artists[idx];
+            final a = filtered[idx];
             return SoftCard(
               padding: const EdgeInsets.all(16),
-              onTap: () => onNavigate('artist_detail', a.name),
+              onTap: () => widget.onNavigate('artist_detail', a.name),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -749,7 +798,7 @@ class DesktopArtistsView extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text(a.role, style: TextStyle(fontSize: 11.5, color: theme.textMuted), textAlign: TextAlign.center),
+                  Text(a.role, style: TextStyle(fontSize: 11.5, color: theme.textMuted), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 8),
                   Text('粉丝 ${a.fans}', style: TextStyle(fontSize: 11, color: theme.textSecondary)),
                 ],
@@ -782,7 +831,7 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
     final artist = getArtistProfileByName(widget.artistName);
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
       children: [
         InkWell(
           onTap: () => widget.onNavigate('artists'),
@@ -903,7 +952,7 @@ class DesktopPodcastView extends StatelessWidget {
     final radios = mockRadioStations;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
       children: [
         Text('声音电台专区', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: theme.textPrimary)),
         const SizedBox(height: 20),
@@ -952,7 +1001,7 @@ class DesktopPodcastView extends StatelessWidget {
   }
 }
 
-/// 7. 我喜欢的音乐 (FavoriteView)
+/// 7. 我喜欢的音乐 (FavoriteView - 一体化现代高密度曲目列表)
 class DesktopFavoriteView extends StatelessWidget {
   final Function(String viewId, [String? extra]) onNavigate;
   const DesktopFavoriteView({super.key, required this.onNavigate});
@@ -961,11 +1010,10 @@ class DesktopFavoriteView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
-
     final favTracks = player.favoriteTracks;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
       children: [
         SoftCard(
           padding: const EdgeInsets.all(28),
@@ -973,11 +1021,11 @@ class DesktopFavoriteView extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 110,
-                height: 110,
+                width: 100,
+                height: 100,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(colors: [Color(0xFFEC4899), Color(0xFFF472B6)]),
-                  borderRadius: MellowRadii.borderR24,
+                  borderRadius: MellowRadii.borderR20,
                   boxShadow: [
                     BoxShadow(
                       color: const Color(0xFFEC4899).withValues(alpha: 0.35),
@@ -986,88 +1034,282 @@ class DesktopFavoriteView extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 48),
+                child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 44),
               ),
               const SizedBox(width: 24),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('我喜欢的音乐', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                  const SizedBox(height: 6),
-                  Text('共收藏 ${favTracks.length} 首心动单曲 · 本地安全持久化存储', style: TextStyle(color: theme.textSecondary, fontSize: 13)),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      SoftButton(
-                        label: '一键播放全部',
-                        icon: Icons.play_arrow_rounded,
-                        isActive: true,
-                        isPill: true,
-                        onTap: () {
-                          if (favTracks.isNotEmpty) player.playPlaylist(favTracks);
-                        },
-                      ),
-                      const SizedBox(width: 10),
-                      SoftButton(
-                        label: '导入更多',
-                        icon: Icons.add_link_rounded,
-                        isPill: true,
-                        onTap: () => showDialog(
-                          context: context,
-                          builder: (_) => const ImportPlaylistModal(),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('我喜欢的音乐', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                    const SizedBox(height: 6),
+                    Text('共收藏 ${favTracks.length} 首心动单曲 · 本地安全持久化存储', style: TextStyle(color: theme.textSecondary, fontSize: 13)),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        SoftButton(
+                          label: '一键播放全部',
+                          icon: Icons.play_arrow_rounded,
+                          isActive: true,
+                          isPill: true,
+                          onTap: () {
+                            if (favTracks.isNotEmpty) player.playPlaylist(favTracks);
+                          },
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(width: 10),
+                        SoftButton(
+                          label: '导入更多',
+                          icon: Icons.add_link_rounded,
+                          isPill: true,
+                          onTap: () => showDialog(
+                            context: context,
+                            builder: (_) => const ImportPlaylistModal(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 24),
-        if (favTracks.isEmpty)
-          Padding(
-            padding: const EdgeInsets.all(40),
-            child: Center(
-              child: Column(
-                children: [
-                  Icon(Icons.favorite_border_rounded, size: 48, color: theme.textMuted),
-                  const SizedBox(height: 12),
-                  Text('暂无收藏曲目，在播放或搜索时点击红心即可收入心动歌单', style: TextStyle(color: theme.textMuted, fontSize: 13)),
-                ],
-              ),
-            ),
-          )
-        else
-          for (final t in favTracks)
-            SoftCard(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              onTap: () => player.playTrack(t),
-              child: Row(
-                children: [
-                  MellowImage(url: t.coverUrl, width: 42, height: 42, borderRadius: MellowRadii.borderR8),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                        Text('${t.artist} · ${t.album}', style: TextStyle(fontSize: 12, color: theme.textMuted)),
-                      ],
-                    ),
-                  ),
-                  Text(t.formattedDuration, style: TextStyle(color: theme.textSecondary, fontSize: 12)),
-                  const SizedBox(width: 16),
-                  IconButton(
-                    icon: const Icon(Icons.favorite_rounded, color: Colors.pink, size: 20),
-                    tooltip: '取消收藏',
-                    onPressed: () => player.toggleFavorite(t.id, t),
-                  ),
-                ],
-              ),
-            ),
+        DesktopSongTableView(
+          tracks: favTracks,
+          emptyMessage: '暂无收藏曲目，在播放或搜索时点击红心即可收入心动歌单',
+        ),
       ],
+    );
+  }
+}
+
+/// 现代桌面端一体化高密度歌曲列表组件
+class DesktopSongTableView extends StatelessWidget {
+  final List<Track> tracks;
+  final Function(Track)? onTrackTap;
+  final String? emptyMessage;
+
+  const DesktopSongTableView({
+    super.key,
+    required this.tracks,
+    this.onTrackTap,
+    this.emptyMessage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.watch<ThemeProvider>();
+    final player = context.watch<AudioPlayerService>();
+    final isDark = theme.isDarkMode;
+
+    if (tracks.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(40),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(Icons.music_off_rounded, size: 44, color: theme.textMuted),
+              const SizedBox(height: 12),
+              Text(emptyMessage ?? '暂无曲目', style: TextStyle(color: theme.textMuted, fontSize: 13)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return SoftCard(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      borderRadius: MellowRadii.borderR20,
+      child: Column(
+        children: [
+          // 优雅表头
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 32,
+                  child: Text('#', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.textMuted)),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 5,
+                  child: Text('音乐标题', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.textMuted)),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Text('歌手', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.textMuted)),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Text('专辑', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.textMuted)),
+                ),
+                Container(
+                  width: 50,
+                  alignment: Alignment.centerRight,
+                  child: Text('时长', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.textMuted)),
+                ),
+                const SizedBox(width: 44),
+              ],
+            ),
+          ),
+          Divider(
+            height: 1,
+            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
+          ),
+          // 数据行
+          ...tracks.asMap().entries.map((entry) {
+            final idx = entry.key + 1;
+            final t = entry.value;
+            final isPlaying = player.currentTrack?.id == t.id;
+
+            return _DesktopSongTableRow(
+              index: idx,
+              track: t,
+              isPlaying: isPlaying,
+              onTap: () => onTrackTap != null ? onTrackTap!(t) : player.playTrack(t),
+              onFavoriteToggle: () => player.toggleFavorite(t.id, t),
+              isFavorite: player.isFavorite(t.id),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+class _DesktopSongTableRow extends StatefulWidget {
+  final int index;
+  final Track track;
+  final bool isPlaying;
+  final VoidCallback onTap;
+  final VoidCallback onFavoriteToggle;
+  final bool isFavorite;
+
+  const _DesktopSongTableRow({
+    required this.index,
+    required this.track,
+    required this.isPlaying,
+    required this.onTap,
+    required this.onFavoriteToggle,
+    required this.isFavorite,
+  });
+
+  @override
+  State<_DesktopSongTableRow> createState() => _DesktopSongTableRowState();
+}
+
+class _DesktopSongTableRowState extends State<_DesktopSongTableRow> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.watch<ThemeProvider>();
+    final isDark = theme.isDarkMode;
+
+    final bgColor = widget.isPlaying
+        ? theme.accentColor.withValues(alpha: isDark ? 0.18 : 0.1)
+        : (_isHovered
+            ? (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03))
+            : Colors.transparent);
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: MellowRadii.borderR12,
+          ),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 32,
+                child: widget.isPlaying
+                    ? Icon(Icons.volume_up_rounded, size: 16, color: theme.accentColor)
+                    : (_isHovered
+                        ? Icon(Icons.play_arrow_rounded, size: 18, color: theme.accentColor)
+                        : Text(
+                            widget.index.toString().padLeft(2, '0'),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: theme.textMuted,
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                            ),
+                          )),
+              ),
+              const SizedBox(width: 8),
+              MellowImage(
+                url: widget.track.coverUrl,
+                width: 38,
+                height: 38,
+                borderRadius: MellowRadii.borderR8,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 5,
+                child: Text(
+                  widget.track.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: widget.isPlaying ? FontWeight.bold : FontWeight.w500,
+                    color: widget.isPlaying ? theme.accentColor : theme.textPrimary,
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  widget.track.artist,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 12, color: theme.textSecondary),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  widget.track.album,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 12, color: theme.textMuted),
+                ),
+              ),
+              Container(
+                width: 50,
+                alignment: Alignment.centerRight,
+                child: Text(
+                  widget.track.formattedDuration,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: theme.textMuted,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              IconButton(
+                icon: Icon(
+                  widget.isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                  size: 18,
+                  color: widget.isFavorite ? const Color(0xFFEF4444) : theme.textMuted,
+                ),
+                visualDensity: VisualDensity.compact,
+                splashRadius: 16,
+                onPressed: widget.onFavoriteToggle,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1221,7 +1463,7 @@ class _DesktopImportedPlaylistsViewState extends State<DesktopImportedPlaylistsV
     final importedCount = allPlaylists.where((p) => !p.isCustom).length;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1515,7 +1757,7 @@ class DesktopHistoryView extends StatelessWidget {
     final player = context.watch<AudioPlayerService>();
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1544,43 +1786,10 @@ class DesktopHistoryView extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 20),
-        if (player.playHistory.isEmpty)
-          Padding(
-            padding: const EdgeInsets.all(48),
-            child: Center(
-              child: Column(
-                children: [
-                  Icon(Icons.history_rounded, size: 56, color: theme.textMuted.withValues(alpha: 0.5)),
-                  const SizedBox(height: 16),
-                  Text('暂无播放历史', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                  const SizedBox(height: 6),
-                  Text('在发现页、榜单或搜索播放音乐，足迹将自动安全记录在此', style: TextStyle(fontSize: 13, color: theme.textMuted)),
-                ],
-              ),
-            ),
-          )
-        else
-          ...player.playHistory.map((t) => SoftCard(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            onTap: () => player.playTrack(t),
-            child: Row(
-              children: [
-                MellowImage(url: t.coverUrl, width: 40, height: 40, borderRadius: MellowRadii.borderR8),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                      Text('${t.artist} · ${t.album}', style: TextStyle(fontSize: 12, color: theme.textMuted)),
-                    ],
-                  ),
-                ),
-                Text(t.formattedDuration, style: TextStyle(color: theme.textSecondary, fontSize: 12)),
-              ],
-            ),
-          )),
+        DesktopSongTableView(
+          tracks: player.playHistory,
+          emptyMessage: '暂无播放历史，在发现页、榜单或搜索播放音乐，足迹将自动安全记录在此',
+        ),
       ],
     );
   }
@@ -1680,7 +1889,7 @@ class _DesktopLocalMusicViewState extends State<DesktopLocalMusicView> {
     final localTracks = player.localTracks;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
       children: [
         // 1. 顶部标题栏
         Row(
@@ -1955,7 +2164,7 @@ class _DesktopSettingsViewState extends State<DesktopSettingsView> {
     final isDark = theme.isDarkMode;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
       children: [
         Text('个性化与系统设置', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: theme.textPrimary)),
         const SizedBox(height: 20),
@@ -2297,7 +2506,10 @@ class _DesktopSettingsViewState extends State<DesktopSettingsView> {
       decoration: BoxDecoration(
         color: theme.canvasColor.withValues(alpha: 0.7),
         borderRadius: MellowRadii.borderR8,
-        border: Border.all(color: theme.borderColor.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: theme.isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.04),
+          width: 0.5,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -2307,7 +2519,10 @@ class _DesktopSettingsViewState extends State<DesktopSettingsView> {
             decoration: BoxDecoration(
               color: theme.cardColor,
               borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: theme.borderColor),
+              border: Border.all(
+                color: theme.isDarkMode ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.06),
+                width: 0.5,
+              ),
             ),
             child: Text(
               keyStr,
@@ -2343,7 +2558,7 @@ class DesktopSourceManagerView extends StatelessWidget {
         final activeName = activeDriver?.metadata.name ?? engine.activeSourceId;
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
+          padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
           children: [
             // --- 顶部标头栏 ---
             Row(
@@ -3194,7 +3409,7 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
     final isWebDavConfigured = _config?.isConfigured ?? false;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -3652,7 +3867,10 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                                           decoration: BoxDecoration(
                                             color: theme.canvasColor,
                                             borderRadius: MellowRadii.borderPill,
-                                            border: Border.all(color: theme.borderColor.withValues(alpha: 0.5)),
+                                            border: Border.all(
+                                              color: theme.isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.04),
+                                              width: 0.5,
+                                            ),
                                           ),
                                           child: Text(
                                             'v${dev.version}',

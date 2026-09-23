@@ -503,6 +503,38 @@ final List<ArtistProfile> mockArtistsProfiles = [
     avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&q=80',
     tracks: mockBoYuanTracks,
   ),
+  ArtistProfile(
+    name: '陈奕迅',
+    role: '华语乐坛情歌歌神',
+    fans: '2980.5万',
+    bio: '殿堂级情歌巨匠 · 抚慰无数都市心灵 · 华语音乐传世经典',
+    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&q=80',
+    tracks: mockPresetTracks,
+  ),
+  ArtistProfile(
+    name: '孙燕姿',
+    role: '华语流行天后',
+    fans: '1850.3万',
+    bio: '华语钻石女歌手 · 独特的清澈声线 · 青春永恒记忆',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&q=80',
+    tracks: mockPresetTracks,
+  ),
+  ArtistProfile(
+    name: '告五人',
+    role: '当代新锐潮水摇滚乐团',
+    fans: '960.2万',
+    bio: '新生代乐团翘楚 · 浪漫迷幻双主唱 · 巡回演唱会场场售罄',
+    avatarUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=500&q=80',
+    tracks: mockPresetTracks,
+  ),
+  ArtistProfile(
+    name: '林俊杰',
+    role: '华语行走的 CD',
+    fans: '3120.4万',
+    bio: '实力派创作歌王 · 卓越唱功与天籁编曲 · 屡获金曲最佳男歌手',
+    avatarUrl: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=500&q=80',
+    tracks: mockPresetTracks,
+  ),
 ];
 
 /// 根据歌手名字检索歌手档案

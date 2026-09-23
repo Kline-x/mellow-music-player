@@ -1,6 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../audio/track_model.dart';
+import 'itunes_music_service.dart';
+import 'netease_music_service.dart';
+
+export 'netease_music_service.dart' show NeteaseMusicService, NeteaseQuality, NeteaseStreamResult;
+export 'itunes_music_service.dart' show ItunesMusicService;
 
 /// 导入与自建歌单模型
 class ImportedPlaylist {
@@ -47,138 +52,136 @@ class ImportedPlaylist {
   }
 }
 
-/// 在线音乐与公开歌单服务引擎 (多源真实高保真音频引擎)
+/// 在线音乐与公开歌单服务引擎 (多源真实高保真音频引擎：酷我高保真 + 网易云真实流 + iTunes 官方试听)
 class OnlineMusicService {
   static const Duration _timeout = Duration(seconds: 6);
   static final Map<String, String> _urlCache = {};
 
-  /// 1. 全网多音源真实音乐实时检索 (首发聚合真实高保真音频流，消灭 404)
+  /// 可注入的真实音源子服务实例（便于单元测试 Mock）
+  static NeteaseMusicService neteaseService = NeteaseMusicService();
+  static ItunesMusicService itunesService = ItunesMusicService();
+
+  /// 是否启用酷我搜索源（默认 true，单测可置为 false 隔离外部网络）
+  static bool enableKuwoSearch = true;
+
+  /// 按归一化后的 title + artist 去重，保留先出现的真实来源。
+  static List<Track> dedupeByTitleArtist(List<Track> tracks) {
+    final seen = <String>{};
+    final result = <Track>[];
+    for (final track in tracks) {
+      final key = '${_normalizeForMatch(track.title)}|${_normalizeForMatch(track.artist)}';
+      if (seen.add(key)) result.add(track);
+    }
+    return result;
+  }
+
+  static String _normalizeForMatch(String value) {
+    return value
+        .toLowerCase()
+        .replaceAll(RegExp(r'\s+'), '')
+        .replaceAll(RegExp(r'[·、,，.。!！?？()（）\[\]【】\-_/]'), '');
+  }
+
+  /// 1. 全网多音源真实音乐并发实时检索 (网易云 + 酷我高保真 + iTunes 官方保底，消灭 404)
   static Future<List<Track>> searchOnlineTracks(String query, {int limit = 30}) async {
     final cleanQuery = query.trim();
     if (cleanQuery.isEmpty) return [];
 
-    // 第一优先级：Kuwo 高保真搜索源 (免 VIP 真实音频流覆盖率 99%+)
-    try {
-      final kwUri = Uri.parse(
-        'http://search.kuwo.cn/r.s?client=kt&all=${Uri.encodeComponent(cleanQuery)}&pn=0&rn=$limit&vipver=1&ft=music&encoding=utf8&rformat=json&mobi=1',
-      );
-      final kwResp = await http.get(kwUri, headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      }).timeout(_timeout);
+    final errors = <Object>[];
 
-      if (kwResp.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(kwResp.bodyBytes));
-        final songs = data['abslist'] as List?;
-        if (songs != null && songs.isNotEmpty) {
-          final results = <Track>[];
-          for (final item in songs) {
-            final rawMid = (item['DC_TARGETID'] ?? item['MUSICRID'] ?? '').toString();
-            final mid = rawMid.replaceAll('MUSIC_', '');
-            if (mid.isEmpty) continue;
-
-            final rawName = item['SONGNAME']?.toString() ?? '未知曲目';
-            final name = rawName.replaceAll(RegExp(r'<[^>]*>'), '').trim();
-
-            final rawArtist = item['ARTIST']?.toString() ?? '未知歌手';
-            final artist = rawArtist
-                .replaceAll(RegExp(r'<[^>]*>'), '')
-                .replaceAll('&', ' / ')
-                .replaceAll('###', ' / ')
-                .trim();
-
-            final rawAlbum = item['ALBUM']?.toString() ?? '未知专辑';
-            final album = rawAlbum.replaceAll(RegExp(r'<[^>]*>'), '').trim();
-
-            final durationSec = int.tryParse(item['DURATION']?.toString() ?? '240') ?? 240;
-            final duration = Duration(seconds: durationSec);
-
-            // 封面图片解析
-            final albumPic = item['web_albumpic_short']?.toString();
-            final mvPic = item['hts_MVPIC']?.toString();
-            String coverUrl;
-            if (albumPic != null && albumPic.isNotEmpty) {
-              coverUrl = 'https://img1.kuwo.cn/star/albumcover/$albumPic';
-            } else if (mvPic != null && mvPic.isNotEmpty) {
-              coverUrl = mvPic;
-            } else {
-              coverUrl = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80';
-            }
-
-            final audioUrl = 'http://music.nxinxz.com/kw.php?id=$mid&level=standard&type=mp3';
-            _urlCache['$name::$artist'] = audioUrl;
-
-            results.add(Track(
-              id: 'kw_$mid',
-              title: name.isEmpty ? '未知曲目' : name,
-              artist: artist.isEmpty ? '群星' : artist,
-              album: album.isEmpty ? '单曲' : album,
-              coverUrl: coverUrl,
-              duration: duration,
-              source: 'kuwo-sq',
-              audioUrl: audioUrl,
-              lyrics: const [],
-            ));
-          }
-          if (results.isNotEmpty) {
-            return results;
-          }
-        }
+    Future<List<Track>?> trySource(Future<List<Track>> Function() source) async {
+      try {
+        return await source();
+      } catch (e) {
+        errors.add(e);
+        return null;
       }
-    } catch (_) {
-      // Kuwo 失败则无缝平滑进入网易云后备源
     }
 
-    // 第二优先级：网易云检索源作为后备补足
-    try {
-      final uri = Uri.parse(
-        'https://music.163.com/api/search/get/web?s=${Uri.encodeComponent(cleanQuery)}&type=1&offset=0&total=true&limit=$limit',
-      );
-      final resp = await http.get(uri, headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Referer': 'https://music.163.com/',
-      }).timeout(_timeout);
+    final neteaseFuture = trySource(() => neteaseService.search(cleanQuery, limit: limit));
+    final kuwoFuture = enableKuwoSearch
+        ? trySource(() => _searchKuwoTracks(cleanQuery, limit: limit))
+        : Future<List<Track>?>.value(null);
+    final itunesFuture = trySource(() => itunesService.search(cleanQuery, limit: limit));
 
-      if (resp.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(resp.bodyBytes));
-        final songs = data['result']?['songs'] as List?;
-        if (songs != null && songs.isNotEmpty) {
-          final results = <Track>[];
-          for (final item in songs) {
-            final id = item['id']?.toString() ?? '';
-            final name = item['name']?.toString() ?? '未知曲目';
-            final artists = (item['artists'] as List?)
-                    ?.map((a) => a['name']?.toString() ?? '')
-                    .where((s) => s.isNotEmpty)
-                    .join(' / ') ??
-                '未知歌手';
-            final album = item['album']?['name']?.toString() ?? '未知专辑';
-            final durationMs = (item['duration'] as num?)?.toInt() ?? 240000;
-            final duration = Duration(milliseconds: durationMs);
+    final perSource = await Future.wait([neteaseFuture, kuwoFuture, itunesFuture]);
 
-            final coverUrl = item['album']?['picUrl']?.toString() ??
-                'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80';
+    final merged = <Track>[
+      ...?perSource[0],
+      ...?perSource[1],
+      ...?perSource[2],
+    ];
 
-            final audioUrl = 'https://music.163.com/song/media/outer/url?id=$id.mp3';
-
-            results.add(Track(
-              id: 'netease_$id',
-              title: name,
-              artist: artists,
-              album: album,
-              coverUrl: coverUrl,
-              duration: duration,
-              source: 'netease-online',
-              audioUrl: audioUrl,
-              lyrics: const [],
-            ));
-          }
-          return results;
-        }
-      }
-    } catch (_) {
-      // 容错返回空
+    if (merged.isEmpty && errors.isNotEmpty) {
+      throw Exception('在线曲库请求失败：${errors.first}');
     }
-    return [];
+
+    return dedupeByTitleArtist(merged);
+  }
+
+  static Future<List<Track>> _searchKuwoTracks(String cleanQuery, {required int limit}) async {
+    final kwUri = Uri.parse(
+      'http://search.kuwo.cn/r.s?client=kt&all=${Uri.encodeComponent(cleanQuery)}&pn=0&rn=$limit&vipver=1&ft=music&encoding=utf8&rformat=json&mobi=1',
+    );
+    final kwResp = await http.get(kwUri, headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    }).timeout(_timeout);
+
+    if (kwResp.statusCode != 200) return [];
+
+    final data = jsonDecode(utf8.decode(kwResp.bodyBytes));
+    final songs = data['abslist'] as List?;
+    if (songs == null || songs.isEmpty) return [];
+
+    final results = <Track>[];
+    for (final item in songs) {
+      final rawMid = (item['DC_TARGETID'] ?? item['MUSICRID'] ?? '').toString();
+      final mid = rawMid.replaceAll('MUSIC_', '');
+      if (mid.isEmpty) continue;
+
+      final rawName = item['SONGNAME']?.toString() ?? '未知曲目';
+      final name = rawName.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+
+      final rawArtist = item['ARTIST']?.toString() ?? '未知歌手';
+      final artist = rawArtist
+          .replaceAll(RegExp(r'<[^>]*>'), '')
+          .replaceAll('&', ' / ')
+          .replaceAll('###', ' / ')
+          .trim();
+
+      final rawAlbum = item['ALBUM']?.toString() ?? '未知专辑';
+      final album = rawAlbum.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+
+      final durationSec = int.tryParse(item['DURATION']?.toString() ?? '240') ?? 240;
+      final duration = Duration(seconds: durationSec);
+
+      final albumPic = item['web_albumpic_short']?.toString();
+      final mvPic = item['hts_MVPIC']?.toString();
+      String coverUrl;
+      if (albumPic != null && albumPic.isNotEmpty) {
+        coverUrl = 'https://img1.kuwo.cn/star/albumcover/$albumPic';
+      } else if (mvPic != null && mvPic.isNotEmpty) {
+        coverUrl = mvPic;
+      } else {
+        coverUrl = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80';
+      }
+
+      final audioUrl = 'http://music.nxinxz.com/kw.php?id=$mid&level=standard&type=mp3';
+      _urlCache['$name::$artist'] = audioUrl;
+
+      results.add(Track(
+        id: 'kw_$mid',
+        title: name.isEmpty ? '未知曲目' : name,
+        artist: artist.isEmpty ? '群星' : artist,
+        album: album.isEmpty ? '单曲' : album,
+        coverUrl: coverUrl,
+        duration: duration,
+        source: 'kuwo-sq',
+        audioUrl: audioUrl,
+        lyrics: const [],
+      ));
+    }
+    return results;
   }
 
   /// 真实高保真音源智能解析与 Fallback 调度 (消灭 404 与播放受限)
@@ -206,7 +209,7 @@ class OnlineMusicService {
       return defaultUrl;
     }
 
-    // 跨音源智能解析：通过歌名+歌手在 Kuwo 高保真音轨库中匹配真实音频
+    // 1. 跨音源智能解析：通过歌名+歌手在 Kuwo 高保真音轨库中匹配真实音频
     try {
       final searchKw = '$cleanTitle $cleanArtist'.trim();
       final uri = Uri.parse(
@@ -232,6 +235,28 @@ class OnlineMusicService {
       }
     } catch (_) {}
 
+    // 2. 网易云真实流兜底
+    final neId = NeteaseMusicService.pureSongId(defaultUrl ?? '');
+    if (neId != null) {
+      try {
+        final res = await neteaseService.resolveStreamUrl(neId);
+        if (res.isPlayable) {
+          _urlCache[cacheKey] = res.url!;
+          return res.url;
+        }
+      } catch (_) {}
+    }
+
+    // 3. iTunes 官方高可用试听流兜底（确保列表必定有声）
+    try {
+      final itunesList = await itunesService.search('$cleanTitle $cleanArtist', limit: 2);
+      if (itunesList.isNotEmpty && itunesList.first.audioUrl != null) {
+        final iUrl = itunesList.first.audioUrl!;
+        _urlCache[cacheKey] = iUrl;
+        return iUrl;
+      }
+    } catch (_) {}
+
     // 如果无法解析，回退默认
     return defaultUrl;
   }
@@ -241,7 +266,11 @@ class OnlineMusicService {
     final cleanInput = input.trim();
     if (cleanInput.isEmpty) return null;
 
-    // 提取歌单数字 ID（支持直接数字、或带 id= 的链接）
+    try {
+      final result = await neteaseService.importPlaylist(cleanInput);
+      if (result != null) return result;
+    } catch (_) {}
+
     String? playlistId;
     final idMatch = RegExp(r'id=(\d+)').firstMatch(cleanInput);
     if (idMatch != null) {
@@ -307,9 +336,7 @@ class OnlineMusicService {
           );
         }
       }
-    } catch (_) {
-      // 容错处理
-    }
+    } catch (_) {}
     return null;
   }
 
@@ -347,21 +374,8 @@ class OnlineMusicService {
     // 2. 若为网易云音轨或 fallback
     final pureId = trackId.replaceAll('netease_', '');
     try {
-      final uri = Uri.parse(
-        'https://music.163.com/api/song/lyric?os=pc&id=$pureId&lv=-1&kv=-1&tv=-1',
-      );
-      final resp = await http.get(uri, headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Referer': 'https://music.163.com/',
-      }).timeout(_timeout);
-
-      if (resp.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(resp.bodyBytes));
-        final lrcStr = data['lrc']?['lyric']?.toString();
-        if (lrcStr != null && lrcStr.isNotEmpty) {
-          return LyricLine.parseLrc(lrcStr);
-        }
-      }
+      final lyrics = await neteaseService.fetchLyric(pureId);
+      if (lyrics.isNotEmpty) return lyrics;
     } catch (_) {}
 
     // 3. 兜底尝试通过标题+歌手检索 Kuwo 歌词

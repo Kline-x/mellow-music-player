@@ -117,7 +117,7 @@ class WindowsSmtcService {
   /// 向 Windows SMTC 推送歌曲元数据（曲名、歌手、专辑、封面图）
   Future<void> updateMetadata(Track track) async {
     _lastTrack = track;
-    if (!_isSupportedPlatform && !kDebugMode) return;
+    if (!_isSupportedPlatform) return;
 
     try {
       await _channel.invokeMethod('updateMetadata', {
@@ -136,7 +136,7 @@ class WindowsSmtcService {
   /// 向 Windows SMTC 同步播放状态（Playing / Paused）
   Future<void> updatePlaybackState(bool isPlaying) async {
     _lastIsPlaying = isPlaying;
-    if (!_isSupportedPlatform && !kDebugMode) return;
+    if (!_isSupportedPlatform) return;
 
     try {
       await _channel.invokeMethod('updatePlaybackState', {
@@ -151,7 +151,7 @@ class WindowsSmtcService {
   Future<void> updateTimeline(Duration position, Duration duration) async {
     _lastPosition = position;
     _lastDuration = duration;
-    if (!_isSupportedPlatform && !kDebugMode) return;
+    if (!_isSupportedPlatform) return;
 
     try {
       await _channel.invokeMethod('updateTimeline', {
@@ -170,7 +170,7 @@ class WindowsSmtcService {
     _lastPosition = Duration.zero;
     _lastDuration = Duration.zero;
 
-    if (!_isSupportedPlatform && !kDebugMode) return;
+    if (!_isSupportedPlatform) return;
 
     try {
       await _channel.invokeMethod('clear');

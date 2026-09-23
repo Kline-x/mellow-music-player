@@ -10,10 +10,20 @@ import 'core/window/desktop_floating_lyric_service.dart';
 import 'navigation/adaptive_scaffold.dart';
 
 void main() async {
+  // ignore: avoid_print
+  print('>>> [STEP 1] main started');
   WidgetsFlutterBinding.ensureInitialized();
+  // ignore: avoid_print
+  print('>>> [STEP 2] WidgetsFlutterBinding ensured');
   await StorageService.instance.init();
+  // ignore: avoid_print
+  print('>>> [STEP 3] StorageService initialized');
   await LxSourceEngine.instance.initFromStorage();
+  // ignore: avoid_print
+  print('>>> [STEP 4] LxSourceEngine initialized');
   await DesktopFloatingLyricService.instance.init();
+  // ignore: avoid_print
+  print('>>> [STEP 5] DesktopFloatingLyricService initialized, calling runApp');
   runApp(
     MultiProvider(
       providers: [
@@ -24,6 +34,8 @@ void main() async {
       child: const MellowMusicApp(),
     ),
   );
+  // ignore: avoid_print
+  print('>>> [STEP 6] runApp called successfully');
 }
 
 class MellowMusicApp extends StatelessWidget {
@@ -31,6 +43,8 @@ class MellowMusicApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ignore: avoid_print
+    print('>>> [STEP 7] MellowMusicApp build executed');
     final theme = context.watch<ThemeProvider>();
     final isDark = theme.isDarkMode;
 

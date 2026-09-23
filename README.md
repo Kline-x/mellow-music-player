@@ -6,8 +6,8 @@
 > - **③ 局域网 P2P 近场即时传输**：基于原生 `dart:io` UDP 组播发现与 HTTP P2P 传输，彻底根除虚假备份弹窗与假在线设备；
 > - **④ LX-Music 自定义音源沙箱与降级调度**：内置静态 AST/正则防注入安全校验，实现 128k/320k/flac/flac24bit 音质自动阶梯降级；
 > - **⑤ 桌面独立置顶穿透歌词**：Windows C++ 原生 Win32 API（`SetWindowPos` HWND_TOPMOST、`WS_EX_TRANSPARENT | WS_EX_LAYERED`）系统级贯通；
-> - **⑥ 移动端打包流水线与平台适配**：Android 后台音频与局域网发现权限补齐、iOS 后台音频模式与 ATS 配置，交付自动化打包流水线脚本 `build_mobile.ps1`；
-> - **质量门禁**：全仓 **146 项** Flutter 自动化测试 100% 全部通过，Windows 真实可执行程序保活脚本 `verify_windows_app.ps1` 稳定运行。
+> - **⑦ 跨平台真机 E2E 与多源高可用**：macOS 沙箱出站网络权限与 Android 安全通信配置，酷我 + 网易云 + iTunes 三源并发聚合去重；
+> - **质量门禁**：全仓 **165 项** Flutter 自动化测试 100% 全部通过，macOS 真实物理进程集成测试 8/8 全绿。
 >
 > ---
 
@@ -15,7 +15,7 @@
 
 > 专为全平台高保真体验打造的 **Modern Soft UI（现代柔和微质感 / Soft Depth & Tactility / Calm Tech）** 原生跨平台音乐播放系统。
 
-[![Flutter Tests](https://img.shields.io/badge/Flutter%20Tests-146%2F146%20Passed%20(100%25)-emerald?style=flat-square&logo=flutter)](app/test)
+[![Flutter Tests](https://img.shields.io/badge/Flutter%20Tests-165%2F165%20Passed%20(100%25)-emerald?style=flat-square&logo=flutter)](app/test)
 [![UI Style](https://img.shields.io/badge/Design%20System-Modern%20Soft%20UI-pink?style=flat-square)](app/lib/theme/tokens.dart)
 [![Audio Engine](https://img.shields.io/badge/Audio-Audioplayers%206.8.1%20Physical-blue?style=flat-square)](#-物理音频生态引擎)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Android%20%7C%20iOS%20%7C%20Web-purple?style=flat-square)](#-运行与体验指南)

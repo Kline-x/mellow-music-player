@@ -58,6 +58,11 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
       _searchController.text = widget.initialQuery!.trim();
       _executeSearch(widget.initialQuery!.trim());
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
   }
 
   @override
@@ -112,7 +117,7 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
     final isDark = theme.isDarkMode;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
       children: [
         // 1. 顶部大标题与副标题
         Row(
@@ -143,7 +148,10 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
               decoration: BoxDecoration(
                 color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
                 borderRadius: MellowRadii.borderPill,
-                border: Border.all(color: theme.borderColor.withValues(alpha: 0.5)),
+                border: Border.all(
+                  color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.04),
+                  width: 0.5,
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -448,6 +456,8 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
   }
 
   Widget _buildGenreCard(ThemeProvider theme, String title, String sub, List<Color> colors) {
+    final isDark = theme.isDarkMode;
+    final primaryColor = colors.first;
     return GestureDetector(
       onTap: () {
         _searchController.text = title;
@@ -455,19 +465,19 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
       },
       child: Container(
         height: 84,
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: colors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: isDark ? primaryColor.withValues(alpha: 0.16) : primaryColor.withValues(alpha: 0.08),
           borderRadius: MellowRadii.borderR16,
+          border: Border.all(
+            color: isDark ? primaryColor.withValues(alpha: 0.28) : primaryColor.withValues(alpha: 0.2),
+            width: 0.8,
+          ),
           boxShadow: [
             BoxShadow(
-              color: colors.first.withValues(alpha: 0.28),
+              color: primaryColor.withValues(alpha: isDark ? 0.12 : 0.06),
               blurRadius: 10,
-              offset: const Offset(0, 4),
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -475,14 +485,34 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+            Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: primaryColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : const Color(0xFF1E293B),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 6),
             Text(
               sub,
-              style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.85)),
+              style: TextStyle(
+                fontSize: 11.5,
+                color: isDark ? Colors.white60 : const Color(0xFF64748B),
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -493,6 +523,7 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
   }
 
   Widget _buildResultsView(ThemeProvider theme, AudioPlayerService player) {
+    final isDark = theme.isDarkMode;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -588,7 +619,11 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
             ],
           ),
         ),
-        const Divider(height: 1, thickness: 0.6),
+        Divider(
+          height: 1,
+          thickness: 0.5,
+          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
+        ),
         const SizedBox(height: 8),
 
         // 歌曲列表

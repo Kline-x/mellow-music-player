@@ -281,5 +281,35 @@ void main() {
       themeProvider.setDarkMode(false);
       expect(themeProvider.isDarkMode, isFalse);
     });
+
+    testWidgets('E2E-09: 方案 A 默认落雪聚合音源与桌面端设置视图端到端闭环验收', (tester) async {
+      await sourceEngine.initFromStorage();
+
+      // 1. 验证落雪默认音源已就绪
+      expect(sourceEngine.drivers.containsKey('lx_default_aggregate'), isTrue);
+      final defaultDriver = sourceEngine.getDriver('lx_default_aggregate');
+      expect(defaultDriver, isNotNull);
+      expect(defaultDriver!.metadata.name, equals('默认落雪聚合音源'));
+      expect(defaultDriver.metadata.version, equals('2.0.0'));
+      expect(defaultDriver.metadata.author, equals('MellowLxCommunity'));
+
+      // 2. 验证默认主音源激活
+      expect(sourceEngine.activeSourceId, equals('lx_default_aggregate'));
+
+      // 3. 验证通过默认落雪源解析流
+      final mockSong = LxSongInfo(
+        id: 'lx_default_aggregate_test',
+        songMid: 'test_mid_01',
+        title: '测试曲目',
+        artist: '测试歌手',
+        album: '测试专辑',
+        duration: const Duration(minutes: 3, seconds: 30),
+        source: 'lx_default_aggregate',
+        availableQualities: [AudioQuality.k128k, AudioQuality.k320k, AudioQuality.flac, AudioQuality.flac24bit],
+      );
+      final playUrl = await defaultDriver.getMusicUrl(mockSong, AudioQuality.flac);
+      expect(playUrl, isNotNull);
+      expect(playUrl, contains('custom-cdn.lx_default_aggregate.com'));
+    });
   });
 }

@@ -66,7 +66,7 @@ class WindowsTrayService {
     final tip = '${track.title} - ${track.artist} · Mellow Music';
     _lastTooltip = tip;
 
-    if (!_isSupportedPlatform && !kDebugMode) return;
+    if (!_isSupportedPlatform) return;
 
     try {
       await _channel.invokeMethod('updateTrayTooltip', {
@@ -82,7 +82,7 @@ class WindowsTrayService {
     _minimizeToTray = enabled;
     await StorageService.instance.saveMinimizeToTray(enabled);
 
-    if (!_isSupportedPlatform && !kDebugMode) return;
+    if (!_isSupportedPlatform) return;
 
     try {
       await _channel.invokeMethod('setMinimizeToTray', {
@@ -95,7 +95,7 @@ class WindowsTrayService {
 
   /// 唤醒并置顶主窗口
   Future<void> showWindow() async {
-    if (!_isSupportedPlatform && !kDebugMode) return;
+    if (!_isSupportedPlatform) return;
     try {
       await _channel.invokeMethod('showWindow');
     } catch (_) {}
@@ -103,7 +103,7 @@ class WindowsTrayService {
 
   /// 最小化隐藏到托盘
   Future<void> hideWindow() async {
-    if (!_isSupportedPlatform && !kDebugMode) return;
+    if (!_isSupportedPlatform) return;
     try {
       await _channel.invokeMethod('hideWindow');
     } catch (_) {}

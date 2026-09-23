@@ -15,6 +15,12 @@ class MainFlutterWindow: NSWindow {
     self.setFrame(NSRect(x: originX, y: originY, width: defaultWidth, height: defaultHeight), display: true)
     self.minSize = NSSize(width: 880, height: 600)
 
+    // 沉浸式现代无边框窗口配置 (Full Size Content View)
+    self.titlebarAppearsTransparent = true
+    self.titleVisibility = .hidden
+    self.styleMask.insert(.fullSizeContentView)
+    self.isMovableByWindowBackground = true
+
     RegisterGeneratedPlugins(registry: flutterViewController)
 
     super.awakeFromNib()

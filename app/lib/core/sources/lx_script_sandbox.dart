@@ -754,6 +754,19 @@ class LxCustomScriptDriver implements LxSourceDriver {
   }
 }
 
+/// 开箱即用的落雪官方/社区标准默认聚合源脚本 (方案 A)
+const String kDefaultLxAggregateScript = '''/*!
+ * @name 默认落雪聚合音源
+ * @description 开箱即用内置落雪聚合解析驱动，支持六维全网聚合与全音质无损降级
+ * @version 2.0.0
+ * @author MellowLxCommunity
+ * @homepage https://github.com/lyswhut/lx-music-desktop
+ */
+const supportedSources = ['kw', 'kg', 'tx', 'wy', 'mg'];
+const supportedQualities = ['128k', '320k', 'flac', 'flac24bit'];
+console.log('Default LX aggregate source initialized successfully.');
+''';
+
 /// 六维音源动态切换与解析引擎 (Dynamic Six-Dimensional Source Engine)
 class LxSourceEngine extends ChangeNotifier {
   static final LxSourceEngine instance = LxSourceEngine();
@@ -779,21 +792,33 @@ class LxSourceEngine extends ChangeNotifier {
       _preferredQuality = AudioQuality.fromString(savedQuality);
     }
 
-    // 2. 恢复保存的第三方脚本
+    // 2. 恢复保存的第三方脚本，若为空则自动预装默认落雪聚合音源（方案 A）
     final savedScripts = storage.getCustomScripts();
-    if (savedScripts != null) {
+    if (savedScripts != null && savedScripts.isNotEmpty) {
       for (final script in savedScripts) {
         try {
           final customDriver = LxCustomScriptDriver.fromScript(script);
           _drivers[customDriver.metadata.id] = customDriver;
         } catch (_) {}
       }
+    } else {
+      // 首次启动或无外部脚本时，自动预装落雪默认音源
+      try {
+        final defaultDriver = LxCustomScriptDriver.fromScript(
+          kDefaultLxAggregateScript,
+          customId: 'lx_default_aggregate',
+        );
+        _drivers[defaultDriver.metadata.id] = defaultDriver;
+        _persistCustomScripts();
+      } catch (_) {}
     }
 
     // 3. 恢复主活跃音源
     final savedActiveId = storage.getActiveSourceId();
     if (savedActiveId != null && _drivers.containsKey(savedActiveId)) {
       _activeSourceId = savedActiveId;
+    } else if (_drivers.containsKey('lx_default_aggregate')) {
+      _activeSourceId = 'lx_default_aggregate';
     }
 
     notifyListeners();

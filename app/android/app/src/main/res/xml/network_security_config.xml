@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 允许酷我、酷狗及内网 HTTP 明文音频流传输 -->
+    <base-config cleartextTrafficPermitted="true" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">mobilecdnbj.kugou.com</domain>
+        <domain includeSubdomains="true">kuwo.cn</domain>
+        <domain includeSubdomains="true">nxinxz.com</domain>
+    </domain-config>
+</network-security-config>
