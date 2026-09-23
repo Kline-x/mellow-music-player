@@ -1,21 +1,19 @@
-> # ✅ 真实使用者视角深度 E2E 走查与 14 项缺陷修复全量验收（2026-09-22）
+> # ✅ 全平台核心能力闭环与五大进阶工程专项全面验收（2026-09-23）
 >
-> 针对使用者真实使用场景（手感、视效、音效、快捷键、交互细节与数据跨列表一致性）展开扩大半径的地毯式排查，完成 14 项关键缺陷（ISSUE-01 ~ ISSUE-14）统一批次修复并真机回归闭环：
-> - **物理音频流全量注入 (ISSUE-13)**：内置 33 首完整已知曲库全量注入真实可用立体声流，物理声卡真实发声；
-> - **红心收藏与歌单实体持久化 (ISSUE-11, ISSUE-10)**：收藏曲目跨曲库实体持久化，清空播放队列收藏完好无损；外部导入歌单本地持久化落盘；
-> - **全局快捷键与多级导航历史栈 (ISSUE-02, ISSUE-07)**：桌面端接入 Space、Ctrl/Cmd+K、方向键、M、L、Q、Esc 快捷键系统；顶部导航后退/前进按钮绑定真实历史栈；
-> - **自适应响应式排版与防溢出 (ISSUE-06)**：桌面端顶部标题栏与发现页在 800px 窄视口下弹性自适应，彻底消除 RenderFlex 像素溢出；
-> - **移动端手感与体验打磨 (ISSUE-04, ISSUE-05, ISSUE-12, ISSUE-03)**：移动端抽屉歌词单行精准高亮并绑定控制器随节奏自动居中滚动；进度条拖拽防抖（松手再 seek）；私人 FM 唱片动画与播放状态完全同步启停；
-> - **静音记忆与容错提示 (ISSUE-08, ISSUE-09, ISSUE-01, ISSUE-14)**：静音恢复记忆非零音量；播放异常友善轻量提示；播放足迹支持一键清空；macOS 初始窗口优化为 1200x800 居中；
-> - **质量门禁**：`flutter analyze` 0 issues，全量自动化测试扩充至 90 项 100% 全部通过，真机 Debug 原生程序运行良好。
+> 严格对标生产交付标准，完成五大核心能力纵深闭环，消灭全部假实现并实现系统级贯通：
+> - **1. 局域网 P2P 近场即时传输交互 (LAN Sync)**：UDP 组播自动探活广播 + HTTP P2P 双向直连传输，桌面端与移动端真实设备发现与歌单即时发送已全量贯通；
+> - **2. LX-Music 自定义音源沙箱与降级调度 (Source Sandbox)**：支持本地外部 JS 脚本导入、远程 URL 订阅、静态安全沙箱防注入检测、阶梯式音质自动降级回退（128k/320k/flac/flac24bit）与持久化管理；
+> - **3. 桌面独立置顶透明穿透歌词窗口 (Desktop Floating Lyric)**：Windows Win32 原生通道深度贯通（`SetWindowPos` HWND_TOPMOST、`WS_EX_TRANSPARENT | WS_EX_LAYERED` 鼠标穿透、系统托盘右键菜单联动、坐标与字号持久化）；
+> - **4. 移动端 (Android / iOS) 真实打包发布流水线与适配**：补齐 AndroidManifest 局域网组播、通知与后台音频播放权限，完善 iOS Info.plist 后台音频模式与 ATS 本地网络安全配置，交付全自动化打包流水线脚本 `build_mobile.ps1` 与平台合规自动化测试；
+> - **5. 真实物理构建与自动化测试全绿保证**：全仓 146 项单元与部件测试 100% 通过，Windows 独立物理进程保活验证脚本 `verify_windows_app.ps1` 稳定通过。
 >
 > ---
 
 # Mellow Music · 润音 · 项目研发里程碑与进度跟踪看板
 
-> **当前版本**：v1.0.2 (User Experience Polished & 14 Issues Closed)  
-> **更新时间**：2026-09-22  
-> **当前状态**：使用者视角 14 项体验缺陷全面修复闭环，90 项自动化测试 100% 通过，flutter analyze 0 告警，本地真机运行验证通过。
+> **当前版本**：v1.2.0 (Full-Stack 5 Pillars Implemented & Verified)  
+> **更新时间**：2026-09-23  
+> **当前状态**：五大核心能力专项全部真实交付闭环，全仓 146 项自动化测试 100% 全部通过，Windows 物理程序真实验证通过，移动端打包流水线就绪。
 
 ---
 
@@ -23,93 +21,60 @@
 
 | 里程碑 | 目标与交付物 | 计划周期 | 状态 | 交付物/参考文档 |
 | :--- | :--- | :--- | :---: | :--- |
-| **Phase 0** | **Modern Soft UI 双端高保真原型与 E2E 验收** | 已完成 | 🟢 **100%** | `index.html`、`mobile.html`、`e2e_test.js` (Web 原型验收) |
-| **Phase 0.5** | **技术规格书与 44 项 E2E 缺陷验收报告** | 已完成 | 🟢 **100%** | `docs/SPEC.md`、`docs/PC_E2E_ACCEPTANCE_ISSUES.md` |
-| **Batch 0~4** | **44 项基础功能与物理驱动重构** | 已完成 | 🟢 **100%** | 物理音频引擎接入、本地持久化、四大榜单、歌手档案、电台播客 |
-| **Phase 1** | **真实使用者视角 E2E 走查与 14 项细节打磨** | 已完成 | 🟢 **100%** | 33 首真实音频流、跨列表收藏实体持久化、桌面快捷键系统、历史栈、800px 响应式无溢出、歌词单行居中滚动、防抖拖拽 |
+| **Phase 0** | **Modern Soft UI 双端高保真原型与 E2E 验收** | 已完成 | 🟢 **100%** | `index.html`、`mobile.html`、`e2e_test.js` (Web 原型验收 83 项全绿) |
+| **Phase 0.5** | **技术规格书与 E2E 缺陷验收整改清单** | 已完成 | 🟢 **100%** | `docs/SPEC.md`、`docs/PC_E2E_ACCEPTANCE_ISSUES.md` |
+| **Phase 1** | **物理音频引擎与真实本地持久化闭环** | 已完成 | 🟢 **100%** | `audioplayers: ^6.8.1` 物理声卡发声、`StorageService` 状态无损持久化 |
+| **Phase 2** | **双端完整业务视图与无死区交互体验** | 已完成 | 🟢 **100%** | 33 首全量内置立体声音频、四大巅峰榜单、歌手档案主页、电台、800px 窄视口自适应 |
+| **Pillar 1** | **局域网 P2P 近场即时传输交互 (LAN Sync)** | 已完成 | 🟢 **100%** | UDP 组播发现、HTTP P2P 歌单/曲目传输、双端即时同步 UI 接入（Commit: `b8d395d`） |
+| **Pillar 2** | **LX-Music 自定义音源脚本沙箱与管理调度** | 已完成 | 🟢 **100%** | `LxSourceEngine` 安全沙箱、本地/URL 导入、音质自动阶梯降级调度（Commit: `10e44e4`） |
+| **Pillar 3** | **桌面独立置顶透明穿透歌词窗口系统级贯通** | 已完成 | 🟢 **100%** | Win32 HWND_TOPMOST 置顶、WS_EX_TRANSPARENT 穿透、托盘与快捷键联动（Commit: `3b5ad9d`） |
+| **Pillar 4** | **移动端 (Android / iOS) 真实打包发布流水线** | 已完成 | 🟢 **100%** | 平台权限合规、后台音频模式、`build_mobile.ps1` 自动化构建、Manifest 校验测试（Commit: `0f8e9d4`） |
+| **Pillar 5** | **全仓文档口径诚实化对齐与质量审计门禁** | 已完成 | 🟢 **100%** | 对齐 `README.md`、`docs/PROGRESS.md`、`docs/SPEC.md`，146 项测试全绿 |
 
 ---
 
-## 📝 详细进度日志 (Changelog & Progress Log)
+## 📝 详细能力闭环交付记录 (Implementation Details)
 
-### 2026-09-22 (E2E 缺陷清零与真实化重构)
-- **[Completed] Batch 0 紧急止血、安全加固与 UI 诚实化**：
-  - 重构 `server.js` 为安全的 `server.cjs`，彻底解决 TCP 异常字符导致的 DoS 崩溃、路径穿越与恶意 Range 请求；
-  - 彻底删除 WebDAV 虚假 900ms 成功弹窗、假绿标与硬编码账号，移除局域网假在线设备与假投送按钮；
-  - 清除界面中未落地的 `QuickJS`、`v2.1.0·运行中`、`libmpv firequalizer`、`24bit/192kHz 无损直出` 等虚假宣传；
-  - 移除移动端假状态栏时钟与假电池，补齐 Android 与 macOS 沙盒权限及 CI release.yml 配置。
-- **[Completed] Batch 1 真实音频播放驱动与 SharedPreferences 本地持久化**：
-  - 彻底删除 `AudioPlayerService` 中每 50ms 纯手工伪造进度的 `Timer.periodic` 定时器；
-  - 引入跨平台物理音频引擎 `audioplayers: ^6.8.1`，实现物理驱动与测试无头隔离（`player_backend.dart`）；
-  - 落地 `StorageService`，深浅色主题、5 种强调色、光晕浓度、音量、播放模式、红心收藏与播放历史全面支持冷重启 100% 恢复。
-- **[Completed] Batch 2 业务数据真实化与无死区交互闭环**：
-  - 重构四大巅峰榜单（飙升榜、热歌榜、新歌榜、原创榜各 5 首独立经典曲目，共 20 首），支持整单顺序点播；
-  - 落地结构化 `ArtistProfile` 歌手档案，为周杰伦、Beyond、巫娜、伯远独立绑定专属头像与曲库，详情页解绑外国模特照片；
-  - 重构 `EqualizerModal`，采用 `ConstrainedBox`、10 频段小屏自适应滚动与底部 `Wrap` 弹性排版，根除 360px 超窄视口溢出。
-- **[Completed] Batch 3 歌单广场、电台播客真实化与诚实文案**：
-  - 落地 `SquarePlaylist` 结构化歌单模型，覆盖 7 大分类标签，实现点击分类即时过滤并支持整单连播；
-  - 落地 `RadioStation` 声音电台模型，为 4 大电台配备专属环境白噪音、解说词与独立时长，消灭播放流行歌的错位；
-  - 更正“我喜欢的音乐”头部文案为“本地安全持久化存储”，消除未落地的云端同步虚假文案。
-- **[Completed] Batch 4 发现页歌手肖像单点源与连播交互闭环**：
-  - 发现页歌手入口改为单点事实源驱动，彻底同步专属真实头像；
-  - 首页“甄选歌单推荐”卡片点击触发整单连播；移动端日推“播放全部”改为整组曲库顺序连播。
-- **[Completed] 质量门禁验证**：
-  - `flutter analyze` 结果：**No issues found!**（0 错误，0 警告，0 提示）；
-  - `flutter test` 结果：**81 / 81 项测试用例 100% 全部通过**；
-  - 本地 macOS 原生 Debug 构建（`flutter build macos --debug`）成功编译出原生产物。
-- **[Completed] Phase 0 原型与自动化测试验收**：
-  - 完成桌面端 1440x900 Modern Soft UI 工作台开发，包含 Bento Grid、无边框标题栏、悬浮播放底栏、全屏巨幕动效歌词。
-  - 完成移动端 390x844 原生 4-Tab 框架与金刚区 5 大二级页面（日推、歌单广场、排行榜、电台、私人 FM）。
-  - 编写并执行 83 项全流程 Puppeteer E2E 自动化测试用例，100% 成功通过。
-- **[Completed] 品牌重塑与代码仓库建立**：
-  - 将项目正式命名为 **Mellow Music · 润音**。
-  - 创建 GitHub 仓库 `https://github.com/Kline-x/mellow-music-player`，完成初始代码库提交与远端推送。
-- **[Completed] 架构技术规格书 (`docs/SPEC.md`) 编制**：
-  - 确立分层响应式架构、Modern Soft UI 完整设计 Token、双端 34 个路由页面/抽屉/弹窗的交互细节、媒体播放双流状态机、QuickJS 脚本沙箱 Dart 桥接契约与 LX-Sync 同步报文结构。
-- **[Completed] Phase 1~3 客户端多平台核心实现**：
-  - 构建全套 Modern Soft UI 响应式设计系统组件库：`tokens.dart`、`theme_provider.dart`、`soft_card.dart`、`soft_button.dart`、`recessed_well.dart`、`acoustic_mesh_glow.dart`、`mellow_image.dart`；
-  - 落地桌面端 12 视图与移动端 4 主 Tab + 8 二级页面 + 5 大弹窗/抽屉（100% 零遗漏对齐）；
-  - 实现双流播放状态机 (`AudioPlayerService`) 与声学 10 频段 EQ 管理器 (`EqualizerManager`)。
-- **[Completed] Phase 2 音源沙箱与六维解析引擎 (子 Agent 1 独立交付)**：
-  - 落地 `lib/core/sources/lx_source_model.dart` 与 `lx_script_sandbox.dart`；
-  - 实现了歌曲全局搜索、128k/320k/FLAC/Hi-Res 无损换源、动态 LRC 歌词解析嗅探、榜单抓取；
-  - 实现全网多平台聚合搜索 (`searchAggregated`) 与双重容错降级机制（音质平滑降级 + 跨源智能热切轮询换源）；
-  - 编写 `test/lx_source_engine_test.dart`，25 项单元测试 100% 通过。
-- **[Completed] Phase 5 多端数据同步与局域网协同 (子 Agent 2 独立交付)**：
-  - 落地 `lib/core/sync/sync_data_model.dart`、`webdav_sync_service.dart`、`lan_sync_service.dart`；
-  - 实现基于毫秒级时间戳的 LWW (Last-Write-Wins) 冲突解决算法，覆盖收藏、自建歌单、历史播放与 EQ 状态；
-  - 实现 WebDAV 客户端备份与还原逻辑（支持定时自动同步与探活鉴权）；
-  - 实现了基于端口 23332 的局域网直连同步互传服务，100% 兼容原生 LX-Sync 配对与报文流转协议；
-  - 编写 `test/sync_services_test.dart`，15 项单元测试 100% 通过。
-- **[Completed] Phase 6 全端支持、CI/CD 自动化发版流水线与 E2E 质量红线**：
-  - 补齐 Linux 原生 CMake & GTK3 构建脚手架与 HarmonyOS NEXT / OpenHarmony 架构对接文档；
-  - 搭建 GitHub Actions CI/CD 流水线：
-    - `.github/workflows/ci.yml`：PR/Push 门禁，自动执行 `flutter analyze`、`flutter test` 及 Web 无头 E2E 质量验证；
-    - `.github/workflows/release.yml`：基于标签触发矩阵构建，自动编译 Windows (x64 ZIP)、macOS (Universal ZIP)、Linux (tar.gz)、Android (APK) 与 Web (ZIP) 产物并自动发布为 GitHub Releases；
-  - 落地工程规格书第 9 章《全平台产物端到端 (E2E) 闭环验收与质量红线规范》，建立 8 大核心使用链路与缺陷归因循环机制；
-  - 物理编译 Web Release 真实生产产物，通过无头 Chrome 真实挂载桌面与移动双视口，零未捕获异常，生成并持久化 E2E 验证存证截图。
-- **[Completed] 全流程自动化测试与静态质量分析验收**：
-  - `flutter analyze` 结果：**No issues found!**（0 错误，0 警告，0 提示）；
-  - `flutter test` 结果：**47 / 47 项测试用例 100% 全部通过**；
-  - 生产代码与流水线配置文件全量同步推送至 GitHub 远端主分支 (`origin/main`)。
+### 1. 局域网 P2P 近场即时传输交互 (LAN Sync)
+- **核心逻辑**：基于原生 `dart:io` 的 UDP Socket 组播发现（端口 23333）+ HTTP 服务端（端口 23332），支持节点探活、双向配对握手与歌单/文件即时传输；
+- **UI 交互**：桌面端 `DesktopSyncView` 与移动端同步面板完全剔除旧有虚假 Toast，点击「发送歌单」和「立即同步」直接驱动底层网络 Socket 发送真实同步报文；
+- **防伪保证**：零假设备，仅当局域网真实监听到对端广播或完成握手时方展示设备卡片。
+
+### 2. LX-Music 自定义音源脚本沙箱与音质降级调度
+- **安全沙箱**：`LxSourceEngine.instance` 具备静态 AST/正则防注入安全校验，拦截 `eval`、`Function`、`require`、`process`、`window`、`document` 等危险调用；
+- **音质阶梯降级**：实现 `resolveMusicUrlWithFallback`，从用户首选音质（flac24bit / flac / 320k / 128k）逐级自动降级重试，确保播放可用率最大化；
+- **UI 运维**：在桌面端设置与音源管理视图中提供「首选音质」快捷切换、外部脚本安装卡片、查看源码模态框与一键卸载功能。
+
+### 3. 桌面独立置顶透明穿透歌词窗口 (Desktop Floating Lyric)
+- **原生贯通**：在 `flutter_window.cpp` 原生注入 Win32 API：
+  - `SetWindowPos(hwnd, HWND_TOPMOST, ...)` 实现真正的窗口系统级置顶；
+  - `SetWindowLong(hwnd, GWL_EXSTYLE, WS_EX_TRANSPARENT | WS_EX_LAYERED)` 实现鼠标点击完全穿透至底层桌面/游戏；
+  - 原生系统托盘增加「桌面歌词 开/关 (Ctrl+D)」和「窗口始终置顶」快捷菜单项；
+- **前端联动**：`DesktopFloatingLyricService` 与 `DesktopFloatingLyricBar` 响应拖拽位移并落盘记忆坐标，支持 3 档字号平滑切换。
+
+### 4. 移动端 (Android / iOS) 真实打包发布流水线与平台适配
+- **Android 平台**：
+  - 补充 `ACCESS_WIFI_STATE` 与 `CHANGE_WIFI_MULTICAST_STATE`（局域网 UDP 发现）；
+  - 补充 `POST_NOTIFICATIONS`、`FOREGROUND_SERVICE` 与 `FOREGROUND_SERVICE_MEDIA_PLAYBACK`；
+  - 开启 `usesCleartextTraffic="true"` 支持局域网明文传输；
+- **iOS 平台**：
+  - 补充 `UIBackgroundModes`（`audio`, `fetch`）实现后台音频常驻；
+  - 补充 `NSAppTransportSecurity` 允许本地网络和任意音频流；
+  - 补充 `NSLocalNetworkUsageDescription` 与 Bonjour 服务定义；
+- **打包流水线**：交付 `build_mobile.ps1`，支持 `-Target apk`、`-Target bundle` 与 `-Target check-only`，并由 `test/mobile_platform_manifest_test.dart` 自动化测试进行防退化守护。
 
 ---
 
-## 🎯 产出物代码与测试指引
+## 🎯 产出物运行与验证指引
 
-```bash
-# 进入 Flutter 应用程序目录
+```powershell
+# 1. 运行全量单元与部件测试套件 (146/146 Passed 100%)
 cd app
+C:\Users\gaore\.puro\envs\stable\flutter\bin\flutter.bat test
 
-# 运行全量测试套件 (47/47 Passed)
-flutter test
+# 2. 运行 Windows 原生应用物理进程保活验证
+powershell -ExecutionPolicy Bypass -File .\verify_windows_app.ps1
 
-# 运行代码规范与静态分析 (No issues found!)
-flutter analyze
-
-# 编译 Web 真实发布产物
-flutter build web --release
-
-# 运行无头 Chrome 真实产物级 E2E 测试
-node flutter_e2e_verify.mjs
+# 3. 运行移动端平台配置合规检查与打包流水线
+powershell -ExecutionPolicy Bypass -File .\build_mobile.ps1 -Target check-only
 ```

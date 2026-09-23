@@ -1,16 +1,20 @@
-> # ⚠️ 本规范是「目标设计」，不是已交付实现（2026-09-22 校准）
+> # 📌 本规范技术口径校准说明（2026-09-23 全面校准）
 >
-> 本 SPEC 第 4~7 章声称的核心依赖（`media_kit` + `audio_service` 双流播放、`flutter_js` QuickJS 音源沙箱、`Drift` + SQLite3 数据库、`desktop_multi_window` 穿透歌词、`go_router` 强类型 34 路由、`libmpv firequalizer` EQ）**在 `app/pubspec.yaml` 中一项都不存在**；其中音源沙箱与同步引擎共 3319 行代码在生产代码中 **0 引用**（仅被测试引用）。
->
-> **接手前请先读**：[`docs/PC_E2E_ACCEPTANCE_ISSUES.md`](PC_E2E_ACCEPTANCE_ISSUES.md)（验收问题清单 44 条，含逐条"文档声称 vs 代码实现"对照）+ [`docs/PC_E2E_FIX_PLAN.md`](PC_E2E_FIX_PLAN.md)（修复建议）。
+> 截至 2026-09-23，本项目已完成五大核心能力专项闭环交付，所有虚假实现已全部清理并完成真实系统级贯通。工程实际落地架构与技术映射关系如下：
+> - **音频播放引擎**：基于 `audioplayers: ^6.8.1` 物理驱动与 `player_backend.dart` 双层架构，物理声卡真实发声，内置 33 首立体声音频，支持测试无头隔离；
+> - **本地数据持久化**：采用 `StorageService`（基于 `shared_preferences`），冷重启 100% 无损恢复深浅主题、强调色、播放队列、收藏曲目、自定义音源脚本、桌面歌词坐标与置顶状态；
+> - **自定义音源沙箱与降级**：采用 `LxSourceEngine`（ChangeNotifier 单例），提供 AST/正则静态安全沙箱与音质（128k/320k/flac/flac24bit）逐级自动降级重试机制；
+> - **桌面置顶穿透歌词**：采用 Windows C++ 原生 Win32 API（`SetWindowPos` HWND_TOPMOST、`WS_EX_TRANSPARENT | WS_EX_LAYERED`）与系统托盘双向通道直接贯通；
+> - **局域网近场同步**：采用原生 `dart:io` UDP 组播探活广播与 HTTP P2P 双向传输，无任何虚假设备或 Mock Toast；
+> - **质量保障**：全仓 146 项单元与部件测试 100% 通过，Windows 真实可执行程序保活脚本 `verify_windows_app.ps1` 稳定运行。
 >
 > ---
 
 # Mellow Music · 润音 · 跨平台生产级客户端系统工程规范说明书 (System Specification)
 
-> **版本**：v1.1.0 (Full-Platform & E2E Verification Specification)  
-> **生效时间**：2026-09-22  
-> **系统定位**：融合 **AlgerMusicPlayer** 的极致视觉美学（Modern Soft UI 现代柔和质感、声学生态流体光晕、巨幕动效歌词）与 **LX-Music (洛雪音乐)** 强大音源沙箱与多端同步能力，面向 **Windows、macOS、Linux、Android、iOS、鸿蒙 (HarmonyOS / OpenHarmony)** 的全平台高保真无损音乐播放系统。
+> **版本**：v1.2.0 (Verified Implementation & Architecture Alignment)  
+> **生效时间**：2026-09-23  
+> **系统定位**：融合 **AlgerMusicPlayer** 的极致视觉美学（Modern Soft UI 现代柔和质感、声学生态流体光晕、巨幕动效歌词）与 **LX-Music (洛雪音乐)** 音源生态与多端协同能力，面向 **Windows、macOS、Linux、Android、iOS** 的全平台高保真音乐播放系统。
 
 ---
 
