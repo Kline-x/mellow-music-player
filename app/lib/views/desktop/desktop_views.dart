@@ -8,6 +8,7 @@ import '../../design_system/recessed_well.dart';
 import '../../design_system/mellow_image.dart';
 import '../../core/audio/audio_player_service.dart';
 import '../../core/audio/track_model.dart';
+import '../../core/audio/windows_tray_service.dart';
 import '../common/modals.dart';
 
 /// 1. 发现音乐主页 (DiscoverView - Bento Grid 仪表盘)
@@ -1585,9 +1586,22 @@ class _DesktopLocalMusicViewState extends State<DesktopLocalMusicView> {
 }
 
 /// 10. 个性化设置中心 (SettingsView)
-class DesktopSettingsView extends StatelessWidget {
+class DesktopSettingsView extends StatefulWidget {
   final Function(String viewId, [String? extra]) onNavigate;
   const DesktopSettingsView({super.key, required this.onNavigate});
+
+  @override
+  State<DesktopSettingsView> createState() => _DesktopSettingsViewState();
+}
+
+class _DesktopSettingsViewState extends State<DesktopSettingsView> {
+  late bool _minimizeToTray;
+
+  @override
+  void initState() {
+    super.initState();
+    _minimizeToTray = WindowsTrayService.instance.minimizeToTray;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1703,7 +1717,57 @@ class DesktopSettingsView extends StatelessWidget {
         ),
         const SizedBox(height: 16),
 
-        // 4. 桌面全局键盘快捷键指南
+        // 4. 系统托盘与常驻设置 (Windows & Desktop 特性)
+        SoftCard(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('系统托盘与常驻后台', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: theme.accentColor.withValues(alpha: 0.15),
+                      borderRadius: MellowRadii.borderPill,
+                    ),
+                    child: Text('Windows 原生集成', style: TextStyle(color: theme.accentColor, fontSize: 11, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('关闭主窗口时最小化至托盘', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: theme.textPrimary)),
+                        const SizedBox(height: 4),
+                        Text('点击窗口右上角关闭按钮时不退出程序，在系统托盘保持后台静默播放与快捷菜单控制', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                      ],
+                    ),
+                  ),
+                  Switch.adaptive(
+                    value: _minimizeToTray,
+                    activeColor: theme.accentColor,
+                    onChanged: (val) async {
+                      setState(() {
+                        _minimizeToTray = val;
+                      });
+                      await WindowsTrayService.instance.setMinimizeToTray(val);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // 5. 桌面全局键盘快捷键指南
         SoftCard(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -1730,6 +1794,7 @@ class DesktopSettingsView extends StatelessWidget {
                 children: [
                   _buildShortcutChip('空格 Space', '播放 / 暂停', theme),
                   _buildShortcutChip('⌘/Ctrl + K', '全网即时搜索', theme),
+                  _buildShortcutChip('⌘/Ctrl + D', '桌面悬浮歌词', theme),
                   _buildShortcutChip('← / →', '快退 / 快进 5 秒', theme),
                   _buildShortcutChip('↑ / ↓', '音量微调 ±5%', theme),
                   _buildShortcutChip('M', '一键静音切换', theme),

@@ -42,6 +42,12 @@ class StorageService {
   static const _keyFloatingLyricLocked = 'mellow_floating_lyric_locked';
   static const _keyLocalTracks = 'mellow_audio_local_tracks';
   static const _keyLocalDirectories = 'mellow_audio_local_directories';
+  static const _keyMinimizeToTray = 'mellow_minimize_to_tray';
+
+  // --- 系统托盘与常驻偏好 ---
+  bool getMinimizeToTray() => _prefs?.getBool(_keyMinimizeToTray) ?? true;
+  Future<bool> saveMinimizeToTray(bool value) async =>
+      (await _prefs?.setBool(_keyMinimizeToTray, value)) ?? false;
 
   // --- 本地扫描曲库与目录偏好 ---
 

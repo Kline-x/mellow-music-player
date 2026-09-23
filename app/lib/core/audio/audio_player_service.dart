@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'track_model.dart';
 import 'player_backend.dart';
 import 'windows_smtc_service.dart';
+import 'windows_tray_service.dart';
 import 'local_music_service.dart';
 import '../sources/online_music_service.dart';
 import '../storage/storage_service.dart';
@@ -140,6 +141,7 @@ class AudioPlayerService extends ChangeNotifier {
     _loadFromStorage();
     _initAudioListeners();
     _initSmtc();
+    WindowsTrayService.instance.init();
   }
 
   void _initSmtc() {
@@ -356,6 +358,7 @@ class AudioPlayerService extends ChangeNotifier {
       WindowsSmtcService.instance.updateMetadata(track);
       WindowsSmtcService.instance.updatePlaybackState(true);
       WindowsSmtcService.instance.updateTimeline(_position, duration);
+      WindowsTrayService.instance.updateTooltip(track);
     } catch (e) {
       debugPrint('[AudioPlayerService] 真实音频播放调度异常: $e');
       _playbackNotice = '歌曲「${track.title}」音频资源加载失败，可能需要专属授权或网络受限';

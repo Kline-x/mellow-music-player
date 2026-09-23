@@ -3,6 +3,24 @@
 #include <optional>
 
 #include "flutter/generated_plugin_registrant.h"
+#include "resource.h"
+
+#define WM_TRAY_ICON (WM_USER + 101)
+#define IDM_TRAY_SHOW 1001
+#define IDM_TRAY_PLAY_PAUSE 1002
+#define IDM_TRAY_PREV 1003
+#define IDM_TRAY_NEXT 1004
+#define IDM_TRAY_EXIT 1005
+
+namespace {
+std::wstring Utf8ToWide(const std::string& str) {
+  if (str.empty()) return std::wstring();
+  int size = MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), nullptr, 0);
+  std::wstring out(size, 0);
+  MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), out.data(), size);
+  return out;
+}
+}  // namespace
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
     : project_(project) {}
@@ -26,6 +44,7 @@ bool FlutterWindow::OnCreate() {
   }
   RegisterPlugins(flutter_controller_->engine());
   SetupSmtcChannel();
+  SetupTray();
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
@@ -41,6 +60,8 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  RemoveTray();
+  tray_channel_ = nullptr;
   smtc_channel_ = nullptr;
   if (flutter_controller_) {
     flutter_controller_ = nullptr;
@@ -109,6 +130,141 @@ void FlutterWindow::HandleAppCommand(short app_command) {
   }
 }
 
+void FlutterWindow::SetupTray() {
+  if (!flutter_controller_ || !flutter_controller_->engine()) return;
+
+  HWND hwnd = GetHandle();
+  if (!hwnd) return;
+
+  memset(&nid_, 0, sizeof(NOTIFYICONDATAW));
+  nid_.cbSize = sizeof(NOTIFYICONDATAW);
+  nid_.hWnd = hwnd;
+  nid_.uID = 1;
+  nid_.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+  nid_.uCallbackMessage = WM_TRAY_ICON;
+  nid_.hIcon = LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_APP_ICON));
+  wcscpy_s(nid_.szTip, L"Mellow 音乐播放器");
+  Shell_NotifyIconW(NIM_ADD, &nid_);
+  is_tray_installed_ = true;
+
+  tray_channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+      flutter_controller_->engine()->messenger(),
+      "com.kline.mellow_music/tray",
+      &flutter::StandardMethodCodec::GetInstance());
+
+  tray_channel_->SetMethodCallHandler(
+      [this, hwnd](const flutter::MethodCall<flutter::EncodableValue>& call,
+                   std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
+        if (call.method_name() == "init") {
+          if (const auto* args = std::get_if<flutter::EncodableMap>(call.arguments())) {
+            auto it = args->find(flutter::EncodableValue("minimizeToTray"));
+            if (it != args->end()) {
+              if (const auto* val = std::get_if<bool>(&it->second)) {
+                this->minimize_to_tray_ = *val;
+              }
+            }
+          }
+          result->Success(flutter::EncodableValue(true));
+        } else if (call.method_name() == "setMinimizeToTray") {
+          if (const auto* args = std::get_if<flutter::EncodableMap>(call.arguments())) {
+            auto it = args->find(flutter::EncodableValue("enabled"));
+            if (it != args->end()) {
+              if (const auto* val = std::get_if<bool>(&it->second)) {
+                this->minimize_to_tray_ = *val;
+              }
+            }
+          }
+          result->Success(flutter::EncodableValue(true));
+        } else if (call.method_name() == "updateTrayTooltip") {
+          if (const auto* args = std::get_if<flutter::EncodableMap>(call.arguments())) {
+            auto it = args->find(flutter::EncodableValue("tooltip"));
+            if (it != args->end()) {
+              if (const auto* val = std::get_if<std::string>(&it->second)) {
+                this->UpdateTrayTooltip(Utf8ToWide(*val));
+              }
+            }
+          }
+          result->Success(flutter::EncodableValue(true));
+        } else if (call.method_name() == "showWindow") {
+          ShowWindow(hwnd, SW_RESTORE);
+          SetForegroundWindow(hwnd);
+          result->Success(flutter::EncodableValue(true));
+        } else if (call.method_name() == "hideWindow") {
+          ShowWindow(hwnd, SW_HIDE);
+          result->Success(flutter::EncodableValue(true));
+        } else {
+          result->NotImplemented();
+        }
+      });
+}
+
+void FlutterWindow::RemoveTray() {
+  if (is_tray_installed_) {
+    Shell_NotifyIconW(NIM_DELETE, &nid_);
+    is_tray_installed_ = false;
+  }
+}
+
+void FlutterWindow::UpdateTrayTooltip(const std::wstring& tooltip) {
+  if (!is_tray_installed_) return;
+  wcsncpy_s(nid_.szTip, tooltip.c_str(), _countof(nid_.szTip) - 1);
+  nid_.szTip[_countof(nid_.szTip) - 1] = L'\0';
+  nid_.uFlags = NIF_TIP;
+  Shell_NotifyIconW(NIM_MODIFY, &nid_);
+}
+
+void FlutterWindow::ShowTrayContextMenu() {
+  POINT pt;
+  GetCursorPos(&pt);
+  HMENU hMenu = CreatePopupMenu();
+  if (!hMenu) return;
+
+  InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_STRING, IDM_TRAY_SHOW, L"显示主界面");
+  InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_SEPARATOR, 0, nullptr);
+  InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_STRING, IDM_TRAY_PLAY_PAUSE, L"播放 / 暂停");
+  InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_STRING, IDM_TRAY_PREV, L"上一首");
+  InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_STRING, IDM_TRAY_NEXT, L"下一首");
+  InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_SEPARATOR, 0, nullptr);
+  InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_STRING, IDM_TRAY_EXIT, L"退出程序");
+
+  HWND hwnd = GetHandle();
+  SetForegroundWindow(hwnd);
+
+  int cmd = TrackPopupMenu(hMenu, TPM_RETURNCMD | TPM_NONOTIFY | TPM_RIGHTBUTTON,
+                           pt.x, pt.y, 0, hwnd, nullptr);
+  DestroyMenu(hMenu);
+
+  if (cmd == IDM_TRAY_SHOW) {
+    ShowWindow(hwnd, SW_RESTORE);
+    SetForegroundWindow(hwnd);
+  } else if (cmd == IDM_TRAY_PLAY_PAUSE) {
+    if (smtc_channel_) {
+      flutter::EncodableMap args;
+      args[flutter::EncodableValue("button")] = flutter::EncodableValue("toggleplay");
+      smtc_channel_->InvokeMethod("onButtonPressed",
+                                  std::make_unique<flutter::EncodableValue>(args));
+    }
+  } else if (cmd == IDM_TRAY_PREV) {
+    if (smtc_channel_) {
+      flutter::EncodableMap args;
+      args[flutter::EncodableValue("button")] = flutter::EncodableValue("previous");
+      smtc_channel_->InvokeMethod("onButtonPressed",
+                                  std::make_unique<flutter::EncodableValue>(args));
+    }
+  } else if (cmd == IDM_TRAY_NEXT) {
+    if (smtc_channel_) {
+      flutter::EncodableMap args;
+      args[flutter::EncodableValue("button")] = flutter::EncodableValue("next");
+      smtc_channel_->InvokeMethod("onButtonPressed",
+                                  std::make_unique<flutter::EncodableValue>(args));
+    }
+  } else if (cmd == IDM_TRAY_EXIT) {
+    minimize_to_tray_ = false;
+    RemoveTray();
+    DestroyWindow(hwnd);
+  }
+}
+
 LRESULT
 FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
                               WPARAM const wparam,
@@ -131,6 +287,26 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
       short cmd = GET_APPCOMMAND_LPARAM(lparam);
       HandleAppCommand(cmd);
       return TRUE;
+    }
+    case WM_CLOSE: {
+      if (minimize_to_tray_) {
+        ShowWindow(hwnd, SW_HIDE);
+        return 0;
+      }
+      break;
+    }
+    case WM_TRAY_ICON: {
+      switch (lparam) {
+        case WM_LBUTTONUP:
+        case WM_LBUTTONDBLCLK:
+          ShowWindow(hwnd, SW_RESTORE);
+          SetForegroundWindow(hwnd);
+          return 0;
+        case WM_RBUTTONUP:
+          ShowTrayContextMenu();
+          return 0;
+      }
+      break;
     }
   }
 

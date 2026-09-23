@@ -8,6 +8,7 @@
 
 #include <memory>
 #include <string>
+#include <shellapi.h>
 
 #include "win32_window.h"
 
@@ -36,6 +37,17 @@ class FlutterWindow : public Win32Window {
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> smtc_channel_;
   void SetupSmtcChannel();
   void HandleAppCommand(short app_command);
+
+  // Windows System Tray (Shell_NotifyIcon) & Background Close Control
+  std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> tray_channel_;
+  NOTIFYICONDATAW nid_ = {};
+  bool is_tray_installed_ = false;
+  bool minimize_to_tray_ = true;
+
+  void SetupTray();
+  void RemoveTray();
+  void UpdateTrayTooltip(const std::wstring& tooltip);
+  void ShowTrayContextMenu();
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_
