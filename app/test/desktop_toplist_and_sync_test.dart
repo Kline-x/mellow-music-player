@@ -89,21 +89,21 @@ void main() {
 
       // 1. 验证同步中心标题与特性
       expect(find.text('多端协同与云端同步中心'), findsOneWidget);
-      expect(find.text('支持 WebDAV 私有云盘实时双向热备，与局域网近场毫秒级 P2P 跨端流转'), findsOneWidget);
+      expect(find.text('支持 WebDAV 私有云盘实时双向热备，与免网络环境全量 JSON 快照流转'), findsOneWidget);
 
       // 2. 验证数据指标健康看板
       expect(find.text('本地红心收藏'), findsOneWidget);
       expect(find.text('自建与导入歌单'), findsOneWidget);
       expect(find.text('播放足迹历史'), findsOneWidget);
 
-      // 3. 验证 WebDAV 模块与云端备份触发诚实提示
-      expect(find.text('WebDAV 私有云盘同步'), findsOneWidget);
+      // 3. 验证 WebDAV 模块与云端备份触发真实参数拦截
+      expect(find.text('WebDAV 私有云盘热备'), findsOneWidget);
       final backupBtn = find.text('立即云端备份');
       expect(backupBtn, findsOneWidget);
       await tester.tap(backupBtn);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
-      expect(find.text('云端同步功能尚未完整接入，请勿依赖此页面备份数据'), findsOneWidget);
+      expect(find.text('请先配置 WebDAV 私有云盘服务器参数'), findsOneWidget);
 
       // 4. 滚动到局域网协同设备模块
       final lanTitle = find.text('局域网近场设备协同 (LAN P2P)');
@@ -112,7 +112,7 @@ void main() {
 
       // 验证局域网近场协同模块与当前未发现配对设备的真实状态
       expect(lanTitle, findsOneWidget);
-      expect(find.text('当前未发现局域网配对设备'), findsOneWidget);
+      expect(find.text('近场广播监听已启动，等待同网段设备连接'), findsOneWidget);
 
       audioPlayerService.pause();
       await tester.pump(const Duration(milliseconds: 100));

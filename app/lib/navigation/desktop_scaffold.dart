@@ -577,10 +577,11 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
     final player = context.watch<AudioPlayerService>();
     final isDark = theme.isDarkMode;
     final track = player.currentTrack ?? mockPresetTracks[0];
+    final screenWidth = MediaQuery.of(context).size.width;
 
     return Container(
       height: 78,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: screenWidth < 900 ? 12 : 24, vertical: 6),
       decoration: BoxDecoration(
         color: MellowColors.card(isDark).withValues(alpha: 0.94),
         border: Border(
@@ -599,9 +600,9 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
       ),
       child: Row(
         children: [
-          // 1. 左侧：正在播放曲目信息 (固定宽度约 260)
+          // 1. 左侧：正在播放曲目信息 (自适应宽度防窄视口溢出)
           SizedBox(
-            width: 260,
+            width: screenWidth < 900 ? 190 : 250,
             child: Row(
               children: [
                 ClipRRect(
@@ -682,71 +683,74 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
           // 2. 中央：核心播放控制器与微细平滑进度条
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(horizontal: screenWidth < 900 ? 6 : 18),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // 控制按键行
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          player.playbackMode == PlaybackMode.singleLoop
-                              ? Icons.repeat_one_rounded
-                              : (player.playbackMode == PlaybackMode.shuffle
-                                  ? Icons.shuffle_rounded
-                                  : Icons.repeat_rounded),
-                          size: 19,
-                        ),
-                        color: player.playbackMode == PlaybackMode.sequence
-                            ? theme.textMuted
-                            : theme.accentColor,
-                        tooltip: player.playbackMode.label,
-                        onPressed: () => player.cyclePlaybackMode(),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(Icons.skip_previous_rounded, size: 22),
-                        color: theme.textPrimary,
-                        tooltip: '上一首',
-                        onPressed: () => player.previous(),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: () => player.togglePlay(),
-                        child: Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: theme.accentColor,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: theme.accentColor.withValues(alpha: 0.4),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
+                  // 控制按键行 (自适应缩放防溢出)
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            player.playbackMode == PlaybackMode.singleLoop
+                                ? Icons.repeat_one_rounded
+                                : (player.playbackMode == PlaybackMode.shuffle
+                                    ? Icons.shuffle_rounded
+                                    : Icons.repeat_rounded),
+                            size: 19,
                           ),
-                          child: Icon(
-                            player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                            color: Colors.white,
-                            size: 22,
+                          color: player.playbackMode == PlaybackMode.sequence
+                              ? theme.textMuted
+                              : theme.accentColor,
+                          tooltip: player.playbackMode.label,
+                          onPressed: () => player.cyclePlaybackMode(),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.skip_previous_rounded, size: 22),
+                          color: theme.textPrimary,
+                          tooltip: '上一首',
+                          onPressed: () => player.previous(),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () => player.togglePlay(),
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: theme.accentColor,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: theme.accentColor.withValues(alpha: 0.4),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(Icons.skip_next_rounded, size: 22),
-                        color: theme.textPrimary,
-                        tooltip: '下一首',
-                        onPressed: () => player.next(),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.skip_next_rounded, size: 22),
+                          color: theme.textPrimary,
+                          tooltip: '下一首',
+                          onPressed: () => player.next(),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ],
+                    ),
                   ),
                   // 进度条行 (带拖拽防抖保护，松手再 seek)
                   Row(

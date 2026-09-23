@@ -71,17 +71,30 @@ class SyncTrack {
         'localPath': localPath,
       };
 
-  factory SyncTrack.fromJson(Map<String, dynamic> json) => SyncTrack(
-        id: json['id'] as String? ?? '',
-        title: json['title'] as String? ?? '未知曲目',
-        artist: json['artist'] as String? ?? '未知歌手',
-        album: json['album'] as String? ?? '未知专辑',
-        coverUrl: json['coverUrl'] as String? ?? '',
-        durationMs: (json['durationMs'] as num?)?.toInt() ?? 0,
-        source: json['source'] as String? ?? 'local',
-        audioUrl: json['audioUrl'] as String?,
-        localPath: json['localPath'] as String?,
-      );
+  factory SyncTrack.fromJson(Map<String, dynamic> json) {
+    int duration = (json['durationMs'] as num?)?.toInt() ?? 0;
+    if (duration == 0 && json['interval'] != null) {
+      final interval = json['interval'].toString();
+      final parts = interval.split(':');
+      if (parts.length == 2) {
+        final m = int.tryParse(parts[0]) ?? 0;
+        final s = int.tryParse(parts[1]) ?? 0;
+        duration = (m * 60 + s) * 1000;
+      }
+    }
+
+    return SyncTrack(
+      id: json['id'] as String? ?? json['songmid'] as String? ?? '',
+      title: json['title'] as String? ?? json['name'] as String? ?? '未知曲目',
+      artist: json['artist'] as String? ?? json['singer'] as String? ?? '未知歌手',
+      album: json['album'] as String? ?? json['albumName'] as String? ?? '未知专辑',
+      coverUrl: json['coverUrl'] as String? ?? json['picUrl'] as String? ?? json['img'] as String? ?? '',
+      durationMs: duration,
+      source: json['source'] as String? ?? 'local',
+      audioUrl: json['audioUrl'] as String?,
+      localPath: json['localPath'] as String?,
+    );
+  }
 
   @override
   bool operator ==(Object other) =>
@@ -456,7 +469,9 @@ class SyncSnapshot {
     final data = payload['data'] as Map<String, dynamic>? ?? {};
     final now = DateTime.now();
 
-    final loveListJson = (data['loveList'] as List<dynamic>?) ?? [];
+    final loveListJson = (data['loveList'] as List<dynamic>?) ??
+        (data['defaultList'] as List<dynamic>?) ??
+        [];
     final favorites = loveListJson.map((item) {
       final track = SyncTrack.fromJson(item as Map<String, dynamic>);
       return SyncFavoriteItem(track: track, updatedAt: now);

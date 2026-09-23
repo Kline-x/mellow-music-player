@@ -409,11 +409,14 @@ class LanSyncClient {
 
 /// 局域网协同服务门面 (Facade: 服务端、客户端与配对管理统一中心)
 class LanSyncService extends ChangeNotifier {
+  static final LanSyncService instance = LanSyncService();
+
   final LanSyncServer server;
   final LanSyncClient client;
 
   final List<LanDevice> _discoveredDevices = [];
   bool _isScanning = false;
+  String? _currentLocalIp;
 
   LanSyncService({
     LanSyncServer? server,
@@ -427,7 +430,58 @@ class LanSyncService extends ChangeNotifier {
   bool get isServerRunning => server.isRunning;
   String get serverAuthKey => server.authKey;
   int get serverPort => server.port;
+  String get currentLocalIp => _currentLocalIp ?? '127.0.0.1';
   Stream<SyncSnapshot> get onSnapshotReceived => server.onSnapshotReceived;
+
+  /// 获取本机主物理局域网 IPv4 地址
+  static Future<String> getLocalIPv4() async {
+    try {
+      final interfaces = await NetworkInterface.list(
+        includeLoopback: false,
+        type: InternetAddressType.IPv4,
+      );
+      for (final interface in interfaces) {
+        for (final addr in interface.addresses) {
+          final ip = addr.address;
+          if (!addr.isLoopback &&
+              (ip.startsWith('192.168.') ||
+                  ip.startsWith('10.') ||
+                  ip.startsWith('172.'))) {
+            return ip;
+          }
+        }
+      }
+      if (interfaces.isNotEmpty && interfaces.first.addresses.isNotEmpty) {
+        return interfaces.first.addresses.first.address;
+      }
+    } catch (_) {}
+    return '127.0.0.1';
+  }
+
+  /// 提取子网前缀 (例如 192.168.1.10 -> 192.168.1)
+  static String getSubnetPrefix(String ip) {
+    final parts = ip.split('.');
+    if (parts.length == 4) {
+      return '${parts[0]}.${parts[1]}.${parts[2]}';
+    }
+    return '192.168.1';
+  }
+
+  /// 确保本机局域网接收服务已启动
+  Future<int> ensureServerRunning() async {
+    _currentLocalIp = await getLocalIPv4();
+    if (server.isRunning) {
+      return server.port;
+    }
+    try {
+      final p = await startServer(port: 23332);
+      return p;
+    } catch (_) {
+      // 端口冲突时自动寻找系统可用端口
+      final p = await startServer(port: 0);
+      return p;
+    }
+  }
 
   /// 启动本机服务
   Future<int> startServer({
@@ -500,6 +554,21 @@ class LanSyncService extends ChangeNotifier {
       device.ip,
       snapshot,
       port: device.port,
+      authKey: authKey,
+    );
+  }
+
+  /// 向指定 IP/端口直接投送快照 (支持手动直连模式)
+  Future<bool> pushToTarget(
+    String host,
+    SyncSnapshot snapshot, {
+    int port = 23332,
+    String? authKey,
+  }) async {
+    return client.pushSnapshot(
+      host,
+      snapshot,
+      port: port,
       authKey: authKey,
     );
   }

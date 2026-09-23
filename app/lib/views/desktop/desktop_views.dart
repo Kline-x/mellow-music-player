@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../design_system/tokens.dart';
@@ -13,6 +14,7 @@ import '../../core/audio/equalizer_manager.dart';
 import '../../core/sources/online_music_service.dart';
 import '../../core/sync/webdav_sync_service.dart';
 import '../../core/sync/sync_data_model.dart';
+import '../../core/sync/lan_sync_service.dart';
 import '../../core/storage/storage_service.dart';
 import '../common/modals.dart';
 
@@ -2229,10 +2231,133 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
   String _statusMessage = '空闲就绪';
   DateTime? _lastSyncTime;
 
+  // 局域网近场协同服务状态
+  final LanSyncService _lanService = LanSyncService.instance;
+  StreamSubscription<SyncSnapshot>? _lanSnapshotSub;
+  bool _isScanningLan = false;
+  String? _pushingDeviceId;
+  String? _lanLocalIp;
+  int _lanLocalPort = 23332;
+  List<LanDevice> _discoveredDevices = [];
+
   @override
   void initState() {
     super.initState();
     _loadConfig();
+    _initLanSync();
+  }
+
+  @override
+  void dispose() {
+    _lanSnapshotSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _initLanSync() async {
+    try {
+      final port = await _lanService.ensureServerRunning();
+      final ip = await LanSyncService.getLocalIPv4();
+      if (mounted) {
+        setState(() {
+          _lanLocalIp = ip;
+          _lanLocalPort = port;
+        });
+      }
+    } catch (_) {}
+
+    _lanSnapshotSub = _lanService.onSnapshotReceived.listen((incoming) async {
+      if (!mounted) return;
+      final player = context.read<AudioPlayerService>();
+      final eq = EqualizerManager.instance;
+      final local = SyncSnapshot.createFromAppState(player: player, eqManager: eq);
+      final merged = local.merge(incoming);
+      await SyncSnapshot.applyToAppState(merged, player: player, eqManager: eq);
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('收到局域网设备无线快照！已智能合并 ${merged.favorites.length} 首红心、${merged.playlists.length} 个歌单'),
+            backgroundColor: Colors.teal.shade700,
+          ),
+        );
+        setState(() {});
+      }
+    });
+  }
+
+  Future<void> _scanLanDevices() async {
+    if (_isScanningLan) return;
+    setState(() => _isScanningLan = true);
+    try {
+      final ip = _lanLocalIp ?? await LanSyncService.getLocalIPv4();
+      final subnet = LanSyncService.getSubnetPrefix(ip);
+      final list = await _lanService.scanNetwork(subnet, port: _lanLocalPort);
+      if (mounted) {
+        setState(() {
+          _discoveredDevices = list;
+          _isScanningLan = false;
+        });
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(list.isEmpty
+                ? '扫描完成，当前网段暂未发现其他 Mellow/LX 节点'
+                : '扫描完成，发现 ${list.length} 台在线协同节点'),
+            backgroundColor: list.isNotEmpty ? Colors.teal.shade700 : Colors.blueGrey,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isScanningLan = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('局域网扫描出错: $e'), backgroundColor: Colors.redAccent),
+        );
+      }
+    }
+  }
+
+  void _openLanPairingModal() {
+    showDialog(
+      context: context,
+      builder: (ctx) => const LanPairingModal(),
+    );
+  }
+
+  Future<void> _pushToLanDevice(LanDevice device) async {
+    setState(() => _pushingDeviceId = device.id);
+    try {
+      final player = context.read<AudioPlayerService>();
+      final eq = EqualizerManager.instance;
+      final snap = SyncSnapshot.createFromAppState(player: player, eqManager: eq);
+      final ok = await _lanService.pushToDevice(
+        device,
+        snap,
+        authKey: _lanService.serverAuthKey,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        if (ok) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('成功向「${device.name}」(${device.ip}) 投送当前曲库快照！'),
+              backgroundColor: Colors.teal.shade700,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('投送失败，请确认对端设备处于前台并保持在同一局域网'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _pushingDeviceId = null);
+      }
+    }
   }
 
   void _loadConfig() {
@@ -2715,52 +2840,172 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('局域网近场设备协同 (LAN P2P)', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                          Text('同一 Wi-Fi 局域网下设备近场流转与歌单互传', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                          Text('同一 Wi-Fi 局域网下免公网服务器，自动发现与双向近场快传', style: TextStyle(fontSize: 12, color: theme.textMuted)),
                         ],
                       ),
                     ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.teal.withValues(alpha: 0.15),
-                      borderRadius: MellowRadii.borderPill,
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.wifi_tethering_rounded, size: 14, color: Colors.teal),
-                        SizedBox(width: 4),
-                        Text('服务监听中: 43990', style: TextStyle(color: Colors.teal, fontSize: 11, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.teal.withValues(alpha: 0.15),
+                          borderRadius: MellowRadii.borderPill,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.wifi_tethering_rounded, size: 14, color: Colors.teal),
+                            const SizedBox(width: 5),
+                            Text(
+                              '服务监听中: ${_lanLocalIp ?? '127.0.0.1'}:$_lanLocalPort',
+                              style: const TextStyle(color: Colors.teal, fontSize: 11.5, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      SoftButton(
+                        label: '配对码与手动直连',
+                        icon: Icons.qr_code_rounded,
+                        onTap: _openLanPairingModal,
+                      ),
+                      const SizedBox(width: 8),
+                      SoftButton(
+                        label: _isScanningLan ? '正在雷达扫描...' : '扫描局域网节点',
+                        icon: Icons.radar_rounded,
+                        isActive: true,
+                        isPill: true,
+                        onTap: _isScanningLan ? null : _scanLanDevices,
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
-              Text('局域网协同状态', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-              const SizedBox(height: 10),
-
-              // 设备列表空状态卡片
-              SoftCard(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                child: Row(
-                  children: [
-                    Icon(Icons.devices_other_rounded, color: theme.textMuted, size: 28),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('近场广播就绪，等待同网段设备连接', style: TextStyle(fontWeight: FontWeight.w600, color: theme.textPrimary)),
-                          const SizedBox(height: 2),
-                          Text('当前节点开放局域网 P2P 快照协议通道，支持跨端互传歌单与配置', style: TextStyle(fontSize: 12, color: theme.textMuted)),
-                        ],
-                      ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '在线协同节点 (${_discoveredDevices.length})',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                  ),
+                  if (_lanService.serverAuthKey.isNotEmpty)
+                    Text(
+                      '本机配对密钥: ${_lanService.serverAuthKey}',
+                      style: TextStyle(fontSize: 11.5, color: theme.textMuted, fontFamily: 'monospace'),
                     ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              if (_discoveredDevices.isEmpty)
+                RecessedWell(
+                  padding: const EdgeInsets.all(20),
+                  borderRadius: MellowRadii.borderR16,
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: theme.accentColor.withValues(alpha: 0.12),
+                          borderRadius: MellowRadii.borderR12,
+                        ),
+                        child: Icon(Icons.wifi_find_rounded, color: theme.accentColor, size: 28),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '近场广播监听已启动，等待同网段设备连接',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: theme.textPrimary),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '当前节点开放局域网 P2P 快照协议通道（${_lanLocalIp ?? '127.0.0.1'}:$_lanLocalPort）。点击右上角「扫描局域网节点」雷达探测，或使用「配对码与手动直连」扫码投送。',
+                              style: TextStyle(fontSize: 12, color: theme.textMuted, height: 1.4),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Column(
+                  children: [
+                    for (final dev in _discoveredDevices)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: SoftCard(
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                          borderRadius: MellowRadii.borderR16,
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: theme.accentColor.withValues(alpha: 0.12),
+                                  borderRadius: MellowRadii.borderR12,
+                                ),
+                                child: Icon(
+                                  dev.name.toLowerCase().contains('phone') || dev.name.toLowerCase().contains('android') || dev.name.toLowerCase().contains('ios')
+                                      ? Icons.phone_android_rounded
+                                      : Icons.laptop_chromebook_rounded,
+                                  color: theme.accentColor,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          dev.name,
+                                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: theme.textPrimary),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: theme.canvasColor,
+                                            borderRadius: MellowRadii.borderPill,
+                                            border: Border.all(color: theme.borderColor.withValues(alpha: 0.5)),
+                                          ),
+                                          child: Text(
+                                            'v${dev.version}',
+                                            style: TextStyle(fontSize: 10, color: theme.textMuted),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '端点: ${dev.ip}:${dev.port} · 节点ID: ${dev.id}',
+                                      style: TextStyle(fontSize: 11.5, color: theme.textMuted),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SoftButton(
+                                label: _pushingDeviceId == dev.id ? '正在投送...' : '无线投送曲库',
+                                icon: Icons.send_rounded,
+                                isActive: true,
+                                isPill: true,
+                                onTap: _pushingDeviceId != null ? null : () => _pushToLanDevice(dev),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                   ],
                 ),
-              ),
             ],
           ),
         ),

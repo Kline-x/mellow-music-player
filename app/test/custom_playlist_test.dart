@@ -110,9 +110,13 @@ void main() {
       final backend = InMemoryAudioPlayerBackend();
       final player = AudioPlayerService(backend: backend);
 
-      // 标记两首收藏
-      player.toggleFavorite(mockPresetTracks[0].id, mockPresetTracks[0]);
-      player.toggleFavorite(mockPresetTracks[1].id, mockPresetTracks[1]);
+      // 确保两首收藏在 favoriteTracks 中
+      if (!player.isFavorite(mockPresetTracks[0].id)) {
+        player.toggleFavorite(mockPresetTracks[0].id, mockPresetTracks[0]);
+      }
+      if (!player.isFavorite(mockPresetTracks[1].id)) {
+        player.toggleFavorite(mockPresetTracks[1].id, mockPresetTracks[1]);
+      }
 
       final exported = player.exportFavoritesToPlaylist('我的心动精选集');
       expect(exported, isNotNull);

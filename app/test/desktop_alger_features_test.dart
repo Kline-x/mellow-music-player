@@ -116,7 +116,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // 验证进入歌单中心
-      expect(find.text('支持网易云音乐、QQ音乐分享链接与 ID 一键秒级抓取导入'), findsOneWidget);
+      expect(find.text('管理自建精选集，或一键导入网易云音乐、QQ音乐分享链接与公开歌单'), findsOneWidget);
 
       // 2. 注入模拟导入歌单
       final mockPlaylist = ImportedPlaylist(

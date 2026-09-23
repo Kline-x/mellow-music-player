@@ -16,6 +16,7 @@ import '../../core/sources/online_music_service.dart';
 import '../../core/storage/storage_service.dart';
 import '../../core/sync/sync_data_model.dart';
 import '../../core/sync/webdav_sync_service.dart';
+import '../../core/sync/lan_sync_service.dart';
 
 /// 1. 播放队列抽屉 (Queue Drawer / Sheet)
 class PlaybackQueueView extends StatelessWidget {
@@ -2117,6 +2118,321 @@ class _ImportSnapshotModalState extends State<ImportSnapshotModal> {
                 ],
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 11. 局域网近场直连配对与投送对话框 (LanPairingModal)
+class LanPairingModal extends StatefulWidget {
+  const LanPairingModal({super.key});
+
+  @override
+  State<LanPairingModal> createState() => _LanPairingModalState();
+}
+
+class _LanPairingModalState extends State<LanPairingModal> {
+  final LanSyncService _lanService = LanSyncService.instance;
+  late TextEditingController _targetIpCtrl;
+  late TextEditingController _targetPortCtrl;
+  late TextEditingController _targetKeyCtrl;
+  bool _isPushing = false;
+  String? _statusMessage;
+  bool? _pushSuccess;
+
+  @override
+  void initState() {
+    super.initState();
+    _targetIpCtrl = TextEditingController();
+    _targetPortCtrl = TextEditingController(text: '23332');
+    _targetKeyCtrl = TextEditingController();
+    _initLan();
+  }
+
+  Future<void> _initLan() async {
+    await _lanService.ensureServerRunning();
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _targetIpCtrl.dispose();
+    _targetPortCtrl.dispose();
+    _targetKeyCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handlePush() async {
+    final ip = _targetIpCtrl.text.trim();
+    if (ip.isEmpty) {
+      setState(() {
+        _statusMessage = '请输入对端设备的局域网 IP 地址';
+        _pushSuccess = false;
+      });
+      return;
+    }
+    final port = int.tryParse(_targetPortCtrl.text.trim()) ?? 23332;
+    final key = _targetKeyCtrl.text.trim();
+
+    setState(() {
+      _isPushing = true;
+      _statusMessage = '正在向 $ip:$port 发送曲库数据快照...';
+      _pushSuccess = null;
+    });
+
+    final player = context.read<AudioPlayerService>();
+    final eq = EqualizerManager.instance;
+    final snapshot = SyncSnapshot.createFromAppState(player: player, eqManager: eq);
+
+    final ok = await _lanService.pushToTarget(
+      ip,
+      snapshot,
+      port: port,
+      authKey: key.isNotEmpty ? key : null,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _isPushing = false;
+      _pushSuccess = ok;
+      _statusMessage = ok
+          ? '成功将曲库快照推送到 $ip:$port！'
+          : '投送失败，请检查对端 IP 是否正确且已打开 Mellow Music 同步服务';
+    });
+
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('已成功向 $ip:$port 投送 ${snapshot.favorites.length} 首红心、${snapshot.playlists.length} 个歌单！'),
+          backgroundColor: Colors.teal.shade700,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.watch<ThemeProvider>();
+    final localIp = _lanService.currentLocalIp;
+    final port = _lanService.serverPort;
+    final authKey = _lanService.serverAuthKey;
+    final pairingUri = _lanService.generatePairingUri(localIp);
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: SoftCard(
+          padding: const EdgeInsets.all(24),
+          borderRadius: MellowRadii.borderR24,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.indigoAccent.withValues(alpha: 0.15),
+                            borderRadius: MellowRadii.borderR12,
+                          ),
+                          child: const Icon(Icons.hub_rounded, color: Colors.indigoAccent, size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('局域网近场直连配对', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                            Text('同 Wi-Fi 局域网下秒级 P2P 快照投送与歌单漫游', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                          ],
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close_rounded, color: theme.textMuted, size: 20),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+
+                // 本机服务卡片
+                Text('本机节点信息', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: theme.textSecondary)),
+                const SizedBox(height: 8),
+                RecessedWell(
+                  padding: const EdgeInsets.all(14),
+                  borderRadius: MellowRadii.borderR16,
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Text('本机地址: ', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                              SelectableText('$localIp:$port', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                            ],
+                          ),
+                          InkWell(
+                            onTap: () {
+                              Clipboard.setData(ClipboardData(text: '$localIp:$port'));
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已复制本机地址')));
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(4),
+                              child: Icon(Icons.copy_rounded, size: 15, color: theme.accentColor),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Text('配对密钥: ', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: theme.accentColor.withValues(alpha: 0.15),
+                                  borderRadius: MellowRadii.borderPill,
+                                ),
+                                child: Text(authKey.isNotEmpty ? authKey : '免密', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.accentColor)),
+                              ),
+                            ],
+                          ),
+                          InkWell(
+                            onTap: () {
+                              Clipboard.setData(ClipboardData(text: pairingUri));
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已复制 lxsync:// 完整配对协议链接')));
+                            },
+                            child: Row(
+                              children: [
+                                Icon(Icons.link_rounded, size: 15, color: theme.accentColor),
+                                const SizedBox(width: 4),
+                                Text('复制配对 URI', style: TextStyle(fontSize: 11.5, color: theme.accentColor, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                // 手动直连投送目标
+                Text('向目标设备直连发送曲库快照', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: theme.textSecondary)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: RecessedWell(
+                        height: 40,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        borderRadius: MellowRadii.borderR12,
+                        child: TextField(
+                          controller: _targetIpCtrl,
+                          style: TextStyle(color: theme.textPrimary, fontSize: 13),
+                          decoration: const InputDecoration(border: InputBorder.none, isDense: true, hintText: '目标设备 IP (如 192.168.1.100)'),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 1,
+                      child: RecessedWell(
+                        height: 40,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        borderRadius: MellowRadii.borderR12,
+                        child: TextField(
+                          controller: _targetPortCtrl,
+                          style: TextStyle(color: theme.textPrimary, fontSize: 13),
+                          decoration: const InputDecoration(border: InputBorder.none, isDense: true, hintText: '23332'),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                RecessedWell(
+                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  borderRadius: MellowRadii.borderR12,
+                  child: TextField(
+                    controller: _targetKeyCtrl,
+                    style: TextStyle(color: theme.textPrimary, fontSize: 13),
+                    decoration: const InputDecoration(border: InputBorder.none, isDense: true, hintText: '目标配对密钥 (选填)'),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                if (_statusMessage != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _pushSuccess == true
+                          ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                          : (_pushSuccess == false
+                              ? const Color(0xFFEF4444).withValues(alpha: 0.12)
+                              : theme.accentColor.withValues(alpha: 0.12)),
+                      borderRadius: MellowRadii.borderR12,
+                    ),
+                    child: Row(
+                      children: [
+                        if (_isPushing)
+                          SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: theme.accentColor))
+                        else
+                          Icon(
+                            _pushSuccess == true ? Icons.check_circle_rounded : Icons.info_outline_rounded,
+                            size: 16,
+                            color: _pushSuccess == true ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                          ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _statusMessage!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: _pushSuccess == true ? const Color(0xFF10B981) : (_pushSuccess == false ? const Color(0xFFEF4444) : theme.accentColor),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                ],
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    SoftButton(
+                      label: '关闭',
+                      onTap: () => Navigator.of(context).pop(),
+                    ),
+                    const SizedBox(width: 10),
+                    SoftButton(
+                      label: _isPushing ? '正在投送...' : '立即无线投送',
+                      icon: Icons.send_rounded,
+                      isActive: true,
+                      onTap: _isPushing ? null : _handlePush,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

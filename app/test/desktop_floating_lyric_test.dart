@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -90,15 +91,15 @@ void main() {
       final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
       await gesture.addPointer(location: Offset.zero);
       addTearDown(gesture.removePointer);
-      await gesture.moveTo(tester.getCenter(find.byType(DesktopFloatingLyricBar)));
-      await tester.pumpAndSettle();
+      await gesture.moveTo(tester.getCenter(find.byType(BackdropFilter)));
+      await tester.pump(const Duration(milliseconds: 200));
 
       // 1. 验证播放/暂停按钮点击驱动 AudioPlayerService
       expect(player.isPlaying, isFalse);
       final playBtn = find.byTooltip('播放');
       expect(playBtn, findsOneWidget);
       await tester.tap(playBtn);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 200));
       expect(player.isPlaying, isTrue);
 
       // 2. 验证下一曲切歌按钮
@@ -106,26 +107,37 @@ void main() {
       final nextBtn = find.byTooltip('下一曲');
       expect(nextBtn, findsOneWidget);
       await tester.tap(nextBtn);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 200));
       expect(player.currentTrack!.id, isNot(equals(initialTrack)));
 
       // 3. 验证锁定切换与落盘保存
-      expect(StorageService.instance.getFloatingLyricLocked(), isFalse);
+      expect(StorageService.instance.getFloatingLyricLocked() ?? false, isFalse);
       final lockBtn = find.byTooltip('锁定歌词位置');
       expect(lockBtn, findsOneWidget);
       await tester.tap(lockBtn);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 200));
       expect(StorageService.instance.getFloatingLyricLocked(), isTrue);
+
+      // 解锁恢复常规工具栏
+      final unlockBtn = find.byTooltip('已锁定歌词，点击解锁');
+      expect(unlockBtn, findsOneWidget);
+      await tester.tap(unlockBtn);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(StorageService.instance.getFloatingLyricLocked(), isFalse);
 
       // 4. 验证关闭按钮触发 onClose
       final closeBtn = find.byTooltip('关闭桌面歌词');
       expect(closeBtn, findsOneWidget);
       await tester.tap(closeBtn);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 200));
       expect(closed, isTrue);
     });
 
     testWidgets('DesktopScaffold 底栏桌面歌词按钮与显隐状态协同闭环', (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
       final backend = InMemoryAudioPlayerBackend();
       final player = AudioPlayerService(backend: backend);
       final theme = ThemeProvider();
@@ -142,7 +154,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 200));
 
       // 1. 初始状态下悬浮歌词未开启
       expect(find.byType(DesktopFloatingLyricBar), findsNothing);
@@ -151,7 +163,7 @@ void main() {
       final toggleBtn = find.byTooltip('开启桌面歌词 (Ctrl+D)');
       expect(toggleBtn, findsOneWidget);
       await tester.tap(toggleBtn);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 200));
 
       // 3. 悬浮歌词组件已成功挂载呈现
       expect(find.byType(DesktopFloatingLyricBar), findsOneWidget);
@@ -161,7 +173,7 @@ void main() {
       final closeToggleBtn = find.byTooltip('关闭桌面歌词 (Ctrl+D)');
       expect(closeToggleBtn, findsOneWidget);
       await tester.tap(closeToggleBtn);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.byType(DesktopFloatingLyricBar), findsNothing);
       expect(StorageService.instance.getFloatingLyricEnabled(), isFalse);

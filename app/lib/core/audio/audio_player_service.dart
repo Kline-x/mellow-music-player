@@ -395,11 +395,7 @@ class AudioPlayerService extends ChangeNotifier {
 
   /// 一键将我喜欢的音乐批量导出为自建歌单
   ImportedPlaylist? exportFavoritesToPlaylist(String playlistTitle) {
-    final favs = _cachedFavoriteTracks.values.toList();
-    if (favs.isEmpty) {
-      final inPlFavs = _playlist.where((t) => _favoriteIds.contains(t.id)).toList();
-      favs.addAll(inPlFavs);
-    }
+    final favs = favoriteTracks;
     return createCustomPlaylist(
       playlistTitle.trim().isEmpty ? '我的心动精选歌单' : playlistTitle.trim(),
       description: '由「我喜欢的音乐」心动收藏一键导出 · 共 ${favs.length} 首',
@@ -470,6 +466,7 @@ class AudioPlayerService extends ChangeNotifier {
     _position = Duration.zero;
     _recordHistory(_playlist[_currentIndex]);
     _isPlaying = true;
+    WindowsTrayService.instance.updateTooltip(_playlist[_currentIndex]);
     _executeRealPlay(_playlist[_currentIndex]);
     notifyListeners();
     _loadLyricIfNeed(_playlist[_currentIndex]);
