@@ -66,14 +66,57 @@ def bring_to_front(hwnd):
     user32.BringWindowToTop(hwnd)
     time.sleep(0.4)
 
+class BITMAPINFOHEADER(ctypes.Structure):
+    _fields_ = [
+        ('biSize', wintypes.DWORD),
+        ('biWidth', wintypes.LONG),
+        ('biHeight', wintypes.LONG),
+        ('biPlanes', wintypes.WORD),
+        ('biBitCount', wintypes.WORD),
+        ('biCompression', wintypes.DWORD),
+        ('biSizeImage', wintypes.DWORD),
+        ('biXPelsPerMeter', wintypes.LONG),
+        ('biYPelsPerMeter', wintypes.LONG),
+        ('biClrUsed', wintypes.DWORD),
+        ('biClrImportant', wintypes.DWORD)
+    ]
+
 def capture_window(hwnd, out_path):
     bring_to_front(hwnd)
-    time.sleep(0.3)
+    time.sleep(0.4)
     l, t, r, b = rect_of(hwnd)
-    # 使用物理屏幕直接抓取以完整捕获 GPU/DirectX/Impeller 渲染表面
-    img = ImageGrab.grab(bbox=(l, t, r, b), all_screens=False)
-    img.save(out_path)
-    return img.size
+    w = max(1, r - l)
+    h = max(1, b - t)
+    
+    hwndDC = user32.GetWindowDC(hwnd)
+    memDC = gdi32.CreateCompatibleDC(hwndDC)
+    hbmp = gdi32.CreateCompatibleBitmap(hwndDC, w, h)
+    gdi32.SelectObject(memDC, hbmp)
+    
+    res = user32.PrintWindow(hwnd, memDC, 2)
+    if not res:
+        res = user32.PrintWindow(hwnd, memDC, 0)
+    
+    bmi = BITMAPINFOHEADER()
+    bmi.biSize = ctypes.sizeof(BITMAPINFOHEADER)
+    bmi.biWidth = w
+    bmi.biHeight = -h
+    bmi.biPlanes = 1
+    bmi.biBitCount = 32
+    bmi.biCompression = 0
+    
+    buf = (ctypes.c_char * (w * h * 4))()
+    gdi32.GetDIBits(memDC, hbmp, 0, h, buf, ctypes.byref(bmi), 0)
+    
+    gdi32.DeleteObject(hbmp)
+    gdi32.DeleteDC(memDC)
+    user32.ReleaseDC(hwnd, hwndDC)
+    
+    from PIL import Image
+    img = Image.frombuffer('RGBA', (w, h), buf, 'raw', 'BGRA', 0, 1)
+    rgb = img.convert('RGB')
+    rgb.save(out_path)
+    return (w, h)
 
 def click_client(hwnd, x, y):
     bring_to_front(hwnd)
