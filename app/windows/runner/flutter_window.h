@@ -48,6 +48,12 @@ class FlutterWindow : public Win32Window {
   void RemoveTray();
   void UpdateTrayTooltip(const std::wstring& tooltip);
   void ShowTrayContextMenu();
+
+  // Windows Floating Lyric & Window TopMost Channel
+  std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> floating_lyric_channel_;
+  bool is_always_on_top_ = false;
+  bool is_click_through_ = false;
+  void SetupFloatingLyricChannel();
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_

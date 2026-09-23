@@ -11,6 +11,7 @@ import '../design_system/mellow_image.dart';
 import '../core/audio/audio_player_service.dart';
 import '../core/audio/track_model.dart';
 import '../core/storage/storage_service.dart';
+import '../core/window/desktop_floating_lyric_service.dart';
 import '../views/desktop/desktop_views.dart';
 import '../views/desktop/fullscreen_lyrics_view.dart';
 import '../views/desktop/desktop_floating_lyric_bar.dart';
@@ -35,19 +36,27 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
   @override
   void initState() {
     super.initState();
-    _isFloatingLyricEnabled = StorageService.instance.getFloatingLyricEnabled() ?? false;
+    _isFloatingLyricEnabled = DesktopFloatingLyricService.instance.isEnabled ||
+        (StorageService.instance.getFloatingLyricEnabled() ?? false);
+    DesktopFloatingLyricService.instance.addListener(_onFloatingLyricChanged);
     HardwareKeyboard.instance.addHandler(_handleGlobalHardwareKeyEvent);
   }
 
+  void _onFloatingLyricChanged() {
+    if (mounted) {
+      setState(() {
+        _isFloatingLyricEnabled = DesktopFloatingLyricService.instance.isEnabled;
+      });
+    }
+  }
+
   void _toggleFloatingLyric() {
-    setState(() {
-      _isFloatingLyricEnabled = !_isFloatingLyricEnabled;
-    });
-    StorageService.instance.saveFloatingLyricEnabled(_isFloatingLyricEnabled);
+    DesktopFloatingLyricService.instance.toggleEnabled();
   }
 
   @override
   void dispose() {
+    DesktopFloatingLyricService.instance.removeListener(_onFloatingLyricChanged);
     HardwareKeyboard.instance.removeHandler(_handleGlobalHardwareKeyEvent);
     super.dispose();
   }

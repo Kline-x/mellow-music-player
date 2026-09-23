@@ -18,6 +18,7 @@ import '../../core/sync/webdav_sync_service.dart';
 import '../../core/sync/sync_data_model.dart';
 import '../../core/sync/lan_sync_service.dart';
 import '../../core/storage/storage_service.dart';
+import '../../core/window/desktop_floating_lyric_service.dart';
 import '../common/modals.dart';
 
 /// 1. 发现音乐主页 (DiscoverView - Bento Grid 仪表盘)
@@ -2065,7 +2066,7 @@ class _DesktopSettingsViewState extends State<DesktopSettingsView> {
                   ),
                   Switch.adaptive(
                     value: _minimizeToTray,
-                    activeColor: theme.accentColor,
+                    activeThumbColor: theme.accentColor,
                     onChanged: (val) async {
                       setState(() {
                         _minimizeToTray = val;
@@ -2080,7 +2081,142 @@ class _DesktopSettingsViewState extends State<DesktopSettingsView> {
         ),
         const SizedBox(height: 16),
 
-        // 5. 桌面全局键盘快捷键指南
+        // 5. 桌面悬浮动效歌词与系统级穿透置顶
+        ListenableBuilder(
+          listenable: DesktopFloatingLyricService.instance,
+          builder: (context, _) {
+            final lyricService = DesktopFloatingLyricService.instance;
+            return SoftCard(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('桌面悬浮歌词与置顶穿透', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                        decoration: BoxDecoration(
+                          color: theme.accentColor.withValues(alpha: 0.15),
+                          borderRadius: MellowRadii.borderPill,
+                        ),
+                        child: Text('Win32 原生置顶 / 穿透', style: TextStyle(color: theme.accentColor, fontSize: 11, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('开启桌面悬浮动效歌词', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: theme.textPrimary)),
+                            const SizedBox(height: 4),
+                            Text('在桌面上浮动显示现代柔光质感双行歌词，支持鼠标拖拽与微控手柄 (Ctrl+D)', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                          ],
+                        ),
+                      ),
+                      Switch.adaptive(
+                        value: lyricService.isEnabled,
+                        activeThumbColor: theme.accentColor,
+                        onChanged: (val) => lyricService.setEnabled(val),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('主窗口始终置顶 (Always on Top)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: theme.textPrimary)),
+                            const SizedBox(height: 4),
+                            Text('固定播放器窗口于屏幕最上层显示，避免被其他程序遮挡 (Win32 HWND_TOPMOST)', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                          ],
+                        ),
+                      ),
+                      Switch.adaptive(
+                        value: lyricService.isAlwaysOnTop,
+                        activeThumbColor: theme.accentColor,
+                        onChanged: (val) => lyricService.setAlwaysOnTop(val),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('锁定歌词与鼠标点击穿透 (Click-Through)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: theme.textPrimary)),
+                            const SizedBox(height: 4),
+                            Text('锁定后歌词小组件进入半透明状态，鼠标点击直接透传到底层游戏或网页 (Win32 WS_EX_TRANSPARENT)', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                          ],
+                        ),
+                      ),
+                      Switch.adaptive(
+                        value: lyricService.isLocked,
+                        activeThumbColor: theme.accentColor,
+                        onChanged: (val) => lyricService.setLocked(val),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('歌词字号档位', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: theme.textPrimary)),
+                          const SizedBox(height: 4),
+                          Text('缩放桌面悬浮歌词的字号大小', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                        ],
+                      ),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          {'id': 'normal', 'label': '标准'},
+                          {'id': 'large', 'label': '放大'},
+                          {'id': 'xlarge', 'label': '超大'},
+                        ].map((item) {
+                          final isSelected = lyricService.fontSizeLevel == item['id'];
+                          return GestureDetector(
+                            onTap: () => lyricService.setFontSizeLevel(item['id']!),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? theme.accentColor
+                                    : theme.accentColor.withValues(alpha: 0.08),
+                                borderRadius: MellowRadii.borderPill,
+                              ),
+                              child: Text(
+                                item['label']!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                  color: isSelected ? Colors.white : theme.textPrimary,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+
+        // 6. 桌面全局键盘快捷键指南
         SoftCard(
           padding: const EdgeInsets.all(20),
           child: Column(

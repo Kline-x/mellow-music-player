@@ -41,6 +41,10 @@ class StorageService {
   static const _keyImportedPlaylists = 'mellow_audio_imported_playlists';
   static const _keyFloatingLyricEnabled = 'mellow_floating_lyric_enabled';
   static const _keyFloatingLyricLocked = 'mellow_floating_lyric_locked';
+  static const _keyFloatingLyricAlwaysOnTop = 'mellow_floating_lyric_on_top';
+  static const _keyFloatingLyricPosX = 'mellow_floating_lyric_pos_x';
+  static const _keyFloatingLyricPosY = 'mellow_floating_lyric_pos_y';
+  static const _keyFloatingLyricFontSize = 'mellow_floating_lyric_font_size';
   static const _keyLocalTracks = 'mellow_audio_local_tracks';
   static const _keyLocalDirectories = 'mellow_audio_local_directories';
   static const _keyMinimizeToTray = 'mellow_minimize_to_tray';
@@ -133,6 +137,22 @@ class StorageService {
   bool? getFloatingLyricLocked() => _prefs?.getBool(_keyFloatingLyricLocked);
   Future<bool> saveFloatingLyricLocked(bool value) async =>
       (await _prefs?.setBool(_keyFloatingLyricLocked, value)) ?? false;
+
+  bool? getFloatingLyricAlwaysOnTop() => _prefs?.getBool(_keyFloatingLyricAlwaysOnTop);
+  Future<bool> saveFloatingLyricAlwaysOnTop(bool value) async =>
+      (await _prefs?.setBool(_keyFloatingLyricAlwaysOnTop, value)) ?? false;
+
+  double? getFloatingLyricPosX() => _prefs?.getDouble(_keyFloatingLyricPosX);
+  double? getFloatingLyricPosY() => _prefs?.getDouble(_keyFloatingLyricPosY);
+  Future<bool> saveFloatingLyricPosition(double x, double y) async {
+    final r1 = await _prefs?.setDouble(_keyFloatingLyricPosX, x) ?? false;
+    final r2 = await _prefs?.setDouble(_keyFloatingLyricPosY, y) ?? false;
+    return r1 && r2;
+  }
+
+  String? getFloatingLyricFontSize() => _prefs?.getString(_keyFloatingLyricFontSize);
+  Future<bool> saveFloatingLyricFontSize(String size) async =>
+      (await _prefs?.setString(_keyFloatingLyricFontSize, size)) ?? false;
 
   // --- 主题偏好 ---
 

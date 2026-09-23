@@ -10,6 +10,8 @@
 #define IDM_TRAY_PLAY_PAUSE 1002
 #define IDM_TRAY_PREV 1003
 #define IDM_TRAY_NEXT 1004
+#define IDM_TRAY_FLOATING_LYRIC 1006
+#define IDM_TRAY_TOPMOST 1007
 #define IDM_TRAY_EXIT 1005
 
 namespace {
@@ -45,6 +47,7 @@ bool FlutterWindow::OnCreate() {
   RegisterPlugins(flutter_controller_->engine());
   SetupSmtcChannel();
   SetupTray();
+  SetupFloatingLyricChannel();
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
@@ -61,6 +64,7 @@ bool FlutterWindow::OnCreate() {
 
 void FlutterWindow::OnDestroy() {
   RemoveTray();
+  floating_lyric_channel_ = nullptr;
   tray_channel_ = nullptr;
   smtc_channel_ = nullptr;
   if (flutter_controller_) {
@@ -225,6 +229,9 @@ void FlutterWindow::ShowTrayContextMenu() {
   InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_STRING, IDM_TRAY_PREV, L"上一首");
   InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_STRING, IDM_TRAY_NEXT, L"下一首");
   InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_SEPARATOR, 0, nullptr);
+  InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_STRING, IDM_TRAY_FLOATING_LYRIC, L"桌面歌词 开/关 (Ctrl+D)");
+  InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_STRING, IDM_TRAY_TOPMOST, is_always_on_top_ ? L"取消窗口置顶" : L"窗口始终置顶");
+  InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_SEPARATOR, 0, nullptr);
   InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_STRING, IDM_TRAY_EXIT, L"退出程序");
 
   HWND hwnd = GetHandle();
@@ -258,11 +265,79 @@ void FlutterWindow::ShowTrayContextMenu() {
       smtc_channel_->InvokeMethod("onButtonPressed",
                                   std::make_unique<flutter::EncodableValue>(args));
     }
+  } else if (cmd == IDM_TRAY_FLOATING_LYRIC) {
+    if (floating_lyric_channel_) {
+      floating_lyric_channel_->InvokeMethod("toggleFloatingLyric", nullptr);
+    }
+  } else if (cmd == IDM_TRAY_TOPMOST) {
+    is_always_on_top_ = !is_always_on_top_;
+    SetWindowPos(hwnd, is_always_on_top_ ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0,
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    if (floating_lyric_channel_) {
+      flutter::EncodableMap args;
+      args[flutter::EncodableValue("alwaysOnTop")] = flutter::EncodableValue(is_always_on_top_);
+      floating_lyric_channel_->InvokeMethod("onAlwaysOnTopChanged",
+                                            std::make_unique<flutter::EncodableValue>(args));
+    }
   } else if (cmd == IDM_TRAY_EXIT) {
     minimize_to_tray_ = false;
     RemoveTray();
     DestroyWindow(hwnd);
   }
+}
+
+void FlutterWindow::SetupFloatingLyricChannel() {
+  if (!flutter_controller_ || !flutter_controller_->engine()) return;
+
+  HWND hwnd = GetHandle();
+  if (!hwnd) return;
+
+  floating_lyric_channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+      flutter_controller_->engine()->messenger(),
+      "com.kline.mellow_music/floating_lyric",
+      &flutter::StandardMethodCodec::GetInstance());
+
+  floating_lyric_channel_->SetMethodCallHandler(
+      [this, hwnd](const flutter::MethodCall<flutter::EncodableValue>& call,
+                   std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
+        if (call.method_name() == "setAlwaysOnTop") {
+          if (const auto* args = std::get_if<flutter::EncodableMap>(call.arguments())) {
+            auto it = args->find(flutter::EncodableValue("alwaysOnTop"));
+            if (it != args->end()) {
+              if (const auto* val = std::get_if<bool>(&it->second)) {
+                this->is_always_on_top_ = *val;
+                SetWindowPos(hwnd, *val ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0,
+                             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+              }
+            }
+          }
+          result->Success(flutter::EncodableValue(true));
+        } else if (call.method_name() == "setClickThrough") {
+          if (const auto* args = std::get_if<flutter::EncodableMap>(call.arguments())) {
+            auto it = args->find(flutter::EncodableValue("clickThrough"));
+            if (it != args->end()) {
+              if (const auto* val = std::get_if<bool>(&it->second)) {
+                this->is_click_through_ = *val;
+                LONG exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+                if (*val) {
+                  SetWindowLong(hwnd, GWL_EXSTYLE, exStyle | WS_EX_TRANSPARENT | WS_EX_LAYERED);
+                } else {
+                  SetWindowLong(hwnd, GWL_EXSTYLE, exStyle & ~WS_EX_TRANSPARENT);
+                }
+              }
+            }
+          }
+          result->Success(flutter::EncodableValue(true));
+        } else if (call.method_name() == "isAlwaysOnTop") {
+          result->Success(flutter::EncodableValue(this->is_always_on_top_));
+        } else if (call.method_name() == "isClickThrough") {
+          result->Success(flutter::EncodableValue(this->is_click_through_));
+        } else if (call.method_name() == "updateLyric") {
+          result->Success(flutter::EncodableValue(true));
+        } else {
+          result->NotImplemented();
+        }
+      });
 }
 
 LRESULT

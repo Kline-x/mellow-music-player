@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/audio/audio_player_service.dart';
 import '../../core/audio/track_model.dart';
 import '../../core/storage/storage_service.dart';
-import '../../design_system/tokens.dart';
+import '../../core/window/desktop_floating_lyric_service.dart';
 import '../../design_system/theme_provider.dart';
 
 /// 桌面悬浮动效歌词小组件 (DesktopFloatingLyricBar)
@@ -29,18 +29,21 @@ class _DesktopFloatingLyricBarState extends State<DesktopFloatingLyricBar> {
   bool _isLocked = false;
   bool _isHovered = false;
   bool _isLargeFont = false;
+  final DesktopFloatingLyricService _lyricService = DesktopFloatingLyricService.instance;
 
   @override
   void initState() {
     super.initState();
-    _isLocked = StorageService.instance.getFloatingLyricLocked() ?? false;
-    _position = widget.initialPosition ?? const Offset(200, 100);
+    _isLocked = _lyricService.isLocked || (StorageService.instance.getFloatingLyricLocked() ?? false);
+    _isLargeFont = _lyricService.fontSizeLevel != 'normal';
+    _position = widget.initialPosition ?? _lyricService.position ?? const Offset(200, 100);
   }
 
   void _toggleLock() {
     setState(() {
       _isLocked = !_isLocked;
     });
+    _lyricService.setLocked(_isLocked);
     StorageService.instance.saveFloatingLyricLocked(_isLocked);
   }
 
@@ -48,6 +51,7 @@ class _DesktopFloatingLyricBarState extends State<DesktopFloatingLyricBar> {
     setState(() {
       _isLargeFont = !_isLargeFont;
     });
+    _lyricService.cycleFontSize();
   }
 
   @override
@@ -82,6 +86,12 @@ class _DesktopFloatingLyricBarState extends State<DesktopFloatingLyricBar> {
         }
       }
     }
+
+    _lyricService.updateLyric(
+      currentLine: currentLine,
+      nextLine: nextLine,
+      track: track,
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -226,6 +236,9 @@ class _DesktopFloatingLyricBarState extends State<DesktopFloatingLyricBar> {
               _position += details.delta;
             });
           },
+          onPanEnd: (_) {
+            _lyricService.savePosition(_position);
+          },
           child: MouseRegion(
             cursor: SystemMouseCursors.move,
             child: Container(
@@ -302,6 +315,23 @@ class _DesktopFloatingLyricBarState extends State<DesktopFloatingLyricBar> {
           onPressed: () => player.next(),
         ),
         const SizedBox(width: 6),
+
+        // 窗口置顶按键 (Win32 HWND_TOPMOST)
+        IconButton(
+          icon: Icon(
+            _lyricService.isAlwaysOnTop ? Icons.push_pin_rounded : Icons.push_pin_outlined,
+            size: 14,
+          ),
+          color: _lyricService.isAlwaysOnTop ? theme.accentColor : (isDark ? Colors.white70 : Colors.black54),
+          tooltip: _lyricService.isAlwaysOnTop ? '取消窗口置顶' : '窗口始终置顶',
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+          onPressed: () {
+            setState(() {});
+            _lyricService.toggleAlwaysOnTop();
+          },
+        ),
 
         // 字体调节
         IconButton(
