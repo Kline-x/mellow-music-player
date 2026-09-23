@@ -11,6 +11,11 @@ import ctypes
 from ctypes import wintypes
 from PIL import ImageGrab
 
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+except Exception:
+    pass
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 APP_ROOT = HERE
 EXE_PATH = os.path.join(APP_ROOT, "release_windows", "app.exe")
@@ -83,19 +88,20 @@ class BITMAPINFOHEADER(ctypes.Structure):
 
 def capture_window(hwnd, out_path):
     bring_to_front(hwnd)
-    time.sleep(0.4)
+    time.sleep(0.5)
     l, t, r, b = rect_of(hwnd)
     w = max(1, r - l)
     h = max(1, b - t)
     
-    hwndDC = user32.GetWindowDC(hwnd)
-    memDC = gdi32.CreateCompatibleDC(hwndDC)
-    hbmp = gdi32.CreateCompatibleBitmap(hwndDC, w, h)
+    # Use desktop DC BitBlt which captures real GPU/DWM composited pixels on screen
+    deskDC = user32.GetDC(0)
+    memDC = gdi32.CreateCompatibleDC(deskDC)
+    hbmp = gdi32.CreateCompatibleBitmap(deskDC, w, h)
     gdi32.SelectObject(memDC, hbmp)
     
-    res = user32.PrintWindow(hwnd, memDC, 2)
-    if not res:
-        res = user32.PrintWindow(hwnd, memDC, 0)
+    # SRCCOPY = 0x00CC0020, CAPTUREBLT = 0x40000000 -> 0x40CC0020 captures layered/DWM transparent windows too
+    gdi32.BitBlt(memDC, 0, 0, w, h, deskDC, l, t, 0x40CC0020)
+    user32.ReleaseDC(0, deskDC)
     
     bmi = BITMAPINFOHEADER()
     bmi.biSize = ctypes.sizeof(BITMAPINFOHEADER)
@@ -110,7 +116,6 @@ def capture_window(hwnd, out_path):
     
     gdi32.DeleteObject(hbmp)
     gdi32.DeleteDC(memDC)
-    user32.ReleaseDC(hwnd, hwndDC)
     
     from PIL import Image
     img = Image.frombuffer('RGBA', (w, h), buf, 'raw', 'BGRA', 0, 1)
@@ -171,7 +176,8 @@ def main():
         ws = find_flutter_windows(pid=pid)
         if ws:
             hwnd = ws[0][0]
-            print("  -> Found Win32 Window: HWND=%s, Title=%r, Class=%r" % (hwnd, ws[0][2], ws[0][3]))
+            safe_title = ws[0][2].encode('ascii', 'backslashreplace').decode('ascii')
+            print("  -> Found Win32 Window: HWND=%s, Title=%s, Class=%r" % (hwnd, safe_title, ws[0][3]))
             break
             
     if not hwnd:

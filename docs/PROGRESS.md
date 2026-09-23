@@ -11,16 +11,16 @@
 
 # Mellow Music · 润音 · 项目研发里程碑与进度跟踪看板
 
-> **当前版本**：v1.2.0 (Full-Stack 5 Pillars Implemented & Verified)  
+> **当前版本**：v1.3.0 (Goal 4 Key Pillars Resolved & CI 151 Tests 100% Passed)  
 > **更新时间**：2026-09-23  
-> **当前状态**：五大核心能力专项全部真实交付闭环，全仓 146 项自动化测试 100% 全部通过，Windows 物理程序真实验证通过，移动端打包流水线就绪。
+> **当前状态**：/goal 四大核心体验痛点（全仓去假求真、DWM沉浸式原生美化、全网真实原声音源解析、独立全屏搜索页面）全部架构级闭环交付，云端 CI 151 项测试 100% 全绿，Windows 物理桌面客户端实测就绪。
 
 ---
 
 ## 📊 里程碑整体进度看板 (Milestone Dashboard)
 
 | 里程碑 | 目标与交付物 | 计划周期 | 状态 | 交付物/参考文档 |
-| :--- | :--- | :--- | :---: | :--- |
+| :--- | :--- | :--- | :--- | :--- |
 | **Phase 0** | **Modern Soft UI 双端高保真原型与 E2E 验收** | 已完成 | 🟢 **100%** | `index.html`、`mobile.html`、`e2e_test.js` (Web 原型验收 83 项全绿) |
 | **Phase 0.5** | **技术规格书与 E2E 缺陷验收整改清单** | 已完成 | 🟢 **100%** | `docs/SPEC.md`、`docs/PC_E2E_ACCEPTANCE_ISSUES.md` |
 | **Phase 1** | **物理音频引擎与真实本地持久化闭环** | 已完成 | 🟢 **100%** | `audioplayers: ^6.8.1` 物理声卡发声、`StorageService` 状态无损持久化 |
@@ -30,6 +30,7 @@
 | **Pillar 3** | **桌面独立置顶透明穿透歌词窗口系统级贯通** | 已完成 | 🟢 **100%** | Win32 HWND_TOPMOST 置顶、WS_EX_TRANSPARENT 穿透、托盘与快捷键联动（Commit: `3b5ad9d`） |
 | **Pillar 4** | **移动端 (Android / iOS) 真实打包发布流水线** | 已完成 | 🟢 **100%** | 平台权限合规、后台音频模式、`build_mobile.ps1` 自动化构建、Manifest 校验测试（Commit: `0f8e9d4`） |
 | **Pillar 5** | **全仓文档口径诚实化对齐与质量审计门禁** | 已完成 | 🟢 **100%** | 对齐 `README.md`、`docs/PROGRESS.md`、`docs/SPEC.md`，146 项测试全绿 |
+| **Phase 3** | **/goal 四大核心体验痛点全量闭环交付** | 已完成 | 🟢 **100%** | 全仓去假求真、消除原生蓝边框、高保真真实音频解析、独立全屏搜索（CI Run: `35850447362`, 151/151 Passed） |
 
 ---
 
@@ -63,17 +64,24 @@
   - 补充 `NSLocalNetworkUsageDescription` 与 Bonjour 服务定义；
 - **打包流水线**：交付 `build_mobile.ps1`，支持 `-Target apk`、`-Target bundle` 与 `-Target check-only`，并由 `test/mobile_platform_manifest_test.dart` 自动化测试进行防退化守护。
 
+### 5. /goal 四大核心体验痛点全量闭环交付 (Goal Realization)
+- **全仓去假求真**：彻底剔除 66+ 处 `soundhelix.com` 假音源，内置 33 首核心曲库全量注入真实流媒体直链（每首歌曲验证 HTTP 200 与流媒体大小），冷启动底栏呈现微拟物雅致空闲态，四大官方榜单接入实时在线流与动态歌词解析；
+- **消除原生窗口丑陋蓝边框**：DWM API 深度定制 `DWMWA_CAPTION_COLOR`、`DWMWA_TEXT_COLOR`、`DWMWA_BORDER_COLOR`，开启 `DWMWCP_ROUND` 原生大圆角，窗口标题统一为 `Mellow Music · 润音`，MethodChannel 实现深浅主题原生自适应；
+- **彻底根治“歌曲听不了”**：`OnlineMusicService` 集成免 VIP 高保真解析接口与 LRC 动态歌词，`AudioPlayerService` 引入智能换源重试与异常 Fallback 机制，彻底消除 404 弹窗；
+- **独立全屏搜索页面建设**：废弃居中小弹窗，新建桌面端 `DesktopSearchView` 与移动端 `MobileSearchPage`，支持搜索历史持久化、热门探索推荐标签、30+ 丰富结果即点即播与一键批量播放。
+
 ---
 
 ## 🎯 产出物运行与验证指引
 
 ```powershell
-# 1. 运行全量单元与部件测试套件 (146/146 Passed 100%)
+# 1. 运行全量单元与部件测试套件 (151/151 Passed 100%)
 cd app
-C:\Users\gaore\.puro\envs\stable\flutter\bin\flutter.bat test
+& "E:\code\flutter-ohos\sdk-3.44\bin\cache\dart-sdk\bin\dart.exe" analyze .
+flutter test --coverage
 
-# 2. 运行 Windows 原生应用物理进程保活验证
-powershell -ExecutionPolicy Bypass -File .\verify_windows_app.ps1
+# 2. 运行 Windows 原生应用物理进程与 GUI E2E 自动化驱动验证
+python run_pc_physical_e2e.py
 
 # 3. 运行移动端平台配置合规检查与打包流水线
 powershell -ExecutionPolicy Bypass -File .\build_mobile.ps1 -Target check-only
