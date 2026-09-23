@@ -29,6 +29,45 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
   bool _isFullscreenLyrics = false;
   double? _dragPositionMs;
 
+  @override
+  void initState() {
+    super.initState();
+    HardwareKeyboard.instance.addHandler(_handleGlobalHardwareKeyEvent);
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleGlobalHardwareKeyEvent);
+    super.dispose();
+  }
+
+  bool _handleGlobalHardwareKeyEvent(KeyEvent event) {
+    if (event is! KeyDownEvent) return false;
+    final player = context.read<AudioPlayerService>();
+    final key = event.logicalKey;
+
+    if (key == LogicalKeyboardKey.mediaPlayPause) {
+      player.togglePlay();
+      return true;
+    } else if (key == LogicalKeyboardKey.mediaPlay) {
+      player.play();
+      return true;
+    } else if (key == LogicalKeyboardKey.mediaPause) {
+      player.pause();
+      return true;
+    } else if (key == LogicalKeyboardKey.mediaTrackNext) {
+      player.next();
+      return true;
+    } else if (key == LogicalKeyboardKey.mediaTrackPrevious) {
+      player.previous();
+      return true;
+    } else if (key == LogicalKeyboardKey.mediaStop) {
+      player.pause();
+      return true;
+    }
+    return false;
+  }
+
   // 浏览器级真实导航历史栈
   final List<Map<String, String?>> _history = [
     {'view': 'discover', 'extra': null}
@@ -122,6 +161,16 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
           setState(() => _isQueueOpen = false);
         }
       },
+      // 9. 硬件多媒体按键直通绑定
+      const SingleActivator(LogicalKeyboardKey.mediaPlayPause): () => player.togglePlay(),
+      const SingleActivator(LogicalKeyboardKey.mediaPlay): () => player.play(),
+      const SingleActivator(LogicalKeyboardKey.mediaPause): () => player.pause(),
+      const SingleActivator(LogicalKeyboardKey.mediaTrackNext): () => player.next(),
+      const SingleActivator(LogicalKeyboardKey.mediaTrackPrevious): () => player.previous(),
+      const SingleActivator(LogicalKeyboardKey.mediaStop): () => player.pause(),
+      const SingleActivator(LogicalKeyboardKey.audioVolumeMute): () => player.toggleMute(),
+      const SingleActivator(LogicalKeyboardKey.audioVolumeUp): () => player.setVolume(player.volume + 0.05),
+      const SingleActivator(LogicalKeyboardKey.audioVolumeDown): () => player.setVolume(player.volume - 0.05),
     };
 
     return CallbackShortcuts(

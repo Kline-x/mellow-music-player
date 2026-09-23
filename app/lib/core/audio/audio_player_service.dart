@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'track_model.dart';
 import 'player_backend.dart';
+import 'windows_smtc_service.dart';
 import '../sources/online_music_service.dart';
 import '../storage/storage_service.dart';
 
@@ -108,6 +109,36 @@ class AudioPlayerService extends ChangeNotifier {
       : _backend = backend ?? AudioPlayerBackendFactory.create() {
     _loadFromStorage();
     _initAudioListeners();
+    _initSmtc();
+  }
+
+  void _initSmtc() {
+    WindowsSmtcService.instance.init(
+      onAction: (action) {
+        switch (action) {
+          case SmtcButtonAction.play:
+            play();
+            break;
+          case SmtcButtonAction.pause:
+            pause();
+            break;
+          case SmtcButtonAction.togglePlay:
+            togglePlay();
+            break;
+          case SmtcButtonAction.next:
+            next();
+            break;
+          case SmtcButtonAction.previous:
+            previous();
+            break;
+          case SmtcButtonAction.stop:
+            pause();
+            seek(Duration.zero);
+            break;
+        }
+      },
+      onSeek: (pos) => seek(pos),
+    );
   }
 
   void _loadFromStorage() {
@@ -176,6 +207,7 @@ class AudioPlayerService extends ChangeNotifier {
     _playingSub = _backend.onPlayingChanged.listen((playing) {
       if (_isPlaying != playing) {
         _isPlaying = playing;
+        WindowsSmtcService.instance.updatePlaybackState(playing);
         notifyListeners();
       }
     });
@@ -260,6 +292,7 @@ class AudioPlayerService extends ChangeNotifier {
   void pause() {
     _isPlaying = false;
     _backend.pause();
+    WindowsSmtcService.instance.updatePlaybackState(false);
     notifyListeners();
   }
 
@@ -290,6 +323,9 @@ class AudioPlayerService extends ChangeNotifier {
         await _backend.resume();
       }
       await _backend.setVolume(_volume);
+      WindowsSmtcService.instance.updateMetadata(track);
+      WindowsSmtcService.instance.updatePlaybackState(true);
+      WindowsSmtcService.instance.updateTimeline(_position, duration);
     } catch (e) {
       debugPrint('[AudioPlayerService] 真实音频播放调度异常: $e');
       _playbackNotice = '歌曲「${track.title}」音频资源加载失败，可能需要专属授权或网络受限';
@@ -343,6 +379,7 @@ class AudioPlayerService extends ChangeNotifier {
       _position = target;
     }
     _backend.seek(_position);
+    WindowsSmtcService.instance.updateTimeline(_position, curDuration);
     notifyListeners();
   }
 
@@ -435,6 +472,7 @@ class AudioPlayerService extends ChangeNotifier {
     _currentIndex = 0;
     _position = Duration.zero;
     pause();
+    WindowsSmtcService.instance.clear();
   }
 
   // 睡眠定时器
@@ -482,6 +520,7 @@ class AudioPlayerService extends ChangeNotifier {
     _completeSub?.cancel();
     _sleepTimer?.cancel();
     _backend.dispose();
+    WindowsSmtcService.instance.dispose();
     super.dispose();
   }
 }
