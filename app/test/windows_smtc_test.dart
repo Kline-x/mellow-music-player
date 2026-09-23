@@ -38,12 +38,9 @@ void main() {
     });
 
     test('SMTC 服务生命周期初始化与元数据同步', () async {
-      SmtcButtonAction? receivedAction;
-      Duration? receivedSeek;
-
       await smtc.init(
-        onAction: (action) => receivedAction = action,
-        onSeek: (pos) => receivedSeek = pos,
+        onAction: (_) {},
+        onSeek: (_) {},
       );
 
       expect(smtc.isInitialized, isTrue);

@@ -258,7 +258,7 @@ void main() {
           ],
           child: MaterialApp(
             home: Scaffold(
-              body: DesktopSettingsView(onNavigate: (_, [__]) {}),
+              body: DesktopSettingsView(onNavigate: (page, [extra]) {}),
             ),
           ),
         ),

@@ -55,9 +55,9 @@ void main() {
         }
       });
 
-      final f1 = File(p.join(tempDir.path, '林俊杰 - 江南.flac'))..createSync();
-      final f2 = File(p.join(tempDir.path, '陈奕迅 - 十年.mp3'))..createSync();
-      final f3 = File(p.join(tempDir.path, '无损试音 - 渡口.wav'))..createSync();
+      File(p.join(tempDir.path, '林俊杰 - 江南.flac')).createSync();
+      File(p.join(tempDir.path, '陈奕迅 - 十年.mp3')).createSync();
+      File(p.join(tempDir.path, '无损试音 - 渡口.wav')).createSync();
       // 非音频文件应被完全过滤
       File(p.join(tempDir.path, 'album_info.txt')).createSync();
       File(p.join(tempDir.path, 'cover.jpg')).createSync();

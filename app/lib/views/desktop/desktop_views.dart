@@ -1766,7 +1766,7 @@ class _DesktopLocalMusicViewState extends State<DesktopLocalMusicView> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: localTracks.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            separatorBuilder: (_, index) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               final track = localTracks[index];
               final isCurrent = player.currentTrack?.id == track.id;
@@ -2875,7 +2875,6 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
   WebDavConfig? _config;
   bool _isSyncing = false;
   String _statusMessage = '空闲就绪';
-  DateTime? _lastSyncTime;
 
   // 局域网近场协同服务状态
   final LanSyncService _lanService = LanSyncService.instance;
@@ -3124,9 +3123,9 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
     await SyncSnapshot.applyToAppState(mergedSnapshot, player: player, eqManager: eq);
 
     final now = DateTime.now();
+    if (!mounted) return;
     setState(() {
       _isSyncing = false;
-      _lastSyncTime = now;
       _statusMessage = '云端恢复并合并成功 (${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')})';
     });
 

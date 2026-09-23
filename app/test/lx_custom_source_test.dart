@@ -265,7 +265,7 @@ proc.exec('calc.exe');
           ],
           child: MaterialApp(
             home: Scaffold(
-              body: DesktopSourceManagerView(onNavigate: (_, [__]) {}),
+              body: DesktopSourceManagerView(onNavigate: (page, [extra]) {}),
             ),
           ),
         ),

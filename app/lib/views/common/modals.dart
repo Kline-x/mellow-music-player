@@ -1392,7 +1392,7 @@ class _AddToPlaylistModalState extends State<AddToPlaylistModal> {
                       )
                     : ListView.separated(
                         itemCount: playlists.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        separatorBuilder: (_, index) => const SizedBox(height: 8),
                         itemBuilder: (context, index) {
                           final pl = playlists[index];
                           final isContained = player.isTrackInPlaylist(pl.id, widget.track.id);
@@ -1930,9 +1930,11 @@ class ExportSnapshotModal extends StatelessWidget {
                     isActive: true,
                     onTap: () async {
                       await Clipboard.setData(ClipboardData(text: jsonStr));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('曲库快照 JSON 已复制到剪贴板！可发送至新设备直接导入。')),
-                      );
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('曲库快照 JSON 已复制到剪贴板！可发送至新设备直接导入。')),
+                        );
+                      }
                     },
                   ),
                 ],

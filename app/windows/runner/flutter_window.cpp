@@ -223,16 +223,16 @@ void FlutterWindow::ShowTrayContextMenu() {
   HMENU hMenu = CreatePopupMenu();
   if (!hMenu) return;
 
-  InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_STRING, IDM_TRAY_SHOW, L"显示主界面");
-  InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_SEPARATOR, 0, nullptr);
-  InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_STRING, IDM_TRAY_PLAY_PAUSE, L"播放 / 暂停");
-  InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_STRING, IDM_TRAY_PREV, L"上一首");
-  InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_STRING, IDM_TRAY_NEXT, L"下一首");
-  InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_SEPARATOR, 0, nullptr);
-  InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_STRING, IDM_TRAY_FLOATING_LYRIC, L"桌面歌词 开/关 (Ctrl+D)");
-  InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_STRING, IDM_TRAY_TOPMOST, is_always_on_top_ ? L"取消窗口置顶" : L"窗口始终置顶");
-  InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_SEPARATOR, 0, nullptr);
-  InsertMenuW(hMenu, -1, MF_BYPOSITION | MF_STRING, IDM_TRAY_EXIT, L"退出程序");
+  AppendMenuW(hMenu, MF_STRING, IDM_TRAY_SHOW, L"显示主界面");
+  AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
+  AppendMenuW(hMenu, MF_STRING, IDM_TRAY_PLAY_PAUSE, L"播放 / 暂停");
+  AppendMenuW(hMenu, MF_STRING, IDM_TRAY_PREV, L"上一首");
+  AppendMenuW(hMenu, MF_STRING, IDM_TRAY_NEXT, L"下一首");
+  AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
+  AppendMenuW(hMenu, MF_STRING, IDM_TRAY_FLOATING_LYRIC, L"桌面歌词 开/关 (Ctrl+D)");
+  AppendMenuW(hMenu, MF_STRING, IDM_TRAY_TOPMOST, is_always_on_top_ ? L"取消窗口置顶" : L"窗口始终置顶");
+  AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
+  AppendMenuW(hMenu, MF_STRING, IDM_TRAY_EXIT, L"退出程序");
 
   HWND hwnd = GetHandle();
   SetForegroundWindow(hwnd);
