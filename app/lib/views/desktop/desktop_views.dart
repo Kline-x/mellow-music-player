@@ -12,6 +12,8 @@ import '../../core/audio/track_model.dart';
 import '../../core/audio/windows_tray_service.dart';
 import '../../core/audio/equalizer_manager.dart';
 import '../../core/sources/online_music_service.dart';
+import '../../core/sources/lx_source_model.dart';
+import '../../core/sources/lx_script_sandbox.dart';
 import '../../core/sync/webdav_sync_service.dart';
 import '../../core/sync/sync_data_model.dart';
 import '../../core/sync/lan_sync_service.dart';
@@ -2161,60 +2163,568 @@ class DesktopSourceManagerView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return ListenableBuilder(
+      listenable: LxSourceEngine.instance,
+      builder: (context, _) {
+        final engine = LxSourceEngine.instance;
+        final allSources = engine.sources;
+        final builtinSources = allSources.where((s) => s.isBuiltIn).toList();
+        final customSources = allSources.where((s) => !s.isBuiltIn).toList();
+        final enabledCount = allSources.where((s) => s.isEnabled).length;
+        final activeDriver = engine.drivers[engine.activeSourceId];
+        final activeName = activeDriver?.metadata.name ?? engine.activeSourceId;
+
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            // --- 顶部标头栏 ---
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text('自定义音源管理', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                Text('支持扩展音源解析脚本（功能接入中）', style: TextStyle(fontSize: 13, color: theme.textMuted)),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '音源引擎与外部脚本沙箱',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: theme.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '基于开放音源规范，实现六维平台音源解析、外部脚本安全沙箱隔离挂载与无损阶梯降级',
+                        style: TextStyle(fontSize: 13, color: theme.textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                SoftButton(
+                  label: '导入自定义脚本',
+                  icon: Icons.add_link_rounded,
+                  isPill: true,
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => const ImportScriptSourceModal(),
+                    );
+                  },
+                ),
               ],
             ),
-            SoftButton(
-              label: '在线导入音源',
-              icon: Icons.add_link_rounded,
-              isPill: true,
-              onTap: () {
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('自定义音源在线导入功能接入中...')),
-                );
-              },
+            const SizedBox(height: 20),
+
+            // --- Bento 调度控制台：全局音质偏好与引擎状态 ---
+            SoftCard(
+              padding: const EdgeInsets.all(22),
+              borderRadius: MellowRadii.borderR24,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 左侧：音质阶梯控制
+                      Expanded(
+                        flex: 6,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.high_quality_rounded, size: 18, color: theme.accentColor),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '全局首选音质偏好',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: AudioQuality.values.map((quality) {
+                                final isSelected = engine.preferredQuality == quality;
+                                return GestureDetector(
+                                  onTap: () => engine.setPreferredQuality(quality),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? theme.accentColor
+                                          : theme.accentColor.withValues(alpha: 0.08),
+                                      borderRadius: MellowRadii.borderPill,
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? theme.accentColor
+                                            : Colors.transparent,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (isSelected) ...[
+                                          const Icon(Icons.check_circle_rounded, size: 14, color: Colors.white),
+                                          const SizedBox(width: 4),
+                                        ],
+                                        Text(
+                                          '${quality.label} · ${quality.displayName.split(' ').last}',
+                                          style: TextStyle(
+                                            fontSize: 12.5,
+                                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                            color: isSelected ? Colors.white : theme.textPrimary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              '播放或下载时优先请求该音质。若音源未提供，自动沿「24bit -> FLAC -> 320K -> 128K」顺位降级回退。',
+                              style: TextStyle(fontSize: 12, color: theme.textMuted),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      // 右侧：沙箱安全与状态统计
+                      Expanded(
+                        flex: 4,
+                        child: RecessedWell(
+                          padding: const EdgeInsets.all(16),
+                          borderRadius: MellowRadii.borderR16,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.withValues(alpha: 0.15),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.shield_rounded, size: 16, color: Colors.green),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    '沙箱防御机制运行中',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '阻断原生文件写权限，限定网络接口访问，沙箱内独立执行外部音源解析逻辑。',
+                                style: TextStyle(fontSize: 11.5, color: theme.textMuted),
+                              ),
+                              const Divider(height: 18),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('当前主音源:', style: TextStyle(fontSize: 12, color: theme.textSecondary)),
+                                  Flexible(
+                                    child: Text(
+                                      activeName,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.accentColor),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('音源就绪状态:', style: TextStyle(fontSize: 12, color: theme.textSecondary)),
+                                  Text(
+                                    '$enabledCount / ${allSources.length} 就绪',
+                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 28),
+
+            // --- 分区 1：外部扩展与自定义脚本音源 ---
+            Row(
+              children: [
+                Icon(Icons.extension_rounded, size: 18, color: theme.accentColor),
+                const SizedBox(width: 8),
+                Text(
+                  '外部自定义扩展音源 (${customSources.length})',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: theme.textPrimary,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '支持符合 LX-Music 开放标准的 JS 脚本',
+                  style: TextStyle(fontSize: 12, color: theme.textMuted),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (customSources.isEmpty)
+              SoftCard(
+                padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 24),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: theme.accentColor.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.extension_off_rounded, size: 36, color: theme.accentColor),
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        '暂无外部第三方音源脚本',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '点击右上角「导入自定义脚本」可通过订阅 URL 或直接粘贴 JavaScript 代码加载音源',
+                        style: TextStyle(fontSize: 12.5, color: theme.textMuted),
+                      ),
+                      const SizedBox(height: 16),
+                      SoftButton(
+                        label: '立即导入第三方脚本',
+                        icon: Icons.add_rounded,
+                        isPill: true,
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (_) => const ImportScriptSourceModal(),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              ...customSources.map((meta) => _buildSourceCard(context, meta, engine, theme, isCustom: true)),
+
+            const SizedBox(height: 32),
+
+            // --- 分区 2：官方预设六维音源 ---
+            Row(
+              children: [
+                Icon(Icons.dashboard_customize_rounded, size: 18, color: theme.accentColor),
+                const SizedBox(width: 8),
+                Text(
+                  '官方预设与六维音源 (${builtinSources.length})',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: theme.textPrimary,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '覆盖国内主流六大音乐平台高保真音源驱动',
+                  style: TextStyle(fontSize: 12, color: theme.textMuted),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...builtinSources.map((meta) => _buildSourceCard(context, meta, engine, theme, isCustom: false)),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSourceCard(
+    BuildContext context,
+    LxSourceMetadata meta,
+    LxSourceEngine engine,
+    ThemeProvider theme, {
+    required bool isCustom,
+  }) {
+    final isActive = engine.activeSourceId == meta.id;
+    final isEnabled = meta.isEnabled;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: SoftCard(
+        padding: const EdgeInsets.all(18),
+        borderRadius: MellowRadii.borderR20,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // 左侧图标
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isCustom
+                    ? Colors.purple.withValues(alpha: 0.12)
+                    : theme.accentColor.withValues(alpha: 0.12),
+                borderRadius: MellowRadii.borderR16,
+              ),
+              child: Icon(
+                isCustom ? Icons.javascript_rounded : _getPlatformIcon(meta.id),
+                color: isCustom ? Colors.purple : theme.accentColor,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 16),
+
+            // 中间元信息
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          meta.name,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: isEnabled ? theme.textPrimary : theme.textMuted,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // 版本号
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: theme.textMuted.withValues(alpha: 0.1),
+                          borderRadius: MellowRadii.borderPill,
+                        ),
+                        child: Text(
+                          'v${meta.version}',
+                          style: TextStyle(fontSize: 11, color: theme.textMuted, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      // 主音源徽章
+                      if (isActive)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: theme.accentColor,
+                            borderRadius: MellowRadii.borderPill,
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.star_rounded, size: 12, color: Colors.white),
+                              SizedBox(width: 3),
+                              Text(
+                                '当前主音源',
+                                style: TextStyle(fontSize: 10.5, color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (isCustom) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withValues(alpha: 0.12),
+                            borderRadius: MellowRadii.borderPill,
+                          ),
+                          child: const Text(
+                            '沙箱挂载',
+                            style: TextStyle(fontSize: 10.5, color: Colors.green, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    meta.description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, color: theme.textSecondary),
+                  ),
+                  const SizedBox(height: 6),
+                  // 音质支持标签与作者信息
+                  Wrap(
+                    spacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                        '作者: ${meta.author}',
+                        style: TextStyle(fontSize: 11, color: theme.textMuted),
+                      ),
+                      const Text('·', style: TextStyle(color: Colors.grey)),
+                      ...meta.supportedQualities.map((q) => Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: theme.accentColor.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              q.label,
+                              style: TextStyle(fontSize: 10, color: theme.accentColor, fontWeight: FontWeight.w600),
+                            ),
+                          )),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+
+            // 右侧操作栏
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 设为主音源按钮
+                if (!isActive)
+                  SoftButton(
+                    label: '设为主源',
+                    icon: Icons.star_border_rounded,
+                    isPill: true,
+                    onTap: isEnabled
+                        ? () {
+                            try {
+                              engine.setActiveSource(meta.id);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('主音源已切换为「${meta.name}」')),
+                              );
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('切换失败: $e')),
+                              );
+                            }
+                          }
+                        : null,
+                  ),
+                const SizedBox(width: 8),
+
+                // 查看详情与代码
+                SoftButton(
+                  icon: isCustom ? Icons.code_rounded : Icons.info_outline_rounded,
+                  label: isCustom ? '源码' : '详情',
+                  isPill: true,
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => ViewScriptSourceModal(metadata: meta),
+                    );
+                  },
+                ),
+
+                // 若为自定义音源，提供删除卸载按钮
+                if (isCustom) ...[
+                  const SizedBox(width: 8),
+                  SoftButton(
+                    icon: Icons.delete_outline_rounded,
+                    isPill: true,
+                    onTap: () => _confirmDeleteSource(context, meta, engine),
+                  ),
+                ],
+
+                const SizedBox(width: 10),
+                // 启用 / 停用 Switch 开关
+                Switch.adaptive(
+                  value: isEnabled,
+                  activeThumbColor: theme.accentColor,
+                  onChanged: (val) {
+                    engine.setSourceEnabled(meta.id, val);
+                  },
+                ),
+              ],
             ),
           ],
         ),
-        const SizedBox(height: 20),
-        SoftCard(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: theme.accentColor.withValues(alpha: 0.15), borderRadius: MellowRadii.borderR16),
-                child: Icon(Icons.source_rounded, color: theme.accentColor, size: 28),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('网易云在线开放音源 (Built-in)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: theme.textPrimary)),
-                    const SizedBox(height: 4),
-                    Text('支持在线搜索与公开歌单导入解析', style: TextStyle(fontSize: 12, color: theme.textSecondary)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
+
+  IconData _getPlatformIcon(String id) {
+    switch (id) {
+      case LxPlatformId.kw:
+        return Icons.album_rounded;
+      case LxPlatformId.kg:
+        return Icons.graphic_eq_rounded;
+      case LxPlatformId.tx:
+        return Icons.library_music_rounded;
+      case LxPlatformId.wy:
+        return Icons.music_note_rounded;
+      case LxPlatformId.mg:
+        return Icons.radio_rounded;
+      case LxPlatformId.mellow:
+      default:
+        return Icons.auto_awesome_rounded;
+    }
+  }
+
+  Future<void> _confirmDeleteSource(
+    BuildContext context,
+    LxSourceMetadata meta,
+    LxSourceEngine engine,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('卸载自定义音源'),
+        content: Text('确定要卸载并移除外部音源脚本「${meta.name}」吗？此操作无法撤销。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('确认卸载'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      engine.unregisterDriver(meta.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('已成功卸载音源「${meta.name}」')),
+        );
+      }
+    }
+  }
 }
+
 
 /// 12. 多端协同与云端同步中心 (DesktopSyncView)
 class DesktopSyncView extends StatefulWidget {

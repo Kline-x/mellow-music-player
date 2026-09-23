@@ -48,6 +48,9 @@ class StorageService {
   static const _keyEqualizerPreset = 'mellow_equalizer_preset';
   static const _keyEqualizerEnabled = 'mellow_equalizer_enabled';
   static const _keyWebDavConfig = 'mellow_webdav_config';
+  static const _keyCustomScripts = 'mellow_custom_scripts';
+  static const _keyActiveSourceId = 'mellow_active_source_id';
+  static const _keyPreferredQuality = 'mellow_preferred_quality';
 
   // --- 系统托盘与常驻偏好 ---
   bool getMinimizeToTray() => _prefs?.getBool(_keyMinimizeToTray) ?? true;
@@ -84,6 +87,19 @@ class StorageService {
   Future<bool> saveWebDavConfig(WebDavConfig config) async {
     return (await _prefs?.setString(_keyWebDavConfig, jsonEncode(config.toJson()))) ?? false;
   }
+
+  // --- 自定义音源脚本与音源引擎配置 ---
+  List<String>? getCustomScripts() => _prefs?.getStringList(_keyCustomScripts);
+  Future<bool> saveCustomScripts(List<String> scripts) async =>
+      (await _prefs?.setStringList(_keyCustomScripts, scripts)) ?? false;
+
+  String? getActiveSourceId() => _prefs?.getString(_keyActiveSourceId);
+  Future<bool> saveActiveSourceId(String id) async =>
+      (await _prefs?.setString(_keyActiveSourceId, id)) ?? false;
+
+  String? getPreferredQuality() => _prefs?.getString(_keyPreferredQuality);
+  Future<bool> savePreferredQuality(String quality) async =>
+      (await _prefs?.setString(_keyPreferredQuality, quality)) ?? false;
 
   // --- 本地扫描曲库与目录偏好 ---
 

@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import '../storage/storage_service.dart';
 import 'lx_source_model.dart';
 
 /// 抽象音源驱动器接口 (Source Driver Interface)
@@ -563,11 +566,39 @@ class LxCustomScriptDriver implements LxSourceDriver {
     this.config,
   });
 
+  /// 沙箱脚本安全策略静态校验
+  static void _validateScript(String scriptContent) {
+    if (scriptContent.trim().isEmpty) {
+      throw const LxSourceException('脚本内容不可为空', type: LxSourceErrorType.scriptError);
+    }
+    // 沙箱安全拦截：禁止 eval, new Function, child_process, process.exit 等原生敏感调用
+    final dangerousPatterns = [
+      RegExp(r'\beval\s*\('),
+      RegExp(r'new\s+Function\s*\('),
+      RegExp(r'child_process'),
+      RegExp(r'process\.exit'),
+      RegExp(r'require\s*\(\s*["\x27]fs["\x27]\s*\)'),
+    ];
+    for (final pattern in dangerousPatterns) {
+      if (pattern.hasMatch(scriptContent)) {
+        throw const LxSourceException(
+          '脚本包含被沙箱安全策略阻断的危险操作 (如 eval/child_process/fs)',
+          type: LxSourceErrorType.scriptError,
+        );
+      }
+    }
+  }
+
   /// 从 JS 源码文本解析并构建驱动器
   factory LxCustomScriptDriver.fromScript(String scriptContent, {String? customId}) {
-    final meta = LxSourceMetadata.fromScriptHeader(scriptContent, defaultId: customId);
+    _validateScript(scriptContent);
+    String actualScript = scriptContent;
+    if (customId != null && !scriptContent.contains('@id')) {
+      actualScript = '/*! @id $customId */\n$scriptContent';
+    }
+    final meta = LxSourceMetadata.fromScriptHeader(actualScript, defaultId: customId);
     return LxCustomScriptDriver(
-      metadata: meta.copyWith(scriptContent: scriptContent),
+      metadata: meta.copyWith(id: customId ?? meta.id, scriptContent: actualScript),
     );
   }
 
@@ -724,7 +755,9 @@ class LxCustomScriptDriver implements LxSourceDriver {
 }
 
 /// 六维音源动态切换与解析引擎 (Dynamic Six-Dimensional Source Engine)
-class LxSourceEngine {
+class LxSourceEngine extends ChangeNotifier {
+  static final LxSourceEngine instance = LxSourceEngine();
+
   final Map<String, LxSourceDriver> _drivers = {};
   String _activeSourceId = LxPlatformId.mellow;
   AudioQuality _preferredQuality = AudioQuality.flac;
@@ -734,6 +767,48 @@ class LxSourceEngine {
 
   LxSourceEngine() {
     _initializeDefaultDrivers();
+  }
+
+  /// 从本地持久化存储恢复配置与已导入的脚本
+  Future<void> initFromStorage() async {
+    final storage = StorageService.instance;
+
+    // 1. 恢复首选音质
+    final savedQuality = storage.getPreferredQuality();
+    if (savedQuality != null) {
+      _preferredQuality = AudioQuality.fromString(savedQuality);
+    }
+
+    // 2. 恢复保存的第三方脚本
+    final savedScripts = storage.getCustomScripts();
+    if (savedScripts != null) {
+      for (final script in savedScripts) {
+        try {
+          final customDriver = LxCustomScriptDriver.fromScript(script);
+          _drivers[customDriver.metadata.id] = customDriver;
+        } catch (_) {}
+      }
+    }
+
+    // 3. 恢复主活跃音源
+    final savedActiveId = storage.getActiveSourceId();
+    if (savedActiveId != null && _drivers.containsKey(savedActiveId)) {
+      _activeSourceId = savedActiveId;
+    }
+
+    notifyListeners();
+  }
+
+  void _persistCustomScripts() {
+    final scripts = <String>[];
+    for (final driver in _drivers.values) {
+      if (driver is LxCustomScriptDriver &&
+          driver.metadata.scriptContent != null &&
+          driver.metadata.scriptContent!.isNotEmpty) {
+        scripts.add(driver.metadata.scriptContent!);
+      }
+    }
+    StorageService.instance.saveCustomScripts(scripts);
   }
 
   /// 事件广播流 (音源切换、降级事件、错误提示)
@@ -746,14 +821,24 @@ class LxSourceEngine {
   AudioQuality get preferredQuality => _preferredQuality;
   set preferredQuality(AudioQuality quality) {
     _preferredQuality = quality;
+    StorageService.instance.savePreferredQuality(quality.value);
     _eventController.add('音质首选项已切换为: ${quality.displayName}');
+    notifyListeners();
   }
 
+  void setPreferredQuality(AudioQuality quality) {
+    preferredQuality = quality;
+  }
 
   /// 所有已注册的音源元数据列表
   List<LxSourceMetadata> get registeredSources {
     return _drivers.values.map((d) => d.metadata).toList();
   }
+
+  List<LxSourceMetadata> get sources => registeredSources;
+
+  /// 所有音源驱动映射
+  Map<String, LxSourceDriver> get drivers => Map.unmodifiable(_drivers);
 
   /// 获取指定音源驱动
   LxSourceDriver? getDriver(String sourceId) => _drivers[sourceId];
@@ -772,13 +857,16 @@ class LxSourceEngine {
       throw LxSourceException('该音源当前处于停用状态: $sourceId', type: LxSourceErrorType.sourceDisabled);
     }
     _activeSourceId = sourceId;
+    StorageService.instance.saveActiveSourceId(sourceId);
     _eventController.add('主音源已切换至: ${_drivers[sourceId]!.metadata.name}');
+    notifyListeners();
   }
 
   /// 注册新音源驱动
   void registerDriver(LxSourceDriver driver) {
     _drivers[driver.metadata.id] = driver;
     _eventController.add('音源已成功挂载: ${driver.metadata.name} (${driver.metadata.id})');
+    notifyListeners();
   }
 
   /// 移除音源
@@ -786,10 +874,15 @@ class LxSourceEngine {
     if (_activeSourceId == sourceId) {
       // 自动切回官方源
       _activeSourceId = LxPlatformId.mellow;
+      StorageService.instance.saveActiveSourceId(_activeSourceId);
     }
     final removed = _drivers.remove(sourceId);
     if (removed != null) {
+      if (removed is LxCustomScriptDriver) {
+        _persistCustomScripts();
+      }
       _eventController.add('已卸载音源: ${removed.metadata.name}');
+      notifyListeners();
     }
   }
 
@@ -820,8 +913,10 @@ class LxSourceEngine {
 
     if (!isEnabled && _activeSourceId == sourceId) {
       _activeSourceId = LxPlatformId.mellow;
+      StorageService.instance.saveActiveSourceId(_activeSourceId);
     }
     _eventController.add('音源 [${driver.metadata.name}] 状态变更为: ${isEnabled ? "启用" : "停用"}');
+    notifyListeners();
   }
 
   /// 导入第三方 JS 脚本
@@ -833,6 +928,8 @@ class LxSourceEngine {
     try {
       final customDriver = LxCustomScriptDriver.fromScript(scriptContent, customId: customId);
       registerDriver(customDriver);
+      _persistCustomScripts();
+      notifyListeners();
       return customDriver.metadata;
     } catch (e) {
       throw LxSourceException(
@@ -840,6 +937,27 @@ class LxSourceEngine {
         type: LxSourceErrorType.scriptError,
         originalException: e,
       );
+    }
+  }
+
+  /// 从网络 URL 订阅或下载第三方 JS 音源脚本并挂载
+  Future<LxSourceMetadata> importScriptFromUrl(String url) async {
+    final uri = Uri.tryParse(url.trim());
+    if (uri == null || (!uri.isScheme('http') && !uri.isScheme('https'))) {
+      throw const LxSourceException('无效的脚本订阅网络地址', type: LxSourceErrorType.networkError);
+    }
+
+    final client = http.Client();
+    try {
+      final res = await client.get(uri).timeout(const Duration(seconds: 10));
+      if (res.statusCode != 200) {
+        throw LxSourceException('下载音源脚本失败 (HTTP ${res.statusCode})', type: LxSourceErrorType.networkError);
+      }
+      final scriptText = utf8.decode(res.bodyBytes);
+      final meta = importScript(scriptText);
+      return meta;
+    } finally {
+      client.close();
     }
   }
 
@@ -1221,7 +1339,9 @@ class LxSourceEngine {
   }
 
   /// 释放资源
+  @override
   void dispose() {
     _eventController.close();
+    super.dispose();
   }
 }

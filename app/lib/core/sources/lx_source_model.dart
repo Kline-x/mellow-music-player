@@ -623,6 +623,7 @@ enum LxSourceErrorType {
   notFound,
   unsupportedQuality,
   networkTimeout,
+  networkError,
   scriptError,
   sourceDisabled,
   rateLimited,

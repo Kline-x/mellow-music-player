@@ -116,6 +116,7 @@ void main() {
       // 1. 播放曲目，验证 SMTC 自动接收到当前曲目元数据与播放中状态
       final trackToPlay = mockPresetTracks[2];
       player.playTrack(trackToPlay);
+      await Future.delayed(const Duration(milliseconds: 50));
 
       expect(smtc.lastTrack?.id, trackToPlay.id);
       expect(smtc.lastTrack?.title, trackToPlay.title);
@@ -123,10 +124,12 @@ void main() {
 
       // 2. 暂停播放
       player.pause();
+      await Future.delayed(const Duration(milliseconds: 50));
       expect(smtc.lastIsPlaying, isFalse);
 
       // 3. 恢复播放
       player.play();
+      await Future.delayed(const Duration(milliseconds: 50));
       expect(smtc.lastIsPlaying, isTrue);
 
       // 4. Seek 拖拽

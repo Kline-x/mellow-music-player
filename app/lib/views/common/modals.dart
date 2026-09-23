@@ -17,6 +17,8 @@ import '../../core/storage/storage_service.dart';
 import '../../core/sync/sync_data_model.dart';
 import '../../core/sync/webdav_sync_service.dart';
 import '../../core/sync/lan_sync_service.dart';
+import '../../core/sources/lx_source_model.dart';
+import '../../core/sources/lx_script_sandbox.dart';
 
 /// 1. 播放队列抽屉 (Queue Drawer / Sheet)
 class PlaybackQueueView extends StatelessWidget {
@@ -2433,6 +2435,530 @@ class _LanPairingModalState extends State<LanPairingModal> {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 14. 自定义音源脚本导入模态框 (ImportScriptSourceModal)
+class ImportScriptSourceModal extends StatefulWidget {
+  final VoidCallback? onImportSuccess;
+  const ImportScriptSourceModal({super.key, this.onImportSuccess});
+
+  @override
+  State<ImportScriptSourceModal> createState() => _ImportScriptSourceModalState();
+}
+
+class _ImportScriptSourceModalState extends State<ImportScriptSourceModal>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  final TextEditingController _urlController = TextEditingController();
+  final TextEditingController _scriptController = TextEditingController();
+  bool _isLoading = false;
+  String? _errorMessage;
+  LxSourceMetadata? _parsedMeta;
+
+  static const String _sampleTemplate = '''/*!
+ * @name 六维高清云解析
+ * @description 支持全网六维音乐高品质无损音源解析与智能降级
+ * @version 1.0.0
+ * @author AudioGeek
+ * @homepage https://github.com/mellow-music/custom-sources
+ */
+
+const { EVENT_NAMES, on } = globalThis.lx;
+
+on(EVENT_NAMES.request, async ({ source, action, info }) => {
+  switch (action) {
+    case 'musicUrl':
+      return { url: 'https://cdn.example.com/audio/' + info.musicInfo.songmid + '.mp3' };
+    case 'lyric':
+      return { lyric: '[00:00.00]自定义音源歌词' };
+  }
+});
+''';
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _scriptController.text = _sampleTemplate;
+    _updateParsedMetadata(_sampleTemplate);
+    _scriptController.addListener(() {
+      _updateParsedMetadata(_scriptController.text);
+    });
+  }
+
+  void _updateParsedMetadata(String text) {
+    if (text.trim().isEmpty) {
+      if (mounted) setState(() => _parsedMeta = null);
+      return;
+    }
+    try {
+      final meta = LxSourceMetadata.fromScriptHeader(text);
+      if (mounted) {
+        setState(() {
+          _parsedMeta = meta;
+          _errorMessage = null;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _parsedMeta = null);
+    }
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _urlController.dispose();
+    _scriptController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleImportFromUrl() async {
+    final url = _urlController.text.trim();
+    if (url.isEmpty) {
+      setState(() => _errorMessage = '请输入有效的音源脚本网络 URL 地址');
+      return;
+    }
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final meta = await LxSourceEngine.instance.importScriptFromUrl(url);
+      if (mounted) {
+        widget.onImportSuccess?.call();
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('成功导入并挂载音源: ${meta.name} (v${meta.version})'),
+            backgroundColor: Colors.teal.shade700,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = '导入失败: $e';
+        });
+      }
+    }
+  }
+
+  Future<void> _handleImportFromScript() async {
+    final script = _scriptController.text.trim();
+    if (script.isEmpty) {
+      setState(() => _errorMessage = '脚本内容不可为空');
+      return;
+    }
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final meta = LxSourceEngine.instance.importScript(script);
+      if (mounted) {
+        widget.onImportSuccess?.call();
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('成功导入并挂载自定义脚本: ${meta.name} (v${meta.version})'),
+            backgroundColor: Colors.teal.shade700,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = '脚本校验或挂载失败: $e';
+        });
+      }
+    }
+  }
+
+  Future<void> _pasteFromClipboard() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (data?.text != null && data!.text!.isNotEmpty) {
+      _scriptController.text = data.text!;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.watch<ThemeProvider>();
+    final isDark = theme.isDarkMode;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 620, maxHeight: 680),
+        child: SoftCard(
+          padding: const EdgeInsets.all(24),
+          borderRadius: MellowRadii.borderR24,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: theme.accentColor.withValues(alpha: 0.15),
+                          borderRadius: MellowRadii.borderR12,
+                        ),
+                        child: Icon(Icons.extension_rounded, color: theme.accentColor, size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('导入外部自定义音源脚本',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                          Text('支持遵循 LX-Music 开放音源标准规范的 JavaScript 扩展脚本',
+                              style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                        ],
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, color: theme.textSecondary, size: 20),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              TabBar(
+                controller: _tabController,
+                indicatorColor: theme.accentColor,
+                labelColor: theme.accentColor,
+                unselectedLabelColor: theme.textMuted,
+                labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                tabs: const [
+                  Tab(text: '网络订阅导入 (URL)'),
+                  Tab(text: '直接粘贴/编辑脚本 (JS)'),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    // Tab 1: URL 导入
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('脚本订阅或直接下载链接 (HTTP / HTTPS):',
+                            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: theme.textPrimary)),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _urlController,
+                          style: TextStyle(fontSize: 13, color: theme.textPrimary),
+                          decoration: InputDecoration(
+                            hintText: 'https://example.com/sources/lx-custom-source.js',
+                            hintStyle: TextStyle(fontSize: 12, color: theme.textMuted),
+                            filled: true,
+                            fillColor: theme.canvasColor,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            border: OutlineInputBorder(
+                              borderRadius: MellowRadii.borderR12,
+                              borderSide: BorderSide(color: theme.borderColor.withValues(alpha: 0.6)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: MellowRadii.borderR12,
+                              borderSide: BorderSide(color: theme.borderColor.withValues(alpha: 0.6)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: MellowRadii.borderR12,
+                              borderSide: BorderSide(color: theme.accentColor, width: 1.5),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        RecessedWell(
+                          padding: const EdgeInsets.all(16),
+                          borderRadius: MellowRadii.borderR16,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.shield_outlined, size: 20, color: theme.accentColor),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  '安全沙箱承诺：所有外部脚本均在内存严格沙箱环境中解析，剥离 process、child_process 等敏感危险 API，确保客户端与系统环境 100% 安全。',
+                                  style: TextStyle(fontSize: 12, color: theme.textSecondary, height: 1.4),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Tab 2: 直接粘贴脚本
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('JavaScript 音源脚本内容:',
+                                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: theme.textPrimary)),
+                            InkWell(
+                              onTap: _pasteFromClipboard,
+                              borderRadius: BorderRadius.circular(8),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.content_paste_rounded, size: 14, color: theme.accentColor),
+                                    const SizedBox(width: 4),
+                                    Text('从剪贴板粘贴', style: TextStyle(fontSize: 12, color: theme.accentColor)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _scriptController,
+                            maxLines: null,
+                            expands: true,
+                            style: const TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: 11.5,
+                              height: 1.4,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: '粘贴符合规范的音源 JS 源码...',
+                              hintStyle: TextStyle(fontSize: 12, color: theme.textMuted),
+                              filled: true,
+                              fillColor: isDark ? const Color(0xFF1E1E24) : const Color(0xFFF8FAFC),
+                              contentPadding: const EdgeInsets.all(12),
+                              border: OutlineInputBorder(
+                                borderRadius: MellowRadii.borderR12,
+                                borderSide: BorderSide(color: theme.borderColor.withValues(alpha: 0.6)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: MellowRadii.borderR12,
+                                borderSide: BorderSide(color: theme.borderColor.withValues(alpha: 0.6)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: MellowRadii.borderR12,
+                                borderSide: BorderSide(color: theme.accentColor, width: 1.5),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // 实时解析元数据小卡片
+              if (_parsedMeta != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: theme.accentColor.withValues(alpha: 0.08),
+                    borderRadius: MellowRadii.borderR12,
+                    border: Border.all(color: theme.accentColor.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.verified_rounded, size: 18, color: theme.accentColor),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '已识别元数据: ${_parsedMeta!.name} · v${_parsedMeta!.version} · 作者: ${_parsedMeta!.author}',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.accentColor),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(fontSize: 12, color: Colors.redAccent, fontWeight: FontWeight.w600),
+                  ),
+                ),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  SoftButton(
+                    label: '取消',
+                    onTap: () => Navigator.of(context).pop(),
+                  ),
+                  const SizedBox(width: 10),
+                  SoftButton(
+                    label: _isLoading ? '正在校验导入...' : '确认导入并挂载',
+                    icon: Icons.check_circle_rounded,
+                    isActive: true,
+                    isPill: true,
+                    onTap: _isLoading
+                        ? null
+                        : () {
+                            if (_tabController.index == 0) {
+                              _handleImportFromUrl();
+                            } else {
+                              _handleImportFromScript();
+                            }
+                          },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 15. 查看音源详情与脚本内容模态框 (ViewScriptSourceModal)
+class ViewScriptSourceModal extends StatelessWidget {
+  final LxSourceMetadata metadata;
+  const ViewScriptSourceModal({super.key, required this.metadata});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.watch<ThemeProvider>();
+    final isDark = theme.isDarkMode;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600, maxHeight: 600),
+        child: SoftCard(
+          padding: const EdgeInsets.all(24),
+          borderRadius: MellowRadii.borderR24,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: theme.accentColor.withValues(alpha: 0.15),
+                          borderRadius: MellowRadii.borderR12,
+                        ),
+                        child: Icon(Icons.code_rounded, color: theme.accentColor, size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(metadata.name,
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                          Text('版本: v${metadata.version} · 作者: ${metadata.author}',
+                              style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                        ],
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, color: theme.textSecondary, size: 20),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              if (metadata.description.isNotEmpty) ...[
+                Text(metadata.description, style: TextStyle(fontSize: 13, color: theme.textSecondary)),
+                const SizedBox(height: 12),
+              ],
+
+              Row(
+                children: [
+                  Text('支持音质: ', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                  for (final q in metadata.supportedQualities)
+                    Container(
+                      margin: const EdgeInsets.only(right: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: theme.accentColor.withValues(alpha: 0.12),
+                        borderRadius: MellowRadii.borderPill,
+                      ),
+                      child: Text(q.label, style: TextStyle(fontSize: 10.5, color: theme.accentColor, fontWeight: FontWeight.bold)),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              Text('脚本源代码预览:', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+              const SizedBox(height: 6),
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E1E24) : const Color(0xFFF8FAFC),
+                    borderRadius: MellowRadii.borderR12,
+                    border: Border.all(color: theme.borderColor.withValues(alpha: 0.5)),
+                  ),
+                  child: SingleChildScrollView(
+                    child: SelectableText(
+                      metadata.scriptContent ?? '// 内置音源，代码编译于原生二进制驱动中。',
+                      style: const TextStyle(fontFamily: 'monospace', fontSize: 11.5, height: 1.4),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (metadata.scriptContent != null && metadata.scriptContent!.isNotEmpty)
+                    SoftButton(
+                      label: '复制代码',
+                      icon: Icons.copy_rounded,
+                      onTap: () {
+                        Clipboard.setData(ClipboardData(text: metadata.scriptContent!));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('脚本源码已复制到剪贴板')),
+                        );
+                      },
+                    )
+                  else
+                    const SizedBox.shrink(),
+                  SoftButton(
+                    label: '关闭',
+                    onTap: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
