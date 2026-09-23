@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'track_model.dart';
 import 'player_backend.dart';
 import 'windows_smtc_service.dart';
+import 'local_music_service.dart';
 import '../sources/online_music_service.dart';
 import '../storage/storage_service.dart';
 
@@ -68,6 +69,35 @@ class AudioPlayerService extends ChangeNotifier {
   }
 
   List<ImportedPlaylist> get importedPlaylists => List.unmodifiable(_importedPlaylists);
+  List<Track> get localTracks => LocalMusicService.instance.localTracks;
+  List<String> get localDirectories => LocalMusicService.instance.scannedDirectories;
+
+  Future<int> scanLocalDirectory(String path) async {
+    final count = await LocalMusicService.instance.scanDirectory(path);
+    notifyListeners();
+    return count;
+  }
+
+  void addLocalTrack(Track track) {
+    LocalMusicService.instance.addLocalTrack(track);
+    notifyListeners();
+  }
+
+  void removeLocalTrack(String trackId) {
+    LocalMusicService.instance.removeLocalTrack(trackId);
+    notifyListeners();
+  }
+
+  void clearLocalTracks() {
+    LocalMusicService.instance.clearLocalTracks();
+    notifyListeners();
+  }
+
+  void playLocalMusic({int startIndex = 0}) {
+    final list = localTracks;
+    if (list.isEmpty) return;
+    playPlaylist(list, startIndex: startIndex);
+  }
 
   List<Track> get favoriteTracks {
     final list = <Track>[];

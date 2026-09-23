@@ -1240,47 +1240,346 @@ class DesktopHistoryView extends StatelessWidget {
 }
 
 /// 9. 本地与下载专区 (LocalMusicView)
-class DesktopLocalMusicView extends StatelessWidget {
+class DesktopLocalMusicView extends StatefulWidget {
   final Function(String viewId, [String? extra]) onNavigate;
   const DesktopLocalMusicView({super.key, required this.onNavigate});
 
   @override
+  State<DesktopLocalMusicView> createState() => _DesktopLocalMusicViewState();
+}
+
+class _DesktopLocalMusicViewState extends State<DesktopLocalMusicView> {
+  void _openScanDialog(BuildContext context, AudioPlayerService player, ThemeProvider theme) {
+    final textController = TextEditingController(text: 'E:\\Music');
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: theme.surfaceColor,
+        shape: RoundedRectangleBorder(borderRadius: MellowRadii.borderR24),
+        title: Text('扫描本地音频目录', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('支持扫描 FLAC、WAV、MP3、OGG、M4A 等常见音频格式：', style: TextStyle(fontSize: 12.5, color: theme.textMuted)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: textController,
+              style: TextStyle(color: theme.textPrimary, fontSize: 13.5),
+              decoration: InputDecoration(
+                hintText: '输入文件夹绝对路径，如 C:\\Users\\Music',
+                hintStyle: TextStyle(color: theme.textMuted),
+                filled: true,
+                fillColor: theme.isDarkMode ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
+                border: OutlineInputBorder(borderRadius: MellowRadii.borderM, borderSide: BorderSide(color: theme.borderColor)),
+                enabledBorder: OutlineInputBorder(borderRadius: MellowRadii.borderM, borderSide: BorderSide(color: theme.borderColor)),
+                focusedBorder: OutlineInputBorder(borderRadius: MellowRadii.borderM, borderSide: BorderSide(color: theme.accentColor)),
+                prefixIcon: const Icon(Icons.folder_open_rounded, size: 20),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              children: [
+                ActionChip(
+                  label: const Text('默认音乐库', style: TextStyle(fontSize: 11)),
+                  onPressed: () => textController.text = 'C:\\Users\\Public\\Music',
+                ),
+                ActionChip(
+                  label: const Text('示例演示目录', style: TextStyle(fontSize: 11)),
+                  onPressed: () => textController.text = 'E:\\Music\\Lossless',
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: Text('取消', style: TextStyle(color: theme.textMuted)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.accentColor,
+              shape: RoundedRectangleBorder(borderRadius: MellowRadii.borderPill),
+            ),
+            onPressed: () async {
+              final path = textController.text.trim();
+              Navigator.of(dialogCtx).pop();
+              if (path.isNotEmpty) {
+                final count = await player.scanLocalDirectory(path);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(count > 0 ? '扫描完成！成功载入 $count 首本地歌曲' : '扫描完成，未发现新支持的音频文件或目录不存在'),
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('开始扫描', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
+    final player = context.watch<AudioPlayerService>();
+    final isDark = theme.isDarkMode;
+    final localTracks = player.localTracks;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
       children: [
-        Text('本地与离线下载', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-        const SizedBox(height: 16),
-        RecessedWell(
-          padding: const EdgeInsets.all(32),
-          borderRadius: MellowRadii.borderR24,
-          child: Column(
+        // 1. 顶部标题栏
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('本地与离线下载', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                const SizedBox(height: 4),
+                Text('支持 FLAC / WAV / MP3 / OGG 无损音频直接声卡解码回放', style: TextStyle(color: theme.textMuted, fontSize: 13)),
+              ],
+            ),
+            Row(
+              children: [
+                if (localTracks.isNotEmpty) ...[
+                  SoftButton(
+                    label: '播放全部',
+                    icon: Icons.play_arrow_rounded,
+                    isPill: true,
+                    onTap: () => player.playLocalMusic(),
+                  ),
+                  const SizedBox(width: 10),
+                  SoftButton(
+                    label: '清空曲库',
+                    icon: Icons.delete_sweep_rounded,
+                    isPill: true,
+                    onTap: () => player.clearLocalTracks(),
+                  ),
+                  const SizedBox(width: 10),
+                ],
+                SoftButton(
+                  label: '扫描目录',
+                  icon: Icons.create_new_folder_rounded,
+                  isPill: true,
+                  onTap: () => _openScanDialog(context, player, theme),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // 2. 本地曲库统计看板
+        SoftCard(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+          borderRadius: MellowRadii.borderR20,
+          child: Row(
             children: [
-              Icon(Icons.file_upload_outlined, size: 48, color: theme.accentColor),
-              const SizedBox(height: 12),
-              Text('本地音频导入与目录扫描', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary, fontSize: 16)),
-              const SizedBox(height: 4),
-              Text('支持 FLAC, WAV, MP3 等格式（功能正在接入中）', style: TextStyle(color: theme.textMuted, fontSize: 12.5)),
-              const SizedBox(height: 16),
-              SoftButton(
-                label: '本地扫描接入中',
-                icon: Icons.folder_open_rounded,
-                isPill: true,
-                onTap: () {
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('本地文件与目录扫描功能正在接入中...')),
-                  );
-                },
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: theme.accentColor.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.audio_file_rounded, size: 28, color: theme.accentColor),
+              ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('本地音乐库统计', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                    const SizedBox(height: 4),
+                    Text(
+                      '已收录 ${localTracks.length} 首离线曲目 · ${player.localDirectories.length} 个扫描目录',
+                      style: TextStyle(color: theme.textMuted, fontSize: 12.5),
+                    ),
+                  ],
+                ),
+              ),
+              Wrap(
+                spacing: 8,
+                children: [
+                  _buildFormatBadge('FLAC', Colors.purpleAccent, isDark),
+                  _buildFormatBadge('WAV', Colors.tealAccent, isDark),
+                  _buildFormatBadge('MP3', Colors.blueAccent, isDark),
+                  _buildFormatBadge('Hi-Res', theme.accentColor, isDark),
+                ],
               ),
             ],
           ),
         ),
         const SizedBox(height: 24),
-        Text('本地曲库暂无内容', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: theme.textMuted)),
+
+        // 3. 歌曲列表或空状态
+        if (localTracks.isEmpty)
+          RecessedWell(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+            borderRadius: MellowRadii.borderR24,
+            child: Column(
+              children: [
+                Icon(Icons.folder_open_rounded, size: 54, color: theme.textMuted.withValues(alpha: 0.5)),
+                const SizedBox(height: 16),
+                Text('本地曲库暂无内容', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary, fontSize: 17)),
+                const SizedBox(height: 6),
+                Text('点击下方按钮选择或输入要扫描的本地音频文件夹，即可秒级载入您的本地无损曲库',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: theme.textMuted, fontSize: 13)),
+                const SizedBox(height: 20),
+                SoftButton(
+                  label: '立即添加并扫描目录',
+                  icon: Icons.add_circle_outline_rounded,
+                  isPill: true,
+                  onTap: () => _openScanDialog(context, player, theme),
+                ),
+              ],
+            ),
+          )
+        else ...[
+          Text('曲目清单 (${localTracks.length})', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+          const SizedBox(height: 12),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: localTracks.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final track = localTracks[index];
+              final isCurrent = player.currentTrack?.id == track.id;
+
+              return SoftCard(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                borderRadius: MellowRadii.borderM,
+                child: Row(
+                  children: [
+                    // 序号/播放中指示
+                    SizedBox(
+                      width: 32,
+                      child: isCurrent && player.isPlaying
+                          ? Icon(Icons.volume_up_rounded, color: theme.accentColor, size: 18)
+                          : Text(
+                              '${index + 1}'.padLeft(2, '0'),
+                              style: TextStyle(fontSize: 13, color: isCurrent ? theme.accentColor : theme.textMuted),
+                            ),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // 封面
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        color: theme.accentColor.withValues(alpha: 0.1),
+                        child: const Icon(Icons.music_note_rounded, color: Colors.white70),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+
+                    // 歌名与歌手
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            track.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: isCurrent ? theme.accentColor : theme.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            track.artist,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 12, color: theme.textMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // 路径/专辑
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        track.localPath ?? track.album,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 11.5, color: theme.textMuted),
+                      ),
+                    ),
+
+                    // 操作栏
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            isCurrent && player.isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_fill_rounded,
+                            color: theme.accentColor,
+                            size: 24,
+                          ),
+                          tooltip: isCurrent && player.isPlaying ? '暂停' : '播放',
+                          onPressed: () {
+                            if (isCurrent) {
+                              player.togglePlay();
+                            } else {
+                              player.playTrack(track);
+                            }
+                          },
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            player.isFavorite(track.id) ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                            color: player.isFavorite(track.id) ? Colors.rose : theme.textMuted,
+                            size: 18,
+                          ),
+                          tooltip: '红心收藏',
+                          onPressed: () => player.toggleFavorite(track.id, track),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.delete_outline_rounded, color: theme.textMuted, size: 18),
+                          tooltip: '从曲库移除',
+                          onPressed: () => player.removeLocalTrack(track.id),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
       ],
+    );
+  }
+
+  Widget _buildFormatBadge(String label, Color color, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.2 : 0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: color),
+      ),
     );
   }
 }

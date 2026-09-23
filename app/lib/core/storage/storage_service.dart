@@ -40,6 +40,32 @@ class StorageService {
   static const _keyImportedPlaylists = 'mellow_audio_imported_playlists';
   static const _keyFloatingLyricEnabled = 'mellow_floating_lyric_enabled';
   static const _keyFloatingLyricLocked = 'mellow_floating_lyric_locked';
+  static const _keyLocalTracks = 'mellow_audio_local_tracks';
+  static const _keyLocalDirectories = 'mellow_audio_local_directories';
+
+  // --- 本地扫描曲库与目录偏好 ---
+
+  List<Track>? getLocalTracks() {
+    final raw = _prefs?.getString(_keyLocalTracks);
+    if (raw == null) return null;
+    try {
+      final list = jsonDecode(raw) as List<dynamic>;
+      return list.map((item) => _deserializeTrack(item as Map<String, dynamic>)).toList();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<bool> saveLocalTracks(List<Track> tracks) async {
+    final list = tracks.map((t) => _serializeTrack(t)).toList();
+    return (await _prefs?.setString(_keyLocalTracks, jsonEncode(list))) ?? false;
+  }
+
+  List<String>? getLocalDirectories() => _prefs?.getStringList(_keyLocalDirectories);
+
+  Future<bool> saveLocalDirectories(List<String> dirs) async {
+    return (await _prefs?.setStringList(_keyLocalDirectories, dirs)) ?? false;
+  }
 
   // --- 桌面悬浮歌词偏好 ---
   bool? getFloatingLyricEnabled() => _prefs?.getBool(_keyFloatingLyricEnabled);

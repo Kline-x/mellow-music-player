@@ -614,6 +614,7 @@ class MobileLocalMusicPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
+    final localTracks = player.localTracks;
 
     return Scaffold(
       backgroundColor: theme.canvasColor,
@@ -626,44 +627,85 @@ class MobileLocalMusicPage extends StatelessWidget {
         ),
         title: Text('本地与离线曲库', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary, fontSize: 17)),
         centerTitle: true,
+        actions: [
+          if (localTracks.isNotEmpty)
+            TextButton.icon(
+              icon: Icon(Icons.play_circle_fill_rounded, size: 18, color: theme.accentColor),
+              label: Text('播放全部', style: TextStyle(color: theme.accentColor, fontSize: 13, fontWeight: FontWeight.bold)),
+              onPressed: () => player.playLocalMusic(),
+            ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
         children: [
           RecessedWell(
             padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                Icon(Icons.folder_zip_rounded, size: 36, color: theme.accentColor),
-                const SizedBox(height: 8),
-                Text('设备离线音频扫描', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                const SizedBox(height: 4),
-                Text('本地离线音频扫描功能正在接入中', style: TextStyle(fontSize: 12, color: theme.textMuted)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          ...mockPresetTracks.map((t) => SoftCard(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            onTap: () => player.playTrack(t),
             child: Row(
               children: [
-                const Icon(Icons.audio_file_rounded, color: Colors.blueAccent),
-                const SizedBox(width: 12),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: theme.accentColor.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.audio_file_rounded, size: 24, color: theme.accentColor),
+                ),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: theme.textPrimary)),
-                      Text('${t.artist} · 演示曲目', style: TextStyle(fontSize: 11, color: theme.textMuted)),
+                      Text('设备离线音频库', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary, fontSize: 15)),
+                      const SizedBox(height: 3),
+                      Text('已收录 ${localTracks.length} 首曲目 · 物理声卡直出回放', style: TextStyle(fontSize: 12, color: theme.textMuted)),
                     ],
                   ),
                 ),
-                Icon(Icons.play_arrow_rounded, color: theme.accentColor),
               ],
             ),
-          )),
+          ),
+          const SizedBox(height: 16),
+          if (localTracks.isEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              child: Column(
+                children: [
+                  Icon(Icons.music_off_rounded, size: 48, color: theme.textMuted.withValues(alpha: 0.5)),
+                  const SizedBox(height: 12),
+                  Text('暂无本地音乐', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary, fontSize: 15)),
+                  const SizedBox(height: 4),
+                  Text('可在桌面端扫描或将音频放入设备音乐目录', style: TextStyle(color: theme.textMuted, fontSize: 12)),
+                ],
+              ),
+            )
+          else
+            ...localTracks.map((t) => SoftCard(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              onTap: () => player.playTrack(t),
+              child: Row(
+                children: [
+                  const Icon(Icons.audio_file_rounded, color: Colors.blueAccent),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: theme.textPrimary)),
+                        const SizedBox(height: 2),
+                        Text('${t.artist} · ${t.album}', style: TextStyle(fontSize: 11, color: theme.textMuted)),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    player.currentTrack?.id == t.id && player.isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_arrow_rounded,
+                    color: theme.accentColor,
+                  ),
+                ],
+              ),
+            )),
         ],
       ),
     );
