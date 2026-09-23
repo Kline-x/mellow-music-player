@@ -48,6 +48,7 @@ bool FlutterWindow::OnCreate() {
   SetupSmtcChannel();
   SetupTray();
   SetupFloatingLyricChannel();
+  SetupWindowChannel();
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
@@ -333,6 +334,32 @@ void FlutterWindow::SetupFloatingLyricChannel() {
         } else if (call.method_name() == "isClickThrough") {
           result->Success(flutter::EncodableValue(this->is_click_through_));
         } else if (call.method_name() == "updateLyric") {
+          result->Success(flutter::EncodableValue(true));
+        } else {
+          result->NotImplemented();
+        }
+      });
+}
+
+void FlutterWindow::SetupWindowChannel() {
+  HWND hwnd = GetHandle();
+  window_channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+      flutter_controller_->engine()->messenger(),
+      "com.kline.mellow_music/window",
+      &flutter::StandardMethodCodec::GetInstance());
+
+  window_channel_->SetMethodCallHandler(
+      [hwnd](const flutter::MethodCall<flutter::EncodableValue>& call,
+             std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
+        if (call.method_name() == "setTheme") {
+          if (const auto* args = std::get_if<flutter::EncodableMap>(call.arguments())) {
+            auto it = args->find(flutter::EncodableValue("isDark"));
+            if (it != args->end()) {
+              if (const auto* val = std::get_if<bool>(&it->second)) {
+                Win32Window::ApplyThemeMode(hwnd, *val);
+              }
+            }
+          }
           result->Success(flutter::EncodableValue(true));
         } else {
           result->NotImplemented();

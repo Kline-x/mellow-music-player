@@ -376,7 +376,7 @@ class MobileQueueBottomSheet extends StatelessWidget {
           Expanded(
             child: ListView.separated(
               itemCount: player.playlist.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
               itemBuilder: (context, idx) {
                 final t = player.playlist[idx];
                 final isCur = idx == player.currentIndex;

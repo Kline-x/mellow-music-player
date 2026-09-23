@@ -54,6 +54,10 @@ class FlutterWindow : public Win32Window {
   bool is_always_on_top_ = false;
   bool is_click_through_ = false;
   void SetupFloatingLyricChannel();
+
+  // Windows Modern Framing & Theme Channel
+  std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> window_channel_;
+  void SetupWindowChannel();
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_

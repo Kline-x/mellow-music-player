@@ -416,8 +416,8 @@ class AudioPlayerService extends ChangeNotifier {
   }
 
   void _loadLyricIfNeed(Track track) {
-    if (track.lyrics.isEmpty && track.id.startsWith('netease_')) {
-      OnlineMusicService.fetchTrackLyric(track.id).then((lyrics) {
+    if (track.lyrics.isEmpty) {
+      OnlineMusicService.fetchTrackLyric(track.id, title: track.title, artist: track.artist).then((lyrics) {
         if (lyrics.isNotEmpty) {
           final idx = _playlist.indexWhere((t) => t.id == track.id);
           if (idx != -1) {
@@ -475,8 +475,29 @@ class AudioPlayerService extends ChangeNotifier {
   Future<void> _executeRealPlay(Track track) async {
     try {
       _playbackNotice = null;
-      if (track.audioUrl != null && track.audioUrl!.isNotEmpty) {
-        await _backend.play(track.audioUrl!);
+      String? playUrl = track.audioUrl;
+
+      // 1. 如果没有有效播放流或为假/受限链接，智能解析真实高保真音源 (消灭 404)
+      if (playUrl == null ||
+          playUrl.isEmpty ||
+          playUrl.contains('soundhelix.com') ||
+          playUrl.contains('music.163.com/song/media/outer/url')) {
+        final resolved = await OnlineMusicService.resolvePlayableAudioUrl(
+          track.title,
+          track.artist,
+          defaultUrl: playUrl,
+        );
+        if (resolved != null && resolved.isNotEmpty) {
+          playUrl = resolved;
+          final idx = _playlist.indexWhere((t) => t.id == track.id);
+          if (idx != -1) {
+            _playlist[idx] = _playlist[idx].copyWith(audioUrl: playUrl);
+          }
+        }
+      }
+
+      if (playUrl != null && playUrl.isNotEmpty) {
+        await _backend.play(playUrl);
       } else if (track.localPath != null && track.localPath!.isNotEmpty) {
         await _backend.play(track.localPath!);
       } else {
@@ -488,7 +509,31 @@ class AudioPlayerService extends ChangeNotifier {
       WindowsSmtcService.instance.updateTimeline(_position, duration);
       WindowsTrayService.instance.updateTooltip(track);
     } catch (e) {
-      debugPrint('[AudioPlayerService] 真实音频播放调度异常: $e');
+      debugPrint('[AudioPlayerService] 初始音频播放失败，尝试静默换源: $e');
+      // 2. 发生网络波动或 404 限制时，启动静默 Fallback 换源重试
+      try {
+        final fallbackUrl = await OnlineMusicService.resolvePlayableAudioUrl(
+          track.title,
+          track.artist,
+          forceRefresh: true,
+        );
+        if (fallbackUrl != null && fallbackUrl.isNotEmpty) {
+          await _backend.play(fallbackUrl);
+          final idx = _playlist.indexWhere((t) => t.id == track.id);
+          if (idx != -1) {
+            _playlist[idx] = _playlist[idx].copyWith(audioUrl: fallbackUrl);
+          }
+          await _backend.setVolume(_volume);
+          WindowsSmtcService.instance.updateMetadata(track);
+          WindowsSmtcService.instance.updatePlaybackState(true);
+          WindowsSmtcService.instance.updateTimeline(_position, duration);
+          WindowsTrayService.instance.updateTooltip(track);
+          return;
+        }
+      } catch (retryErr) {
+        debugPrint('[AudioPlayerService] 换源重试亦异常: $retryErr');
+      }
+
       _playbackNotice = '歌曲「${track.title}」音频资源加载失败，可能需要专属授权或网络受限';
       notifyListeners();
     }

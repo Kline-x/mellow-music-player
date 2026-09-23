@@ -96,7 +96,7 @@ class PlaybackQueueView extends StatelessWidget {
                   )
                 : ListView.separated(
                     itemCount: player.playlist.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       final track = player.playlist[index];
                       final isCurrent = index == player.currentIndex;
@@ -683,7 +683,7 @@ class _QuickSearchOverlayState extends State<QuickSearchOverlay> {
                   : ListView.separated(
                       shrinkWrap: true,
                       itemCount: _results.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 6),
+                      separatorBuilder: (_, __) => const SizedBox(height: 6),
                       itemBuilder: (context, index) {
                         final track = _results[index];
                         final isOnline = track.source.startsWith('netease');

@@ -1,0 +1,742 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../design_system/tokens.dart';
+import '../../design_system/theme_provider.dart';
+import '../../design_system/soft_card.dart';
+import '../../design_system/soft_button.dart';
+import '../../design_system/recessed_well.dart';
+import '../../design_system/mellow_image.dart';
+import '../../core/audio/audio_player_service.dart';
+import '../../core/audio/track_model.dart';
+import '../../core/sources/online_music_service.dart';
+import '../../core/storage/storage_service.dart';
+import '../common/modals.dart';
+
+/// 桌面端独立全屏搜索主视图 (DesktopSearchView - 替代局促小弹窗)
+class DesktopSearchView extends StatefulWidget {
+  final Function(String viewId, [String? extra]) onNavigate;
+  final String? initialQuery;
+
+  const DesktopSearchView({
+    super.key,
+    required this.onNavigate,
+    this.initialQuery,
+  });
+
+  @override
+  State<DesktopSearchView> createState() => _DesktopSearchViewState();
+}
+
+class _DesktopSearchViewState extends State<DesktopSearchView> {
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+
+  String _currentQuery = '';
+  bool _isLoading = false;
+  List<Track> _searchResults = [];
+  String _activeCategory = 'songs'; // 'songs', 'playlists', 'artists'
+  List<String> _history = [];
+
+  final List<Map<String, String>> _hotSearches = [
+    {'title': '周杰伦', 'badge': 'HOT 1'},
+    {'title': '告五人', 'badge': 'HOT 2'},
+    {'title': '布拉格广场', 'badge': 'HOT 3'},
+    {'title': '陈奕迅', 'badge': '4'},
+    {'title': '林俊杰', 'badge': '5'},
+    {'title': '晴天', 'badge': '6'},
+    {'title': '海阔天空', 'badge': '7'},
+    {'title': '邓紫棋', 'badge': '8'},
+    {'title': '粤语经典', 'badge': '9'},
+    {'title': '纯音白噪', 'badge': '10'},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+    if (widget.initialQuery != null && widget.initialQuery!.trim().isNotEmpty) {
+      _searchController.text = widget.initialQuery!.trim();
+      _executeSearch(widget.initialQuery!.trim());
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _loadHistory() {
+    setState(() {
+      _history = StorageService.instance.getSearchHistory();
+    });
+  }
+
+  Future<void> _executeSearch(String query) async {
+    final cleanQuery = query.trim();
+    if (cleanQuery.isEmpty) return;
+
+    setState(() {
+      _isLoading = true;
+      _currentQuery = cleanQuery;
+    });
+
+    await StorageService.instance.addSearchHistory(cleanQuery);
+    _loadHistory();
+
+    final results = await OnlineMusicService.searchOnlineTracks(cleanQuery, limit: 40);
+
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+        _searchResults = results;
+      });
+    }
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() {
+      _currentQuery = '';
+      _searchResults.clear();
+      _isLoading = false;
+    });
+    _focusNode.requestFocus();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.watch<ThemeProvider>();
+    final player = context.watch<AudioPlayerService>();
+    final isDark = theme.isDarkMode;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
+      children: [
+        // 1. 顶部大标题与副标题
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '全网音乐搜索',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: theme.textPrimary,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '聚合主流高保真流媒体音轨 · 原声即点即播',
+                  style: TextStyle(fontSize: 13, color: theme.textMuted),
+                ),
+              ],
+            ),
+            // 分类筛选 Tab 胶囊
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
+                borderRadius: MellowRadii.borderPill,
+                border: Border.all(color: theme.borderColor.withValues(alpha: 0.5)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildCategoryTab('songs', '单曲', Icons.music_note_rounded),
+                  _buildCategoryTab('playlists', '歌单', Icons.queue_music_rounded),
+                  _buildCategoryTab('artists', '歌手', Icons.person_rounded),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // 2. 核心大输入框 (Neumorphic Soft Well)
+        RecessedWell(
+          borderRadius: MellowRadii.borderR24,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+          child: Row(
+            children: [
+              Icon(Icons.search_rounded, size: 22, color: theme.accentColor),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  focusNode: _focusNode,
+                  autofocus: widget.initialQuery == null,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: theme.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: '输入歌曲名、歌手、专辑 (例如：布拉格广场、周杰伦、海阔天空)...',
+                    hintStyle: TextStyle(fontSize: 14, color: theme.textMuted),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  onSubmitted: _executeSearch,
+                  textInputAction: TextInputAction.search,
+                ),
+              ),
+              if (_searchController.text.isNotEmpty)
+                IconButton(
+                  icon: Icon(Icons.clear_rounded, size: 18, color: theme.textMuted),
+                  splashRadius: 18,
+                  onPressed: _clearSearch,
+                ),
+              const SizedBox(width: 8),
+              SoftButton(
+                label: '搜索',
+                icon: Icons.arrow_forward_rounded,
+                isActive: true,
+                isPill: true,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                onTap: () => _executeSearch(_searchController.text),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 28),
+
+        // 3. 搜索内容区
+        if (_isLoading)
+          _buildLoadingState(theme)
+        else if (_currentQuery.isNotEmpty && _searchResults.isNotEmpty)
+          _buildResultsView(theme, player)
+        else if (_currentQuery.isNotEmpty && _searchResults.isEmpty)
+          _buildEmptyResultsView(theme)
+        else
+          _buildPreSearchView(theme),
+      ],
+    );
+  }
+
+  Widget _buildCategoryTab(String id, String label, IconData icon) {
+    final theme = context.watch<ThemeProvider>();
+    final isSelected = _activeCategory == id;
+
+    return GestureDetector(
+      onTap: () => setState(() => _activeCategory = id),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? theme.accentColor : Colors.transparent,
+          borderRadius: MellowRadii.borderPill,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: isSelected ? Colors.white : theme.textSecondary,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? Colors.white : theme.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState(ThemeProvider theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 80),
+      alignment: Alignment.center,
+      child: Column(
+        children: [
+          CircularProgressIndicator(
+            strokeWidth: 3,
+            valueColor: AlwaysStoppedAnimation<Color>(theme.accentColor),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            '正在全网跨音源检索「$_currentQuery」高保真音轨...',
+            style: TextStyle(fontSize: 14, color: theme.textSecondary, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '支持自动换源、原声流媒体解析与 LRC 动态歌词联动',
+            style: TextStyle(fontSize: 12, color: theme.textMuted),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyResultsView(ThemeProvider theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 60),
+      alignment: Alignment.center,
+      child: Column(
+        children: [
+          Icon(Icons.search_off_rounded, size: 56, color: theme.textMuted.withValues(alpha: 0.6)),
+          const SizedBox(height: 16),
+          Text(
+            '未找到与「$_currentQuery」相关的曲目',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '请检查输入拼写，或尝试使用更简短的关键词、歌手名重新检索',
+            style: TextStyle(fontSize: 13, color: theme.textMuted),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPreSearchView(ThemeProvider theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 1. 搜索历史
+        if (_history.isNotEmpty) ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.history_rounded, size: 18, color: theme.accentColor),
+                  const SizedBox(width: 8),
+                  Text(
+                    '历史搜索',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                  ),
+                ],
+              ),
+              GestureDetector(
+                onTap: () async {
+                  await StorageService.instance.clearSearchHistory();
+                  _loadHistory();
+                },
+                child: Text(
+                  '清空历史',
+                  style: TextStyle(fontSize: 12, color: theme.textMuted),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: _history.map((keyword) {
+              return SoftCard(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                borderRadius: MellowRadii.borderPill,
+                onTap: () {
+                  _searchController.text = keyword;
+                  _executeSearch(keyword);
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      keyword,
+                      style: TextStyle(fontSize: 12.5, color: theme.textPrimary),
+                    ),
+                    const SizedBox(width: 6),
+                    GestureDetector(
+                      onTap: () async {
+                        await StorageService.instance.removeSearchHistory(keyword);
+                        _loadHistory();
+                      },
+                      child: Icon(Icons.close_rounded, size: 14, color: theme.textMuted),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 32),
+        ],
+
+        // 2. 热门搜索词条
+        Row(
+          children: [
+            Icon(Icons.local_fire_department_rounded, size: 18, color: const Color(0xFFFF5252)),
+            const SizedBox(width: 8),
+            Text(
+              '热门搜索 · 流行探索',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: theme.textPrimary),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: _hotSearches.map((item) {
+            final title = item['title']!;
+            final badge = item['badge']!;
+            final isTop = badge.startsWith('HOT');
+
+            return SoftCard(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              borderRadius: MellowRadii.borderPill,
+              onTap: () {
+                _searchController.text = title;
+                _executeSearch(title);
+              },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                    margin: const EdgeInsets.only(right: 6),
+                    decoration: BoxDecoration(
+                      color: isTop ? const Color(0xFFFF5252).withValues(alpha: 0.15) : theme.borderColor.withValues(alpha: 0.3),
+                      borderRadius: MellowRadii.borderPill,
+                    ),
+                    child: Text(
+                      badge,
+                      style: TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.bold,
+                        color: isTop ? const Color(0xFFFF5252) : theme.textMuted,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    title,
+                    style: TextStyle(fontSize: 13, fontWeight: isTop ? FontWeight.w600 : FontWeight.normal, color: theme.textPrimary),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 36),
+
+        // 3. 探索专区风格卡片
+        Text(
+          '推荐分类专区',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: theme.textPrimary),
+        ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Expanded(child: _buildGenreCard(theme, '华语流行', '周杰伦、陈奕迅、孙燕姿', const [Color(0xFF6366F1), Color(0xFF8B5CF6)])),
+            const SizedBox(width: 14),
+            Expanded(child: _buildGenreCard(theme, '摇滚现场', 'Beyond、新裤子、草东', const [Color(0xFFEF4444), Color(0xFFF97316)])),
+            const SizedBox(width: 14),
+            Expanded(child: _buildGenreCard(theme, '唯美古风', '巫娜、琴筝合奏、山水静心', const [Color(0xFF10B981), Color(0xFF059669)])),
+            const SizedBox(width: 14),
+            Expanded(child: _buildGenreCard(theme, '治愈民谣', '告五人、房东的猫、赵雷', const [Color(0xFF0EA5E9), Color(0xFF3B82F6)])),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGenreCard(ThemeProvider theme, String title, String sub, List<Color> colors) {
+    return GestureDetector(
+      onTap: () {
+        _searchController.text = title;
+        _executeSearch(title);
+      },
+      child: Container(
+        height: 84,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: colors,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: MellowRadii.borderR16,
+          boxShadow: [
+            BoxShadow(
+              color: colors.first.withValues(alpha: 0.28),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              sub,
+              style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.85)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultsView(ThemeProvider theme, AudioPlayerService player) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 顶部操作栏
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Text(
+                  '搜索「$_currentQuery」',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: theme.accentColor.withValues(alpha: 0.15),
+                    borderRadius: MellowRadii.borderPill,
+                  ),
+                  child: Text(
+                    '${_searchResults.length} 首高保真单曲',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.accentColor),
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                SoftButton(
+                  label: '播放全部',
+                  icon: Icons.play_arrow_rounded,
+                  isActive: true,
+                  isPill: true,
+                  onTap: () {
+                    if (_searchResults.isNotEmpty) {
+                      player.playPlaylist(_searchResults, startIndex: 0);
+                    }
+                  },
+                ),
+                const SizedBox(width: 10),
+                SoftButton(
+                  label: '加入待播队列',
+                  icon: Icons.queue_music_rounded,
+                  isPill: true,
+                  onTap: () {
+                    for (final track in _searchResults) {
+                      if (!player.playlist.any((t) => t.id == track.id)) {
+                        player.playPlaylist([...player.playlist, track], startIndex: player.currentIndex);
+                      }
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('已将 ${_searchResults.length} 首歌曲加入播放队列'),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+
+        // 结果列表表头
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 36,
+                child: Text('#', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.textMuted)),
+              ),
+              const SizedBox(width: 56), // 封面占位
+              Expanded(
+                flex: 4,
+                child: Text('歌曲标题', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.textMuted)),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text('歌手', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.textMuted)),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text('专辑', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.textMuted)),
+              ),
+              SizedBox(
+                width: 60,
+                child: Text('时长', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.textMuted)),
+              ),
+              const SizedBox(width: 80), // 操作区占位
+            ],
+          ),
+        ),
+        const Divider(height: 1, thickness: 0.6),
+        const SizedBox(height: 8),
+
+        // 歌曲列表
+        ...List.generate(_searchResults.length, (index) {
+          final track = _searchResults[index];
+          final isPlayingCurrent = player.currentTrack?.id == track.id && player.isPlaying;
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: SoftCard(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              borderRadius: MellowRadii.borderR12,
+              onTap: () => player.playTrack(track),
+              child: Row(
+                children: [
+                  // 序号
+                  SizedBox(
+                    width: 36,
+                    child: isPlayingCurrent
+                        ? Icon(Icons.volume_up_rounded, size: 16, color: theme.accentColor)
+                        : Text(
+                            (index + 1).toString().padLeft(2, '0'),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: theme.textMuted,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                  ),
+                  // 封面大图 (带悬浮圆角)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: MellowImage(
+                      url: track.coverUrl,
+                      width: 44,
+                      height: 44,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  // 标题与音质角标
+                  Expanded(
+                    flex: 4,
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            track.title,
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
+                              color: isPlayingCurrent ? theme.accentColor : theme.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: theme.accentColor.withValues(alpha: 0.5), width: 0.8),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'SQ',
+                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: theme.accentColor),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // 歌手
+                  Expanded(
+                    flex: 3,
+                    child: Text(
+                      track.artist,
+                      style: TextStyle(fontSize: 13, color: theme.textSecondary),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  // 专辑
+                  Expanded(
+                    flex: 3,
+                    child: Text(
+                      track.album,
+                      style: TextStyle(fontSize: 12.5, color: theme.textMuted),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  // 时长
+                  SizedBox(
+                    width: 60,
+                    child: Text(
+                      '${track.duration.inMinutes.remainder(60).toString().padLeft(2, '0')}:${track.duration.inSeconds.remainder(60).toString().padLeft(2, '0')}',
+                      style: TextStyle(fontSize: 12, color: theme.textMuted),
+                    ),
+                  ),
+                  // 操作按钮群
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // 红心收藏
+                      GestureDetector(
+                        onTap: () => player.toggleFavorite(track.id, track),
+                        child: Icon(
+                          player.isFavorite(track.id) ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                          size: 18,
+                          color: player.isFavorite(track.id) ? const Color(0xFFEF4444) : theme.textMuted,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      // 添加到自建歌单
+                      GestureDetector(
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (_) => AddToPlaylistModal(track: track),
+                          );
+                        },
+                        child: Icon(Icons.playlist_add_rounded, size: 20, color: theme.textMuted),
+                      ),
+                      const SizedBox(width: 12),
+                      // 即刻播放
+                      GestureDetector(
+                        onTap: () => player.playTrack(track),
+                        child: Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            color: theme.accentColor.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            isPlayingCurrent ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                            size: 16,
+                            color: theme.accentColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+}

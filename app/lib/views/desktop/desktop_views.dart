@@ -412,10 +412,35 @@ class _DesktopPlaylistSquareViewState extends State<DesktopPlaylistSquareView> {
   }
 }
 
-/// 3. 官方巅峰榜 (ToplistView)
-class DesktopToplistView extends StatelessWidget {
+/// 3. 官方巅峰榜 (ToplistView - 接入全网实时动态榜单)
+class DesktopToplistView extends StatefulWidget {
   final Function(String viewId, [String? extra]) onNavigate;
   const DesktopToplistView({super.key, required this.onNavigate});
+
+  @override
+  State<DesktopToplistView> createState() => _DesktopToplistViewState();
+}
+
+class _DesktopToplistViewState extends State<DesktopToplistView> {
+  final Map<String, List<Track>> _liveToplists = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLiveToplists();
+  }
+
+  void _loadLiveToplists() {
+    for (final chart in ['飙升榜', '热歌榜', '新歌榜', '原创榜']) {
+      OnlineMusicService.fetchToplistTracks(chart, limit: 20).then((tracks) {
+        if (mounted && tracks.isNotEmpty) {
+          setState(() {
+            _liveToplists[chart] = tracks;
+          });
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -477,7 +502,14 @@ class DesktopToplistView extends StatelessWidget {
               isActive: true,
               isPill: true,
               onTap: () {
-                final allTracks = getAllToplistTracks();
+                final allTracks = <Track>[];
+                final ids = <String>{};
+                for (final c in ['飙升榜', '热歌榜', '新歌榜', '原创榜']) {
+                  final list = _liveToplists[c] ?? toplistTracksMap[c] ?? [];
+                  for (final t in list) {
+                    if (ids.add(t.id)) allTracks.add(t);
+                  }
+                }
                 if (allTracks.isNotEmpty) {
                   player.playPlaylist(allTracks);
                 }
@@ -501,7 +533,7 @@ class DesktopToplistView extends StatelessWidget {
             final gradientColors = c['gradient'] as List<Color>;
             final iconData = c['icon'] as IconData;
             final chartTitle = c['title'] as String;
-            final chartTracks = toplistTracksMap[chartTitle] ?? mockPresetTracks;
+            final chartTracks = _liveToplists[chartTitle] ?? toplistTracksMap[chartTitle] ?? mockPresetTracks;
 
             return SoftCard(
               padding: const EdgeInsets.all(14),

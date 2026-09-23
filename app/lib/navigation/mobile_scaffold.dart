@@ -9,7 +9,6 @@ import '../core/audio/track_model.dart';
 import '../views/mobile/mobile_tabs.dart';
 import '../views/mobile/mobile_pages.dart';
 import '../views/mobile/mobile_sheets.dart';
-import '../views/common/modals.dart';
 
 /// 移动端应用脚手架 (MobileScaffold)
 class MobileScaffold extends StatefulWidget {
@@ -68,7 +67,7 @@ class _MobileScaffoldState extends State<MobileScaffold> {
                     children: [
                       MobileDiscoverTab(
                         onNavigatePage: _navigateToPage,
-                        onOpenSearch: () => showDialog(context: context, builder: (_) => const QuickSearchOverlay()),
+                        onOpenSearch: () => _navigateToPage('search'),
                       ),
                       MobileExploreTab(onNavigatePage: _navigateToPage),
                       MobileLibraryTab(onNavigatePage: _navigateToPage),
@@ -393,6 +392,8 @@ class _MobileScaffoldState extends State<MobileScaffold> {
 
   Widget _buildSubPage() {
     switch (_subPageId) {
+      case 'search':
+        return MobileSearchPage(onBack: _popSubPage);
       case 'recommend':
         return MobileDailyRecommendPage(onBack: _popSubPage);
       case 'fm':

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'tokens.dart';
 import '../core/storage/storage_service.dart';
 
@@ -46,6 +48,16 @@ class ThemeProvider extends ChangeNotifier {
     if (savedGlow != null) {
       _glowIntensity = savedGlow.clamp(0.0, 1.0);
     }
+    _syncWindowTheme();
+  }
+
+  void _syncWindowTheme() {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
+      try {
+        const MethodChannel('com.kline.mellow_music/window')
+            .invokeMethod('setTheme', {'isDark': _isDarkMode});
+      } catch (_) {}
+    }
   }
 
   void toggleTheme() {
@@ -56,6 +68,7 @@ class ThemeProvider extends ChangeNotifier {
     if (_isDarkMode != value) {
       _isDarkMode = value;
       StorageService.instance.saveIsDarkMode(value);
+      _syncWindowTheme();
       notifyListeners();
     }
   }

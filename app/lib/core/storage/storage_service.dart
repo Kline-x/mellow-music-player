@@ -55,6 +55,27 @@ class StorageService {
   static const _keyCustomScripts = 'mellow_custom_scripts';
   static const _keyActiveSourceId = 'mellow_active_source_id';
   static const _keyPreferredQuality = 'mellow_preferred_quality';
+  static const _keySearchHistory = 'mellow_search_history';
+
+  // --- 搜索历史记录持久化 ---
+  List<String> getSearchHistory() => _prefs?.getStringList(_keySearchHistory) ?? [];
+  Future<bool> saveSearchHistory(List<String> history) async =>
+      (await _prefs?.setStringList(_keySearchHistory, history)) ?? false;
+  Future<void> addSearchHistory(String keyword) async {
+    final clean = keyword.trim();
+    if (clean.isEmpty) return;
+    final list = getSearchHistory().where((k) => k != clean).toList();
+    list.insert(0, clean);
+    if (list.length > 30) list.removeRange(30, list.length);
+    await saveSearchHistory(list);
+  }
+  Future<void> removeSearchHistory(String keyword) async {
+    final list = getSearchHistory().where((k) => k != keyword).toList();
+    await saveSearchHistory(list);
+  }
+  Future<void> clearSearchHistory() async {
+    await _prefs?.remove(_keySearchHistory);
+  }
 
   // --- 系统托盘与常驻偏好 ---
   bool getMinimizeToTray() => _prefs?.getBool(_keyMinimizeToTray) ?? true;

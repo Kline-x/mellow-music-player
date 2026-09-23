@@ -9,10 +9,10 @@ import '../design_system/recessed_well.dart';
 import '../design_system/acoustic_mesh_glow.dart';
 import '../design_system/mellow_image.dart';
 import '../core/audio/audio_player_service.dart';
-import '../core/audio/track_model.dart';
 import '../core/storage/storage_service.dart';
 import '../core/window/desktop_floating_lyric_service.dart';
 import '../views/desktop/desktop_views.dart';
+import '../views/desktop/desktop_search_view.dart';
 import '../views/desktop/fullscreen_lyrics_view.dart';
 import '../views/desktop/desktop_floating_lyric_bar.dart';
 import '../views/common/modals.dart';
@@ -148,10 +148,10 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
       const SingleActivator(LogicalKeyboardKey.space): () => player.togglePlay(),
       // 2. 全局搜索 (Ctrl+K / Cmd+K)
       const SingleActivator(LogicalKeyboardKey.keyK, control: true): () {
-        showDialog(context: context, builder: (_) => const QuickSearchOverlay());
+        _navigateTo('search');
       },
       const SingleActivator(LogicalKeyboardKey.keyK, meta: true): () {
-        showDialog(context: context, builder: (_) => const QuickSearchOverlay());
+        _navigateTo('search');
       },
       // 3. 快退 5 秒 / 快进 5 秒
       const SingleActivator(LogicalKeyboardKey.arrowLeft): () {
@@ -370,7 +370,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 380),
                     child: GestureDetector(
-                      onTap: () => showDialog(context: context, builder: (_) => const QuickSearchOverlay()),
+                      onTap: () => _navigateTo('search'),
                       child: RecessedWell(
                         height: 38,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -497,6 +497,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
         children: [
           _buildNavGroupTitle('在线音乐'),
           _buildNavItem('discover', '发现音乐', Icons.explore_rounded),
+          _buildNavItem('search', '全网搜索', Icons.search_rounded),
           _buildNavItem('playlists', '歌单广场', Icons.queue_music_rounded),
           _buildNavItem('toplist', '巅峰榜单', Icons.leaderboard_rounded),
           _buildNavItem('artists', '热门歌手', Icons.people_alt_rounded),
@@ -551,6 +552,8 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
     switch (_activeView) {
       case 'discover':
         return DesktopDiscoverView(onNavigate: _navigateTo);
+      case 'search':
+        return DesktopSearchView(onNavigate: _navigateTo);
       case 'playlists':
         return DesktopPlaylistSquareView(onNavigate: _navigateTo);
       case 'toplist':
@@ -585,7 +588,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
     final isDark = theme.isDarkMode;
-    final track = player.currentTrack ?? mockPresetTracks[0];
+    final track = player.currentTrack;
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Container(
@@ -609,33 +612,29 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
       ),
       child: Row(
         children: [
-          // 1. 左侧：正在播放曲目信息 (自适应宽度防窄视口溢出)
+          // 1. 左侧：正在播放曲目信息 (若空闲则展示优雅空状态)
           SizedBox(
             width: screenWidth < 900 ? 190 : 250,
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: GestureDetector(
-                    onTap: () => setState(() => _isFullscreenLyrics = true),
-                    child: MellowImage(
-                      url: track.coverUrl,
-                      width: 48,
-                      height: 48,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
+            child: track == null
+                ? Row(
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              track.title,
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          color: theme.accentColor.withValues(alpha: 0.1),
+                          child: Icon(Icons.music_note_rounded, size: 24, color: theme.accentColor),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '润音 · 暂无播放曲目',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -644,49 +643,93 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                                 color: theme.textPrimary,
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          GestureDetector(
-                            onTap: () => player.toggleFavorite(track.id),
-                            child: Icon(
-                              player.isFavorite(track.id)
-                                  ? Icons.favorite_rounded
-                                  : Icons.favorite_border_rounded,
-                              size: 18,
-                              color: player.isFavorite(track.id)
-                                  ? const Color(0xFFEF4444)
-                                  : theme.textMuted,
+                            const SizedBox(height: 2),
+                            Text(
+                              '点击全网搜索开启真实音乐',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 11.5, color: theme.textMuted),
                             ),
-                          ),
-                          const SizedBox(width: 6),
-                          GestureDetector(
-                            onTap: () => showDialog(
-                              context: context,
-                              builder: (_) => AddToPlaylistModal(track: track),
-                            ),
-                            child: Tooltip(
-                              message: '收录到歌单',
-                              child: Icon(
-                                Icons.playlist_add_rounded,
-                                size: 19,
-                                color: theme.textMuted,
-                              ),
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${track.artist} · ${track.album}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 11.5, color: theme.textSecondary),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: GestureDetector(
+                          onTap: () => setState(() => _isFullscreenLyrics = true),
+                          child: MellowImage(
+                            url: track.coverUrl,
+                            width: 48,
+                            height: 48,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    track.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13.5,
+                                      color: theme.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                GestureDetector(
+                                  onTap: () => player.toggleFavorite(track.id),
+                                  child: Icon(
+                                    player.isFavorite(track.id)
+                                        ? Icons.favorite_rounded
+                                        : Icons.favorite_border_rounded,
+                                    size: 18,
+                                    color: player.isFavorite(track.id)
+                                        ? const Color(0xFFEF4444)
+                                        : theme.textMuted,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                GestureDetector(
+                                  onTap: () => showDialog(
+                                    context: context,
+                                    builder: (_) => AddToPlaylistModal(track: track),
+                                  ),
+                                  child: Tooltip(
+                                    message: '收录到歌单',
+                                    child: Icon(
+                                      Icons.playlist_add_rounded,
+                                      size: 19,
+                                      color: theme.textMuted,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${track.artist} · ${track.album}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 11.5, color: theme.textSecondary),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ],
-            ),
           ),
 
           // 2. 中央：核心播放控制器与微细平滑进度条
@@ -782,23 +825,29 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                               overlayShape: const RoundSliderOverlayShape(overlayRadius: 8),
                             ),
                             child: Slider(
-                              value: (_dragPositionMs ?? player.currentPosition.inMilliseconds.toDouble())
-                                  .clamp(0.0, max(1.0, track.duration.inMilliseconds.toDouble())),
-                              max: max(1.0, track.duration.inMilliseconds.toDouble()),
-                              onChanged: (val) {
-                                setState(() => _dragPositionMs = val);
-                              },
-                              onChangeEnd: (val) {
-                                player.seek(Duration(milliseconds: val.toInt()));
-                                setState(() => _dragPositionMs = null);
-                              },
+                              value: track == null
+                                  ? 0.0
+                                  : (_dragPositionMs ?? player.currentPosition.inMilliseconds.toDouble())
+                                      .clamp(0.0, max(1.0, track.duration.inMilliseconds.toDouble())),
+                              max: max(1.0, track?.duration.inMilliseconds.toDouble() ?? 1.0),
+                              onChanged: track == null
+                                  ? null
+                                  : (val) {
+                                      setState(() => _dragPositionMs = val);
+                                    },
+                              onChangeEnd: track == null
+                                  ? null
+                                  : (val) {
+                                      player.seek(Duration(milliseconds: val.toInt()));
+                                      setState(() => _dragPositionMs = null);
+                                    },
                             ),
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        track.formattedDuration,
+                        track?.formattedDuration ?? '00:00',
                         style: TextStyle(fontSize: 10.5, color: theme.textMuted, fontFeatures: const [FontFeature.tabularFigures()]),
                       ),
                     ],

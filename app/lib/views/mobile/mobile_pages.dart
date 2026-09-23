@@ -9,6 +9,8 @@ import '../../design_system/recessed_well.dart';
 import '../../design_system/mellow_image.dart';
 import '../../core/audio/audio_player_service.dart';
 import '../../core/audio/track_model.dart';
+import '../../core/sources/online_music_service.dart';
+import '../../core/storage/storage_service.dart';
 
 /// 1. 每日推荐二级页面 (拟物日历便签头 + 6 首日推曲目)
 class MobileDailyRecommendPage extends StatelessWidget {
@@ -329,7 +331,7 @@ class MobileToplistPage extends StatelessWidget {
       body: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
         itemCount: charts.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
         itemBuilder: (context, idx) {
           final chartName = charts[idx];
           final chartTracks = toplistTracksMap[chartName] ?? mockPresetTracks;
@@ -394,7 +396,7 @@ class MobileRadioPage extends StatelessWidget {
       body: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
         itemCount: radios.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
         itemBuilder: (context, idx) {
           final r = radios[idx];
           return SoftCard(
@@ -454,7 +456,7 @@ class MobileArtistsPage extends StatelessWidget {
       body: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
         itemCount: artists.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 10),
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
         itemBuilder: (context, idx) {
           final a = artists[idx];
           return SoftCard(
@@ -711,3 +713,271 @@ class MobileLocalMusicPage extends StatelessWidget {
     );
   }
 }
+
+/// 9. 移动端独立全屏搜索页面 (MobileSearchPage)
+class MobileSearchPage extends StatefulWidget {
+  final VoidCallback onBack;
+  const MobileSearchPage({super.key, required this.onBack});
+
+  @override
+  State<MobileSearchPage> createState() => _MobileSearchPageState();
+}
+
+class _MobileSearchPageState extends State<MobileSearchPage> {
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+  String _currentQuery = '';
+  bool _isLoading = false;
+  List<Track> _searchResults = [];
+  List<String> _history = [];
+
+  final List<String> _hotSearches = [
+    '周杰伦', '告五人', '布拉格广场', '陈奕迅', '林俊杰', '晴天', '海阔天空', '邓紫棋', '粤语经典'
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _loadHistory() {
+    setState(() {
+      _history = StorageService.instance.getSearchHistory();
+    });
+  }
+
+  Future<void> _executeSearch(String query) async {
+    final clean = query.trim();
+    if (clean.isEmpty) return;
+
+    setState(() {
+      _isLoading = true;
+      _currentQuery = clean;
+    });
+
+    await StorageService.instance.addSearchHistory(clean);
+    _loadHistory();
+
+    final results = await OnlineMusicService.searchOnlineTracks(clean, limit: 30);
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+        _searchResults = results;
+      });
+    }
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() {
+      _currentQuery = '';
+      _searchResults.clear();
+      _isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.watch<ThemeProvider>();
+    final player = context.watch<AudioPlayerService>();
+
+    return Scaffold(
+      backgroundColor: theme.canvasColor,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.textPrimary, size: 20),
+          onPressed: widget.onBack,
+        ),
+        title: RecessedWell(
+          height: 40,
+          borderRadius: MellowRadii.borderPill,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            children: [
+              Icon(Icons.search_rounded, size: 18, color: theme.accentColor),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  focusNode: _focusNode,
+                  autofocus: true,
+                  style: TextStyle(fontSize: 14, color: theme.textPrimary),
+                  decoration: InputDecoration(
+                    hintText: '搜索歌曲、歌手 (如布拉格广场)...',
+                    hintStyle: TextStyle(fontSize: 12.5, color: theme.textMuted),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                  onSubmitted: _executeSearch,
+                  textInputAction: TextInputAction.search,
+                ),
+              ),
+              if (_searchController.text.isNotEmpty)
+                GestureDetector(
+                  onTap: _clearSearch,
+                  child: Icon(Icons.close_rounded, size: 16, color: theme.textMuted),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: TextButton(
+              onPressed: () => _executeSearch(_searchController.text),
+              child: Text('搜索', style: TextStyle(color: theme.accentColor, fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
+      ),
+      body: _isLoading
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(strokeWidth: 3, valueColor: AlwaysStoppedAnimation<Color>(theme.accentColor)),
+                  const SizedBox(height: 16),
+                  Text('正在检索全网高保真音频...', style: TextStyle(fontSize: 13, color: theme.textMuted)),
+                ],
+              ),
+            )
+          : _currentQuery.isNotEmpty && _searchResults.isNotEmpty
+              ? ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('共找到 ${_searchResults.length} 首单曲', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                        GestureDetector(
+                          onTap: () => player.playPlaylist(_searchResults, startIndex: 0),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: theme.accentColor.withValues(alpha: 0.12),
+                              borderRadius: MellowRadii.borderPill,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.play_arrow_rounded, size: 16, color: theme.accentColor),
+                                const SizedBox(width: 4),
+                                Text('播放全部', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.accentColor)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    ..._searchResults.map((t) {
+                      final isCurrent = player.currentTrack?.id == t.id && player.isPlaying;
+                      return SoftCard(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(10),
+                        onTap: () => player.playTrack(t),
+                        child: Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: MellowImage(url: t.coverUrl, width: 44, height: 44),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    t.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13.5,
+                                      color: isCurrent ? theme.accentColor : theme.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text('${t.artist} · ${t.album}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: theme.textMuted)),
+                                ],
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () => player.toggleFavorite(t.id, t),
+                              child: Icon(
+                                player.isFavorite(t.id) ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                                color: player.isFavorite(t.id) ? const Color(0xFFEF4444) : theme.textMuted,
+                                size: 20,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                )
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                  children: [
+                    if (_history.isNotEmpty) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('历史搜索', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                          GestureDetector(
+                            onTap: () async {
+                              await StorageService.instance.clearSearchHistory();
+                              _loadHistory();
+                            },
+                            child: Text('清空', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _history.map((h) => SoftCard(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          borderRadius: MellowRadii.borderPill,
+                          onTap: () {
+                            _searchController.text = h;
+                            _executeSearch(h);
+                          },
+                          child: Text(h, style: TextStyle(fontSize: 12, color: theme.textPrimary)),
+                        )).toList(),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                    Text('全网热门搜索', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _hotSearches.map((h) => SoftCard(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        borderRadius: MellowRadii.borderPill,
+                        onTap: () {
+                          _searchController.text = h;
+                          _executeSearch(h);
+                        },
+                        child: Text(h, style: TextStyle(fontSize: 12, color: theme.textPrimary)),
+                      )).toList(),
+                    ),
+                  ],
+                ),
+    );
+  }
+}
+

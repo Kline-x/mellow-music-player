@@ -90,6 +90,12 @@ class Win32Window {
   // Update the window frame's theme to match the system theme.
   static void UpdateTheme(HWND const window);
 
+ public:
+  // Dynamically update DWM titlebar & border colors to match light or dark mode.
+  static void ApplyThemeMode(HWND const window, bool is_dark);
+
+ private:
+
   bool quit_on_close_ = false;
 
   // window handle for top level window.
