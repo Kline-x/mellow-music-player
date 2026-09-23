@@ -81,6 +81,10 @@ class WebDavConfig {
         isAutoSyncEnabled: json['isAutoSyncEnabled'] as bool? ?? false,
       );
 
+  /// 是否已配置基本端点与账号
+  bool get isConfigured =>
+      serverUrl.trim().isNotEmpty && username.trim().isNotEmpty;
+
   /// 组合生成完整的目标备份文件 URL
   Uri get fullBackupUri {
     var base = serverUrl.trim();
@@ -131,6 +135,9 @@ class WebDavSyncResult {
   final DateTime? syncedAt;
   final int? statusCode;
 
+  SyncSnapshot? get data => snapshot;
+  String? get error => isSuccess ? null : message;
+
   const WebDavSyncResult({
     required this.isSuccess,
     required this.message,
@@ -158,6 +165,44 @@ class WebDavSyncResult {
 
 /// WebDAV 云端备份与双向同步服务
 class WebDavSyncService extends ChangeNotifier {
+  /// 便捷静态上传快照方法
+  static Future<WebDavSyncResult> uploadSnapshotDirect(
+    WebDavConfig config,
+    SyncSnapshot snapshot, {
+    http.Client? client,
+  }) async {
+    final service = WebDavSyncService(config: config, client: client);
+    try {
+      return await service.uploadSnapshot(snapshot);
+    } finally {
+      if (client == null) {
+        service.dispose();
+      }
+    }
+  }
+
+  /// 便捷静态拉取快照方法
+  static Future<WebDavSyncResult> downloadSnapshotDirect(
+    WebDavConfig config, {
+    http.Client? client,
+  }) async {
+    final service = WebDavSyncService(config: config, client: client);
+    try {
+      final snapshot = await service.downloadSnapshot();
+      if (snapshot != null) {
+        return WebDavSyncResult.success(snapshot);
+      } else if (service.errorMessage != null) {
+        return WebDavSyncResult.failed(service.errorMessage!);
+      } else {
+        return WebDavSyncResult.failed('云端暂无备份快照或已被清理');
+      }
+    } finally {
+      if (client == null) {
+        service.dispose();
+      }
+    }
+  }
+
   final http.Client _client;
   final bool _isCustomClient;
 

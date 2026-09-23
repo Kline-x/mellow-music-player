@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../audio/track_model.dart';
 import '../sources/online_music_service.dart';
+import '../sync/webdav_sync_service.dart';
 
 /// 本地轻量化 KV 数据落盘持久化服务 (基于 SharedPreferences)
 class StorageService {
@@ -43,11 +44,46 @@ class StorageService {
   static const _keyLocalTracks = 'mellow_audio_local_tracks';
   static const _keyLocalDirectories = 'mellow_audio_local_directories';
   static const _keyMinimizeToTray = 'mellow_minimize_to_tray';
+  static const _keyEqualizerGains = 'mellow_equalizer_gains';
+  static const _keyEqualizerPreset = 'mellow_equalizer_preset';
+  static const _keyEqualizerEnabled = 'mellow_equalizer_enabled';
+  static const _keyWebDavConfig = 'mellow_webdav_config';
 
   // --- 系统托盘与常驻偏好 ---
   bool getMinimizeToTray() => _prefs?.getBool(_keyMinimizeToTray) ?? true;
   Future<bool> saveMinimizeToTray(bool value) async =>
       (await _prefs?.setBool(_keyMinimizeToTray, value)) ?? false;
+
+  // --- 均衡器 EQ 偏好 ---
+  List<double>? getEqualizerGains() {
+    final raw = _prefs?.getStringList(_keyEqualizerGains);
+    if (raw == null) return null;
+    return raw.map((s) => double.tryParse(s) ?? 0.0).toList();
+  }
+  Future<bool> saveEqualizerGains(List<double> gains) async {
+    final list = gains.map((g) => g.toStringAsFixed(1)).toList();
+    return (await _prefs?.setStringList(_keyEqualizerGains, list)) ?? false;
+  }
+  String? getEqualizerPreset() => _prefs?.getString(_keyEqualizerPreset);
+  Future<bool> saveEqualizerPreset(String preset) async =>
+      (await _prefs?.setString(_keyEqualizerPreset, preset)) ?? false;
+  bool getEqualizerEnabled() => _prefs?.getBool(_keyEqualizerEnabled) ?? true;
+  Future<bool> saveEqualizerEnabled(bool enabled) async =>
+      (await _prefs?.setBool(_keyEqualizerEnabled, enabled)) ?? false;
+
+  // --- WebDAV 配置 ---
+  WebDavConfig? getWebDavConfig() {
+    final raw = _prefs?.getString(_keyWebDavConfig);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      return WebDavConfig.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) {
+      return null;
+    }
+  }
+  Future<bool> saveWebDavConfig(WebDavConfig config) async {
+    return (await _prefs?.setString(_keyWebDavConfig, jsonEncode(config.toJson()))) ?? false;
+  }
 
   // --- 本地扫描曲库与目录偏好 ---
 

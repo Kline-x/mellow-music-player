@@ -2,6 +2,9 @@ import 'dart:convert';
 import 'dart:math';
 import '../audio/track_model.dart';
 import '../audio/equalizer_manager.dart';
+import '../audio/audio_player_service.dart';
+import '../sources/online_music_service.dart';
+import '../storage/storage_service.dart';
 
 /// 可同步的歌曲元数据简要快照
 class SyncTrack {
@@ -583,5 +586,126 @@ class SyncSnapshot {
       playbackState: mergedPlayback,
       extra: {...extra, ...other.extra},
     );
+  }
+
+  /// 从当前应用运行状态采集生成完整快照
+  static SyncSnapshot createFromAppState({
+    required AudioPlayerService player,
+    required EqualizerManager eqManager,
+    String? deviceId,
+    String? deviceName,
+  }) {
+    final now = DateTime.now();
+
+    // 1. 收藏列表
+    final favItems = player.favoriteTracks.map((t) {
+      return SyncFavoriteItem(
+        track: SyncTrack.fromTrack(t),
+        updatedAt: now,
+      );
+    }).toList();
+
+    // 2. 自建与导入歌单
+    final List<SyncPlaylist> playlistItems = player.importedPlaylists.map<SyncPlaylist>((p) {
+      return SyncPlaylist(
+        id: p.id,
+        name: p.title,
+        description: p.description,
+        coverUrl: p.coverUrl,
+        songs: p.tracks.map((t) => SyncTrack.fromTrack(t)).toList(),
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(
+            p.createdAt > 0 ? p.createdAt : now.millisecondsSinceEpoch),
+      );
+    }).toList();
+
+    // 3. 播放历史
+    final historyItems = player.playHistory.map((t) {
+      return SyncHistoryItem(
+        track: SyncTrack.fromTrack(t),
+        playedAt: now,
+      );
+    }).toList();
+
+    // 4. EQ 均衡器配置
+    final eqConfig = SyncEqualizerConfig.fromManager(eqManager);
+
+    // 5. 播放状态
+    final curTrack = player.currentTrack;
+    final playback = SyncPlaybackState(
+      currentTrackId: curTrack?.id,
+      positionMs: player.currentPosition.inMilliseconds,
+      durationMs: player.duration.inMilliseconds,
+      isPlaying: player.isPlaying,
+      playbackMode: player.playbackMode.name,
+      volume: player.volume,
+      updatedAt: now,
+    );
+
+    return SyncSnapshot(
+      version: '1.0.0',
+      deviceId: deviceId ?? 'mellow-client-${Random().nextInt(99999)}',
+      deviceName: deviceName ?? 'Mellow Desktop',
+      timestamp: now,
+      favorites: favItems,
+      playlists: playlistItems,
+      history: historyItems,
+      equalizer: eqConfig,
+      playbackState: playback,
+    );
+  }
+
+  /// 将合并后的数据快照真正应用回灌入应用底层与持久化存储
+  static Future<void> applyToAppState(
+    SyncSnapshot snapshot, {
+    required AudioPlayerService player,
+    required EqualizerManager eqManager,
+  }) async {
+    final storage = StorageService.instance;
+
+    // 1. 还原收藏
+    final favTracks = snapshot.favorites
+        .where((f) => !f.isRemoved)
+        .map((f) => f.track.toTrack(isFavorite: true))
+        .toList();
+    final favIds = favTracks.map((t) => t.id).toSet();
+    await storage.saveFavoriteTracks(favTracks);
+    await storage.saveFavoriteIds(favIds);
+
+    // 2. 还原歌单
+    final playlists = snapshot.playlists.map((sp) {
+      return ImportedPlaylist(
+        id: sp.id,
+        title: sp.name,
+        coverUrl: sp.coverUrl,
+        description: sp.description,
+        trackCount: sp.songs.length,
+        tracks: sp.songs.map((t) => t.toTrack()).toList(),
+        isCustom: true,
+        createdAt: sp.updatedAt.millisecondsSinceEpoch,
+      );
+    }).toList();
+    await storage.saveImportedPlaylists(playlists);
+
+    // 3. 还原播放历史
+    final historyTracks = snapshot.history.map((h) => h.track.toTrack()).toList();
+    await storage.savePlayHistory(historyTracks);
+
+    // 4. 还原 EQ
+    if (snapshot.equalizer.isEnabled != eqManager.isEnabled) {
+      eqManager.toggleEnabled();
+    }
+    final matchedPreset = EqualizerPreset.values
+        .where((p) => p.name == snapshot.equalizer.presetName)
+        .firstOrNull;
+    if (matchedPreset != null && matchedPreset != EqualizerPreset.custom) {
+      eqManager.applyPreset(matchedPreset);
+    } else {
+      for (int i = 0; i < snapshot.equalizer.bandGains.length && i < 10; i++) {
+        eqManager.setBandGain(i, snapshot.equalizer.bandGains[i]);
+      }
+    }
+
+    // 5. 触发 AudioPlayerService 全量热刷新
+    player.reloadFromStorage();
   }
 }

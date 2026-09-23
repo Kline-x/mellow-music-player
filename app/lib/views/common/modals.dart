@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../design_system/tokens.dart';
 import '../../design_system/theme_provider.dart';
@@ -11,6 +13,9 @@ import '../../core/audio/audio_player_service.dart';
 import '../../core/audio/equalizer_manager.dart';
 import '../../core/audio/track_model.dart';
 import '../../core/sources/online_music_service.dart';
+import '../../core/storage/storage_service.dart';
+import '../../core/sync/sync_data_model.dart';
+import '../../core/sync/webdav_sync_service.dart';
 
 /// 1. 播放队列抽屉 (Queue Drawer / Sheet)
 class PlaybackQueueView extends StatelessWidget {
@@ -1502,4 +1507,621 @@ class _AddToPlaylistModalState extends State<AddToPlaylistModal> {
     );
   }
 }
+
+/// 8. WebDAV 云端服务器配置对话框 (WebDavConfigModal)
+class WebDavConfigModal extends StatefulWidget {
+  final Function(WebDavConfig savedConfig)? onSave;
+  final VoidCallback? onSaved;
+  final WebDavConfig? initialConfig;
+  const WebDavConfigModal({
+    super.key,
+    this.onSave,
+    this.onSaved,
+    this.initialConfig,
+  });
+
+  @override
+  State<WebDavConfigModal> createState() => _WebDavConfigModalState();
+}
+
+class _WebDavConfigModalState extends State<WebDavConfigModal> {
+  late TextEditingController _serverCtrl;
+  late TextEditingController _userCtrl;
+  late TextEditingController _passCtrl;
+  late TextEditingController _dirCtrl;
+  bool _isTesting = false;
+  String? _testMessage;
+  bool? _testSuccess;
+  bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    final saved = widget.initialConfig ?? StorageService.instance.getWebDavConfig();
+    _serverCtrl = TextEditingController(text: saved?.serverUrl ?? 'https://dav.jianguoyun.com/dav/');
+    _userCtrl = TextEditingController(text: saved?.username ?? '');
+    _passCtrl = TextEditingController(text: saved?.password ?? '');
+    _dirCtrl = TextEditingController(text: saved?.remoteDirectory ?? '/mellow_music/');
+  }
+
+  @override
+  void dispose() {
+    _serverCtrl.dispose();
+    _userCtrl.dispose();
+    _passCtrl.dispose();
+    _dirCtrl.dispose();
+    super.dispose();
+  }
+
+  WebDavConfig _buildConfig() {
+    return WebDavConfig(
+      serverUrl: _serverCtrl.text.trim(),
+      username: _userCtrl.text.trim(),
+      password: _passCtrl.text.trim(),
+      remoteDirectory: _dirCtrl.text.trim().isEmpty ? '/mellow_music/' : _dirCtrl.text.trim(),
+    );
+  }
+
+  Future<void> _testConnection() async {
+    final config = _buildConfig();
+    if (config.serverUrl.isEmpty || config.username.isEmpty || config.password.isEmpty) {
+      setState(() {
+        _testSuccess = false;
+        _testMessage = '请完整填写服务器地址、账号和密码/授权码';
+      });
+      return;
+    }
+
+    setState(() {
+      _isTesting = true;
+      _testMessage = '正在测试连接与鉴权...';
+      _testSuccess = null;
+    });
+
+    final service = WebDavSyncService(config: config);
+    final ok = await service.testConnection();
+
+    setState(() {
+      _isTesting = false;
+      _testSuccess = ok;
+      _testMessage = ok ? 'WebDAV 服务器连接成功，授权有效！' : (service.errorMessage ?? '连接失败，请检查地址或密码');
+    });
+  }
+
+  Future<void> _saveConfig() async {
+    final config = _buildConfig();
+    await StorageService.instance.saveWebDavConfig(config);
+    widget.onSave?.call(config);
+    widget.onSaved?.call();
+    if (mounted) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('WebDAV 云端服务器配置已保存！')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.watch<ThemeProvider>();
+    final isDark = theme.isDarkMode;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: SoftCard(
+          padding: const EdgeInsets.all(24),
+          borderRadius: MellowRadii.borderR24,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: theme.accentColor.withValues(alpha: 0.15),
+                            borderRadius: MellowRadii.borderR12,
+                          ),
+                          child: Icon(Icons.cloud_sync_rounded, color: theme.accentColor, size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('配置 WebDAV 私有云盘', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                            Text('跨设备热备与多端同步', style: TextStyle(fontSize: 11.5, color: theme.textMuted)),
+                          ],
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close_rounded, color: theme.textMuted),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+
+                // 快捷填充芯片
+                Row(
+                  children: [
+                    Text('推荐服务商: ', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _serverCtrl.text = 'https://dav.jianguoyun.com/dav/';
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: theme.accentColor.withValues(alpha: 0.12),
+                          borderRadius: MellowRadii.borderPill,
+                        ),
+                        child: Text('坚果云 WebDAV', style: TextStyle(fontSize: 11, color: theme.accentColor, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _serverCtrl.text = 'https://your-nextcloud.com/remote.php/dav/files/user/';
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+                          borderRadius: MellowRadii.borderPill,
+                        ),
+                        child: Text('Nextcloud / 自建', style: TextStyle(fontSize: 11, color: theme.textSecondary)),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                Text('服务器端点 URL', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: theme.textSecondary)),
+                const SizedBox(height: 6),
+                RecessedWell(
+                  height: 42,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  borderRadius: MellowRadii.borderR12,
+                  child: TextField(
+                    controller: _serverCtrl,
+                    style: TextStyle(color: theme.textPrimary, fontSize: 13),
+                    decoration: const InputDecoration(border: InputBorder.none, isDense: true, hintText: 'https://dav.jianguoyun.com/dav/'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                Text('账号 / 邮箱', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: theme.textSecondary)),
+                const SizedBox(height: 6),
+                RecessedWell(
+                  height: 42,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  borderRadius: MellowRadii.borderR12,
+                  child: TextField(
+                    controller: _userCtrl,
+                    style: TextStyle(color: theme.textPrimary, fontSize: 13),
+                    decoration: const InputDecoration(border: InputBorder.none, isDense: true, hintText: 'username@example.com'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                Text('应用密码 / Token', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: theme.textSecondary)),
+                const SizedBox(height: 6),
+                RecessedWell(
+                  height: 42,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  borderRadius: MellowRadii.borderR12,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _passCtrl,
+                          obscureText: _obscurePassword,
+                          style: TextStyle(color: theme.textPrimary, fontSize: 13),
+                          decoration: const InputDecoration(border: InputBorder.none, isDense: true, hintText: '第三方应用授权密码'),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(_obscurePassword ? Icons.visibility_off_rounded : Icons.visibility_rounded, size: 18, color: theme.textMuted),
+                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                Text('备份子目录 (选填)', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: theme.textSecondary)),
+                const SizedBox(height: 6),
+                RecessedWell(
+                  height: 42,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  borderRadius: MellowRadii.borderR12,
+                  child: TextField(
+                    controller: _dirCtrl,
+                    style: TextStyle(color: theme.textPrimary, fontSize: 13),
+                    decoration: const InputDecoration(border: InputBorder.none, isDense: true, hintText: '/mellow_music/'),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // 测试状态反馈
+                if (_testMessage != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: (_testSuccess == true
+                              ? const Color(0xFF10B981)
+                              : (_testSuccess == false ? const Color(0xFFEF4444) : theme.accentColor))
+                          .withValues(alpha: 0.12),
+                      borderRadius: MellowRadii.borderR8,
+                    ),
+                    child: Row(
+                      children: [
+                        if (_isTesting)
+                          SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: theme.accentColor))
+                        else
+                          Icon(
+                            _testSuccess == true ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+                            size: 16,
+                            color: _testSuccess == true ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                          ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _testMessage!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: _testSuccess == true
+                                  ? const Color(0xFF10B981)
+                                  : (_testSuccess == false ? const Color(0xFFEF4444) : theme.accentColor),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    SoftButton(
+                      label: _isTesting ? '正在测试...' : '测试连接',
+                      icon: Icons.network_check_rounded,
+                      onTap: _isTesting ? null : _testConnection,
+                    ),
+                    Row(
+                      children: [
+                        SoftButton(
+                          label: '取消',
+                          onTap: () => Navigator.of(context).pop(),
+                        ),
+                        const SizedBox(width: 10),
+                        SoftButton(
+                          label: '保存配置',
+                          icon: Icons.save_rounded,
+                          isActive: true,
+                          onTap: _saveConfig,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 9. 离线快照导出对话框 (ExportSnapshotModal)
+class ExportSnapshotModal extends StatelessWidget {
+  const ExportSnapshotModal({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.watch<ThemeProvider>();
+    final player = context.watch<AudioPlayerService>();
+    final eq = context.watch<EqualizerManager>();
+
+    final snapshot = SyncSnapshot.createFromAppState(player: player, eqManager: eq);
+    final jsonStr = JsonEncoder.withIndent('  ').convert(snapshot.toJson());
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520, maxHeight: 560),
+        child: SoftCard(
+          padding: const EdgeInsets.all(24),
+          borderRadius: MellowRadii.borderR24,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: theme.accentColor.withValues(alpha: 0.15),
+                          borderRadius: MellowRadii.borderR12,
+                        ),
+                        child: Icon(Icons.file_upload_outlined, color: theme.accentColor, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('导出离线曲库快照', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                          Text('跨设备冷备份与零网络迁移', style: TextStyle(fontSize: 11.5, color: theme.textMuted)),
+                        ],
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, color: theme.textMuted),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // 数据摘要胶囊
+              Row(
+                children: [
+                  _buildSummaryBadge('收藏 ${snapshot.favorites.length} 首', theme),
+                  const SizedBox(width: 8),
+                  _buildSummaryBadge('歌单 ${snapshot.playlists.length} 个', theme),
+                  const SizedBox(width: 8),
+                  _buildSummaryBadge('足迹 ${snapshot.history.length} 条', theme),
+                  const SizedBox(width: 8),
+                  _buildSummaryBadge('EQ ${snapshot.equalizer.presetName}', theme),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              Expanded(
+                child: RecessedWell(
+                  padding: const EdgeInsets.all(12),
+                  borderRadius: MellowRadii.borderR12,
+                  child: SingleChildScrollView(
+                    child: SelectableText(
+                      jsonStr,
+                      style: TextStyle(fontFamily: 'monospace', fontSize: 11, color: theme.textSecondary),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  SoftButton(
+                    label: '关闭',
+                    onTap: () => Navigator.of(context).pop(),
+                  ),
+                  const SizedBox(width: 10),
+                  SoftButton(
+                    label: '一键复制快照 JSON',
+                    icon: Icons.copy_rounded,
+                    isActive: true,
+                    onTap: () async {
+                      await Clipboard.setData(ClipboardData(text: jsonStr));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('曲库快照 JSON 已复制到剪贴板！可发送至新设备直接导入。')),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryBadge(String label, ThemeProvider theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: theme.accentColor.withValues(alpha: 0.12),
+        borderRadius: MellowRadii.borderPill,
+      ),
+      child: Text(label, style: TextStyle(fontSize: 11, color: theme.accentColor, fontWeight: FontWeight.bold)),
+    );
+  }
+}
+
+/// 10. 离线快照导入对话框 (ImportSnapshotModal)
+class ImportSnapshotModal extends StatefulWidget {
+  final VoidCallback? onImported;
+  const ImportSnapshotModal({super.key, this.onImported});
+
+  @override
+  State<ImportSnapshotModal> createState() => _ImportSnapshotModalState();
+}
+
+class _ImportSnapshotModalState extends State<ImportSnapshotModal> {
+  final _ctrl = TextEditingController();
+  bool _isLoading = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleImport() async {
+    final text = _ctrl.text.trim();
+    if (text.isEmpty) {
+      setState(() => _error = '请粘贴有效的快照 JSON 内容');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final snapshot = SyncSnapshot.fromRawJson(text);
+      final player = context.read<AudioPlayerService>();
+      final eq = context.read<EqualizerManager>();
+
+      // 生成本地快照并执行 LWW 智能合并
+      final localSnapshot = SyncSnapshot.createFromAppState(player: player, eqManager: eq);
+      final merged = localSnapshot.merge(snapshot);
+
+      // 回灌进应用
+      await SyncSnapshot.applyToAppState(merged, player: player, eqManager: eq);
+
+      widget.onImported?.call();
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('成功合并导入 ${snapshot.favorites.length} 首收藏、${snapshot.playlists.length} 个歌单！'),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _error = '快照解析失败，请确保格式正确: $e';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.watch<ThemeProvider>();
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480, maxHeight: 520),
+        child: SoftCard(
+          padding: const EdgeInsets.all(24),
+          borderRadius: MellowRadii.borderR24,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: theme.accentColor.withValues(alpha: 0.15),
+                          borderRadius: MellowRadii.borderR12,
+                        ),
+                        child: Icon(Icons.file_download_outlined, color: theme.accentColor, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('导入离线曲库快照', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                          Text('智能时间戳冲突合并 (LWW)', style: TextStyle(fontSize: 11.5, color: theme.textMuted)),
+                        ],
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, color: theme.textMuted),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              Text('请在下方粘贴导出的快照 JSON 数据：', style: TextStyle(fontSize: 12.5, color: theme.textSecondary)),
+              const SizedBox(height: 8),
+
+              Expanded(
+                child: RecessedWell(
+                  padding: const EdgeInsets.all(12),
+                  borderRadius: MellowRadii.borderR12,
+                  child: TextField(
+                    controller: _ctrl,
+                    maxLines: null,
+                    expands: true,
+                    style: TextStyle(fontFamily: 'monospace', fontSize: 12, color: theme.textPrimary),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      hintText: '{\n  "version": "1.0.0",\n  "favorites": [...]\n}',
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              if (_error != null) ...[
+                Text(_error!, style: const TextStyle(color: Color(0xFFEF4444), fontSize: 12)),
+                const SizedBox(height: 10),
+              ],
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  SoftButton(
+                    label: '从剪贴板粘贴',
+                    icon: Icons.paste_rounded,
+                    onTap: () async {
+                      final data = await Clipboard.getData('text/plain');
+                      if (data?.text != null) {
+                        setState(() => _ctrl.text = data!.text!);
+                      }
+                    },
+                  ),
+                  Row(
+                    children: [
+                      SoftButton(
+                        label: '取消',
+                        onTap: () => Navigator.of(context).pop(),
+                      ),
+                      const SizedBox(width: 10),
+                      SoftButton(
+                        label: _isLoading ? '解析中...' : '解析并合并',
+                        icon: Icons.merge_type_rounded,
+                        isActive: true,
+                        onTap: _isLoading ? null : _handleImport,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 

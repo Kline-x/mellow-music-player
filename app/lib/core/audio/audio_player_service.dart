@@ -223,6 +223,12 @@ class AudioPlayerService extends ChangeNotifier {
     }
   }
 
+  /// 从本地持久化重新载入（在多端云同步或离线快照合并后热刷新）
+  void reloadFromStorage() {
+    _loadFromStorage();
+    notifyListeners();
+  }
+
   void _initAudioListeners() {
     _positionSub = _backend.onPositionChanged.listen((p) {
       _position = p;

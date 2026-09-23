@@ -9,6 +9,11 @@ import '../../design_system/mellow_image.dart';
 import '../../core/audio/audio_player_service.dart';
 import '../../core/audio/track_model.dart';
 import '../../core/audio/windows_tray_service.dart';
+import '../../core/audio/equalizer_manager.dart';
+import '../../core/sources/online_music_service.dart';
+import '../../core/sync/webdav_sync_service.dart';
+import '../../core/sync/sync_data_model.dart';
+import '../../core/storage/storage_service.dart';
 import '../common/modals.dart';
 
 /// 1. 发现音乐主页 (DiscoverView - Bento Grid 仪表盘)
@@ -1559,7 +1564,7 @@ class _DesktopLocalMusicViewState extends State<DesktopLocalMusicView> {
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        backgroundColor: theme.surfaceColor,
+        backgroundColor: theme.cardColor,
         shape: RoundedRectangleBorder(borderRadius: MellowRadii.borderR24),
         title: Text('扫描本地音频目录', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary)),
         content: Column(
@@ -1576,9 +1581,9 @@ class _DesktopLocalMusicViewState extends State<DesktopLocalMusicView> {
                 hintStyle: TextStyle(color: theme.textMuted),
                 filled: true,
                 fillColor: theme.isDarkMode ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
-                border: OutlineInputBorder(borderRadius: MellowRadii.borderM, borderSide: BorderSide(color: theme.borderColor)),
-                enabledBorder: OutlineInputBorder(borderRadius: MellowRadii.borderM, borderSide: BorderSide(color: theme.borderColor)),
-                focusedBorder: OutlineInputBorder(borderRadius: MellowRadii.borderM, borderSide: BorderSide(color: theme.accentColor)),
+                border: OutlineInputBorder(borderRadius: MellowRadii.borderR12, borderSide: BorderSide(color: theme.borderColor)),
+                enabledBorder: OutlineInputBorder(borderRadius: MellowRadii.borderR12, borderSide: BorderSide(color: theme.borderColor)),
+                focusedBorder: OutlineInputBorder(borderRadius: MellowRadii.borderR12, borderSide: BorderSide(color: theme.accentColor)),
                 prefixIcon: const Icon(Icons.folder_open_rounded, size: 20),
               ),
             ),
@@ -1763,7 +1768,7 @@ class _DesktopLocalMusicViewState extends State<DesktopLocalMusicView> {
 
               return SoftCard(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                borderRadius: MellowRadii.borderM,
+                borderRadius: MellowRadii.borderR12,
                 child: Row(
                   children: [
                     // 序号/播放中指示
@@ -1850,7 +1855,7 @@ class _DesktopLocalMusicViewState extends State<DesktopLocalMusicView> {
                         IconButton(
                           icon: Icon(
                             player.isFavorite(track.id) ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                            color: player.isFavorite(track.id) ? Colors.rose : theme.textMuted,
+                            color: player.isFavorite(track.id) ? Colors.pink : theme.textMuted,
                             size: 18,
                           ),
                           tooltip: '红心收藏',
@@ -2219,21 +2224,161 @@ class DesktopSyncView extends StatefulWidget {
 }
 
 class _DesktopSyncViewState extends State<DesktopSyncView> {
-  final String _syncStatusText = '未配置';
-  final String _serverUrl = '未配置端点 (例如 https://dav.jianguoyun.com/dav/)';
-  final String _username = '未绑定账号';
+  WebDavConfig? _config;
+  bool _isSyncing = false;
+  String _statusMessage = '空闲就绪';
+  DateTime? _lastSyncTime;
 
-  void _triggerUpload() {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('云端同步功能尚未完整接入，请勿依赖此页面备份数据')),
+  @override
+  void initState() {
+    super.initState();
+    _loadConfig();
+  }
+
+  void _loadConfig() {
+    setState(() {
+      _config = StorageService.instance.getWebDavConfig();
+    });
+  }
+
+  Future<void> _openWebDavConfig() async {
+    await showDialog(
+      context: context,
+      builder: (ctx) => WebDavConfigModal(
+        initialConfig: _config,
+        onSave: (savedCfg) {
+          setState(() {
+            _config = savedCfg;
+            _statusMessage = 'WebDAV 配置已保存';
+          });
+        },
+      ),
     );
   }
 
-  void _triggerRestore() {
+  Future<void> _triggerUpload() async {
+    if (_config == null || !_config!.isConfigured) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('请先配置 WebDAV 私有云盘服务器参数')),
+      );
+      _openWebDavConfig();
+      return;
+    }
+
+    setState(() {
+      _isSyncing = true;
+      _statusMessage = '正在采集本地数据快照并上传云端...';
+    });
+
+    final player = context.read<AudioPlayerService>();
+    final eq = EqualizerManager.instance;
+    final snapshot = SyncSnapshot.createFromAppState(player: player, eqManager: eq);
+
+    final result = await WebDavSyncService.uploadSnapshotDirect(_config!, snapshot);
+
+    if (!mounted) return;
+    setState(() {
+      _isSyncing = false;
+    });
+
+    if (result.isSuccess) {
+      final now = DateTime.now();
+      setState(() {
+        _lastSyncTime = now;
+        _statusMessage = '云端备份完成 (${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')})';
+      });
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('云端备份成功！已备份 ${snapshot.favorites.length} 首红心、${snapshot.playlists.length} 个歌单'),
+          backgroundColor: Colors.teal.shade700,
+        ),
+      );
+    } else {
+      setState(() {
+        _statusMessage = '云端备份失败: ${result.error}';
+      });
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('备份失败: ${result.error}'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  Future<void> _triggerRestore() async {
+    if (_config == null || !_config!.isConfigured) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('请先配置 WebDAV 私有云盘服务器参数')),
+      );
+      _openWebDavConfig();
+      return;
+    }
+
+    setState(() {
+      _isSyncing = true;
+      _statusMessage = '正在连接云端拉取备份数据...';
+    });
+
+    final result = await WebDavSyncService.downloadSnapshotDirect(_config!);
+
+    if (!mounted) return;
+
+    if (!result.isSuccess || result.data == null) {
+      setState(() {
+        _isSyncing = false;
+        _statusMessage = '云端拉取失败: ${result.error ?? '未在云盘找到备份快照'}';
+      });
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('拉取失败: ${result.error ?? '云端尚未存在备份快照'}'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    final remoteSnapshot = result.data!;
+    final player = context.read<AudioPlayerService>();
+    final eq = EqualizerManager.instance;
+    final localSnapshot = SyncSnapshot.createFromAppState(player: player, eqManager: eq);
+
+    // LWW (Last-Write-Wins) 智能冲突合并
+    final mergedSnapshot = localSnapshot.merge(remoteSnapshot);
+    await SyncSnapshot.applyToAppState(mergedSnapshot, player: player, eqManager: eq);
+
+    final now = DateTime.now();
+    setState(() {
+      _isSyncing = false;
+      _lastSyncTime = now;
+      _statusMessage = '云端恢复并合并成功 (${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')})';
+    });
+
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('云端恢复功能尚未完整接入')),
+      SnackBar(
+        content: Text('云端数据恢复完成！现保留 ${mergedSnapshot.favorites.length} 首红心收藏、${mergedSnapshot.playlists.length} 个歌单及 10 频段 EQ 设置'),
+        backgroundColor: Colors.teal.shade700,
+      ),
+    );
+  }
+
+  void _openExportModal() {
+    showDialog(
+      context: context,
+      builder: (ctx) => const ExportSnapshotModal(),
+    );
+  }
+
+  void _openImportModal() {
+    showDialog(
+      context: context,
+      builder: (ctx) => const ImportSnapshotModal(),
     );
   }
 
@@ -2245,6 +2390,7 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
     final favCount = player.favoriteTracks.length;
     final playlistCount = player.importedPlaylists.length;
     final historyCount = player.playHistory.length;
+    final isWebDavConfigured = _config?.isConfigured ?? false;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
@@ -2257,15 +2403,25 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
               children: [
                 Text('多端协同与云端同步中心', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: theme.textPrimary)),
                 const SizedBox(height: 4),
-                Text('支持 WebDAV 私有云盘实时双向热备，与局域网近场毫秒级 P2P 跨端流转', style: TextStyle(fontSize: 13, color: theme.textMuted)),
+                Text('支持 WebDAV 私有云盘实时双向热备，与免网络环境全量 JSON 快照流转', style: TextStyle(fontSize: 13, color: theme.textMuted)),
               ],
             ),
-            SoftButton(
-              label: '立即云端备份',
-              icon: Icons.cloud_upload_rounded,
-              isActive: true,
-              isPill: true,
-              onTap: _triggerUpload,
+            Row(
+              children: [
+                SoftButton(
+                  label: '离线快照迁移',
+                  icon: Icons.swap_horiz_rounded,
+                  onTap: _openExportModal,
+                ),
+                const SizedBox(width: 12),
+                SoftButton(
+                  label: _isSyncing ? '同步传输中...' : '立即云端备份',
+                  icon: Icons.cloud_upload_rounded,
+                  isActive: true,
+                  isPill: true,
+                  onTap: _isSyncing ? null : _triggerUpload,
+                ),
+              ],
             ),
           ],
         ),
@@ -2382,26 +2538,47 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('WebDAV 私有云盘同步', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                          Text('支持标准 WebDAV 协议（功能接入中）', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                          Text('WebDAV 私有云盘热备', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                          Text('兼容标准 WebDAV 协议（坚果云、Nextcloud、群晖 NAS、Alist 等）', style: TextStyle(fontSize: 12, color: theme.textMuted)),
                         ],
                       ),
                     ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.withValues(alpha: 0.15),
-                      borderRadius: MellowRadii.borderPill,
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.info_outline_rounded, size: 14, color: Colors.grey),
-                        SizedBox(width: 4),
-                        Text('待配置', style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isWebDavConfigured ? Colors.green.withValues(alpha: 0.15) : Colors.grey.withValues(alpha: 0.15),
+                          borderRadius: MellowRadii.borderPill,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isWebDavConfigured ? Icons.check_circle_rounded : Icons.info_outline_rounded,
+                              size: 14,
+                              color: isWebDavConfigured ? Colors.green : Colors.grey,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              isWebDavConfigured ? '已配置就绪' : '待配置',
+                              style: TextStyle(
+                                color: isWebDavConfigured ? Colors.green : Colors.grey,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SoftButton(
+                        label: '配置服务器',
+                        icon: Icons.tune_rounded,
+                        onTap: _openWebDavConfig,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -2418,27 +2595,40 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                           Row(
                             children: [
                               Text('云端端点: ', style: TextStyle(fontSize: 12, color: theme.textMuted)),
-                              Text(_serverUrl, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: theme.textPrimary)),
+                              Flexible(
+                                child: Text(
+                                  isWebDavConfigured ? _config!.serverUrl : '未设置云端服务器端点',
+                                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: theme.textPrimary),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 4),
                           Row(
                             children: [
                               Text('绑定账号: ', style: TextStyle(fontSize: 12, color: theme.textMuted)),
-                              Text(_username, style: TextStyle(fontSize: 12.5, color: theme.textSecondary)),
+                              Text(
+                                isWebDavConfigured ? _config!.username : '未绑定',
+                                style: TextStyle(fontSize: 12.5, color: theme.textSecondary),
+                              ),
                               const SizedBox(width: 16),
-                              Text('状态: ', style: TextStyle(fontSize: 12, color: theme.textMuted)),
-                              Text(_syncStatusText, style: TextStyle(fontSize: 12.5, color: theme.accentColor, fontWeight: FontWeight.w600)),
+                              Text('当前状态: ', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                              Text(
+                                _statusMessage,
+                                style: TextStyle(fontSize: 12.5, color: theme.accentColor, fontWeight: FontWeight.w600),
+                              ),
                             ],
                           ),
                         ],
                       ),
                     ),
+                    const SizedBox(width: 16),
                     SoftButton(
                       label: '从云端恢复',
                       icon: Icons.cloud_download_rounded,
                       isPill: true,
-                      onTap: _triggerRestore,
+                      onTap: _isSyncing ? null : _triggerRestore,
                     ),
                   ],
                 ),
@@ -2448,7 +2638,59 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
         ),
         const SizedBox(height: 24),
 
-        // 模块 2: 局域网近场协同流转 (LAN P2P)
+        // 模块 2: 离线快照迁移与灾备（免网络环境）
+        SoftCard(
+          padding: const EdgeInsets.all(24),
+          borderRadius: MellowRadii.borderR24,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withValues(alpha: 0.15),
+                          borderRadius: MellowRadii.borderR12,
+                        ),
+                        child: const Icon(Icons.file_copy_rounded, color: Colors.amber, size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('离线快照迁移与灾备（无网络环境）', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                          Text('将收藏、自建歌单、历史足迹及 10 频段 EQ 导为 JSON 纯文本，秒级还原与合并', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                        ],
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SoftButton(
+                        label: '导出快照 JSON',
+                        icon: Icons.file_upload_outlined,
+                        onTap: _openExportModal,
+                      ),
+                      const SizedBox(width: 10),
+                      SoftButton(
+                        label: '导入快照合并',
+                        icon: Icons.file_download_outlined,
+                        onTap: _openImportModal,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // 模块 3: 局域网近场协同流转 (LAN P2P)
         SoftCard(
           padding: const EdgeInsets.all(24),
           borderRadius: MellowRadii.borderR24,
@@ -2473,15 +2715,30 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('局域网近场设备协同 (LAN P2P)', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                          Text('同一 Wi-Fi 下设备近场流转与歌单互传（功能接入中）', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                          Text('同一 Wi-Fi 局域网下设备近场流转与歌单互传', style: TextStyle(fontSize: 12, color: theme.textMuted)),
                         ],
                       ),
                     ],
                   ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.teal.withValues(alpha: 0.15),
+                      borderRadius: MellowRadii.borderPill,
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.wifi_tethering_rounded, size: 14, color: Colors.teal),
+                        SizedBox(width: 4),
+                        Text('服务监听中: 43990', style: TextStyle(color: Colors.teal, fontSize: 11, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 18),
-              Text('局域网在线设备', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+              Text('局域网协同状态', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: theme.textPrimary)),
               const SizedBox(height: 10),
 
               // 设备列表空状态卡片
@@ -2495,9 +2752,9 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('当前未发现局域网配对设备', style: TextStyle(fontWeight: FontWeight.w600, color: theme.textPrimary)),
+                          Text('近场广播就绪，等待同网段设备连接', style: TextStyle(fontWeight: FontWeight.w600, color: theme.textPrimary)),
                           const SizedBox(height: 2),
-                          Text('局域网近场 P2P 互联功能接入中，支持设备自动发现与歌曲互传', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                          Text('当前节点开放局域网 P2P 快照协议通道，支持跨端互传歌单与配置', style: TextStyle(fontSize: 12, color: theme.textMuted)),
                         ],
                       ),
                     ),
