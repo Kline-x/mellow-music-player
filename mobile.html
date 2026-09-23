@@ -297,7 +297,7 @@
     </header>
 
     <!-- Modern Soft Toast Container -->
-    <div id="mToastContainer" class="absolute top-14 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex flex-col items-center gap-2 w-11/12"></div>
+    <div id="mToastContainer" class="absolute top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex flex-col items-center gap-2 w-11/12"></div>
 
     <!-- Scrollable Content Area: 4 Native App Tabs -->
     <main class="flex-1 overflow-y-auto px-4 pt-2 pb-36 select-none relative z-10" id="mMainContent">
@@ -1157,12 +1157,21 @@
         </div>
 
         <!-- Visual Audio Equalizer Frequency Bars -->
-        <div class="soft-recessed p-3 rounded-2xl flex items-end justify-around h-16 gap-2">
-          <div id="mEqBar1" class="w-full bg-emerald-500/80 rounded-full transition-all duration-300 h-8"></div>
-          <div id="mEqBar2" class="w-full bg-emerald-500/80 rounded-full transition-all duration-300 h-12"></div>
-          <div id="mEqBar3" class="w-full bg-emerald-500/80 rounded-full transition-all duration-300 h-10"></div>
-          <div id="mEqBar4" class="w-full bg-emerald-500/80 rounded-full transition-all duration-300 h-14"></div>
-          <div id="mEqBar5" class="w-full bg-emerald-500/80 rounded-full transition-all duration-300 h-9"></div>
+        <div class="soft-recessed p-3 rounded-2xl flex flex-col gap-1.5">
+          <div class="flex items-end justify-around h-16 gap-2 px-1">
+            <div id="mEqBar1" class="w-full bg-gradient-to-t from-indigo-500 via-rose-500 to-amber-400 rounded-full transition-all duration-300 h-8 shadow-sm"></div>
+            <div id="mEqBar2" class="w-full bg-gradient-to-t from-indigo-500 via-rose-500 to-amber-400 rounded-full transition-all duration-300 h-12 shadow-sm"></div>
+            <div id="mEqBar3" class="w-full bg-gradient-to-t from-indigo-500 via-rose-500 to-amber-400 rounded-full transition-all duration-300 h-10 shadow-sm"></div>
+            <div id="mEqBar4" class="w-full bg-gradient-to-t from-indigo-500 via-rose-500 to-amber-400 rounded-full transition-all duration-300 h-14 shadow-sm"></div>
+            <div id="mEqBar5" class="w-full bg-gradient-to-t from-indigo-500 via-rose-500 to-amber-400 rounded-full transition-all duration-300 h-9 shadow-sm"></div>
+          </div>
+          <div class="flex justify-around text-[9px] font-mono text-slate-400">
+            <span>60Hz</span>
+            <span>250Hz</span>
+            <span>1kHz</span>
+            <span>4kHz</span>
+            <span>16kHz</span>
+          </div>
         </div>
 
         <!-- 5 Presets Grid -->
@@ -1342,6 +1351,101 @@
           { time: 18, text: "All red Lamb' just to tease you, ah" },
           { time: 24, text: "Look what you've done" },
           { time: 28, text: "I'm a motherfuckin' starboy" }
+        ]
+      },
+      {
+        id: 7,
+        title: "七里香",
+        artist: "周杰伦",
+        album: "七里香",
+        cover: "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=600&auto=format&fit=crop&q=80",
+        duration: "04:59",
+        durationSec: 299,
+        glow: { c1: "rgba(245, 158, 11, 0.4)", c2: "rgba(16, 185, 129, 0.35)" },
+        lyrics: [
+          { time: 0, text: "窗外的麻雀 在电线杆上多嘴" },
+          { time: 7, text: "你说这一句 很有夏天的感觉" },
+          { time: 15, text: "手中的铅笔 在纸上来来回回" },
+          { time: 23, text: "我用几行字形容你是我的谁" },
+          { time: 31, text: "秋刀鱼的滋味 猫跟你都想了解" },
+          { time: 39, text: "初恋的香味就这样被我们寻回" }
+        ]
+      },
+      {
+        id: 8,
+        title: "夜曲",
+        artist: "周杰伦",
+        album: "十一月的萧邦",
+        cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80",
+        duration: "03:46",
+        durationSec: 226,
+        glow: { c1: "rgba(99, 102, 241, 0.4)", c2: "rgba(168, 85, 247, 0.35)" },
+        lyrics: [
+          { time: 0, text: "一群嗜血的蚂蚁 被腐肉所吸引" },
+          { time: 6, text: "我面无表情 看孤独的风景" },
+          { time: 13, text: "失去你 爱恨开始分明" },
+          { time: 19, text: "为你弹奏萧邦的夜曲 纪念我死去的爱情" }
+        ]
+      },
+      {
+        id: 9,
+        title: "稻香",
+        artist: "周杰伦",
+        album: "魔杰座",
+        cover: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=600&auto=format&fit=crop&q=80",
+        duration: "03:43",
+        durationSec: 223,
+        glow: { c1: "rgba(234, 179, 8, 0.45)", c2: "rgba(16, 185, 129, 0.35)" },
+        lyrics: [
+          { time: 0, text: "对这个世界如果你有太多的抱怨" },
+          { time: 6, text: "跌倒了 就不敢继续往前走" },
+          { time: 12, text: "还记得你说家是唯一的城堡 随着稻香河流继续奔跑" }
+        ]
+      },
+      {
+        id: 10,
+        title: "青花瓷",
+        artist: "周杰伦",
+        album: "我很忙",
+        cover: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80",
+        duration: "03:59",
+        durationSec: 239,
+        glow: { c1: "rgba(6, 182, 212, 0.4)", c2: "rgba(59, 130, 246, 0.35)" },
+        lyrics: [
+          { time: 0, text: "素胚勾勒出青花笔锋浓转淡" },
+          { time: 6, text: "瓶身描绘的牡丹一如你初妆" },
+          { time: 13, text: "天青色等烟雨 而我在等你" },
+          { time: 20, text: "炊烟袅袅升起 隔江千万里" }
+        ]
+      },
+      {
+        id: 11,
+        title: "水星记",
+        artist: "郭顶",
+        album: "飞行器的执行周期",
+        cover: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&auto=format&fit=crop&q=80",
+        duration: "05:25",
+        durationSec: 325,
+        glow: { c1: "rgba(59, 130, 246, 0.4)", c2: "rgba(99, 102, 241, 0.35)" },
+        lyrics: [
+          { time: 0, text: "着迷于你眼睛 银河有迹可循" },
+          { time: 7, text: "穿过时间的缝隙 走向你" },
+          { time: 15, text: "咫尺远近却无法靠近的那个人" }
+        ]
+      },
+      {
+        id: 12,
+        title: "New Boy",
+        artist: "房东的猫",
+        album: "青空未来",
+        cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80",
+        duration: "03:42",
+        durationSec: 222,
+        glow: { c1: "rgba(16, 185, 129, 0.4)", c2: "rgba(245, 158, 11, 0.3)" },
+        lyrics: [
+          { time: 0, text: "是的我看见到处是阳光" },
+          { time: 5, text: "快乐在城市上空飘扬" },
+          { time: 11, text: "穿新衣吧剪新发型呀" }
         ]
       }
     ];
@@ -1623,6 +1727,11 @@
           }
         }
       });
+
+      const dock = document.getElementById('miniPlayerDock');
+      const nav = document.getElementById('mobileBottomNav');
+      if (dock) dock.classList.remove('hidden');
+      if (nav) nav.classList.remove('hidden');
 
       const titleEl = document.getElementById('mHeaderTitle');
       if (titleEl) {
@@ -2217,6 +2326,10 @@
 
     function closeMobileSubView() {
       hideAllMobileSubViews();
+      const dock = document.getElementById('miniPlayerDock');
+      const nav = document.getElementById('mobileBottomNav');
+      if (dock) dock.classList.remove('hidden');
+      if (nav) nav.classList.remove('hidden');
       switchMobileTab(currentTab);
     }
 
@@ -2455,6 +2568,10 @@
       hideAllMobileSubViews();
       const v = document.getElementById('mViewPersonalFM');
       if (v) v.classList.remove('hidden');
+      const dock = document.getElementById('miniPlayerDock');
+      const nav = document.getElementById('mobileBottomNav');
+      if (dock) dock.classList.add('hidden');
+      if (nav) nav.classList.add('hidden');
       updateFmUI();
     }
 
@@ -2511,11 +2628,11 @@
       { 
         name: "周杰伦", 
         en: "Jay Chou", 
-        followers: "3280 万", 
+        followers: "3,860 万", 
         avatar: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&auto=format&fit=crop&q=80",
         bio: "华语流行音乐天王、音乐人，引领千禧年至今华语流行音乐潮流。",
         isFollowed: true,
-        songs: [0, 4]
+        songs: [0, 4, 6, 7, 8, 9]
       },
       { 
         name: "The Weeknd", 

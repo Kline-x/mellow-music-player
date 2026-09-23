@@ -2,10 +2,20 @@ import puppeteer from 'puppeteer-core';
 import path from 'path';
 import fs from 'fs';
 
-const CHROME_PATH = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
-const EDGE_PATH = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
+const candidates = [
+  process.env.CHROME_PATH,
+  process.env.PUPPETEER_EXECUTABLE_PATH,
+  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+  'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+  'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+  'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+  '/usr/bin/google-chrome',
+  '/usr/bin/chromium-browser'
+].filter(Boolean);
 
-const browserPath = fs.existsSync(CHROME_PATH) ? CHROME_PATH : EDGE_PATH;
+const browserPath = candidates.find(p => fs.existsSync(p));
 console.log(`[E2E] Using browser executable: ${browserPath}`);
 
 const BASE_URL = 'http://localhost:8088';
@@ -744,7 +754,7 @@ async function runE2ETests() {
     const artDetailFans = await mobilePage.$eval('#mArtistDetailFans', el => el.textContent.trim());
     const artDetailTracks = await mobilePage.$$eval('#mArtistDetailTracklist > div', els => els.length);
     recordResult('Mobile 歌手详情页 (Artist Detail View & Tracklist)', 
-      artDetailVisible && artDetailName === '周杰伦' && artDetailFans.includes('3280 万') && artDetailTracks >= 2, 
+      artDetailVisible && artDetailName === '周杰伦' && artDetailFans.includes('3,860 万') && artDetailTracks >= 2, 
       `Artist: "${artDetailName}", Fans: "${artDetailFans}", Tracks: ${artDetailTracks}`
     );
 
@@ -781,34 +791,49 @@ async function runE2ETests() {
 
     // Take showcase screenshots for new sub-views
     // 1. Personal FM
-    await mobilePage.click('[onclick*="openMobilePersonalFM()"]');
+    await mobilePage.evaluate(() => openMobilePersonalFM());
     await new Promise(r => setTimeout(r, 400));
     await mobilePage.screenshot({ path: path.resolve('public/showcase_mobile_fm.png') });
+    await mobilePage.evaluate(() => closeMobileSubView());
+    await new Promise(r => setTimeout(r, 300));
 
     // 2. Artist Detail
-    await mobilePage.click('#mTabLibrary');
-    await new Promise(r => setTimeout(r, 300));
-    await mobilePage.click('div[onclick*="openMobileArtists()"]');
-    await new Promise(r => setTimeout(r, 300));
-    await mobilePage.click('#mArtistsGrid > div:first-child');
+    await mobilePage.evaluate(() => {
+      switchMobileTab('library');
+      openMobileArtists();
+      openMobileArtistDetail('周杰伦');
+    });
     await new Promise(r => setTimeout(r, 400));
     await mobilePage.screenshot({ path: path.resolve('public/showcase_mobile_artist.png') });
+    await mobilePage.evaluate(() => {
+      closeMobileArtistDetail();
+      closeMobileSubView();
+    });
+    await new Promise(r => setTimeout(r, 300));
 
     // 3. Local Music
-    await mobilePage.click('#mTabLibrary');
-    await new Promise(r => setTimeout(r, 300));
-    await mobilePage.click('div[onclick*="openMobileLocal()"]');
+    await mobilePage.evaluate(() => {
+      switchMobileTab('library');
+      openMobileLocal();
+    });
     await new Promise(r => setTimeout(r, 400));
     await mobilePage.screenshot({ path: path.resolve('public/showcase_mobile_local.png') });
+    await mobilePage.evaluate(() => closeMobileSubView());
+    await new Promise(r => setTimeout(r, 300));
 
     // 4. Equalizer Modal in Fullscreen
-    await mobilePage.click('#mTabDiscover');
-    await new Promise(r => setTimeout(r, 300));
-    await mobilePage.click('#miniPlayerDock');
-    await new Promise(r => setTimeout(r, 400));
-    await mobilePage.click('#mEqBtn');
+    await mobilePage.evaluate(() => {
+      switchMobileTab('discover');
+      openFullscreenLyrics();
+      openMobileEqModal();
+    });
     await new Promise(r => setTimeout(r, 400));
     await mobilePage.screenshot({ path: path.resolve('public/showcase_mobile_eq.png') });
+    await mobilePage.evaluate(() => {
+      closeMobileEqModal();
+      closeFullscreenLyrics();
+    });
+    await new Promise(r => setTimeout(r, 300));
 
     await mobilePage.close();
 

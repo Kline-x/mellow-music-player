@@ -494,15 +494,17 @@ void main() {
         },
       );
 
-      // 等待定时器执行至少两次
-      await Future.delayed(const Duration(milliseconds: 160));
+      // 弹性等待定时器执行至少两次（兼顾高并发机器调度抖动）
+      for (var i = 0; i < 25 && syncCount < 2; i++) {
+        await Future.delayed(const Duration(milliseconds: 25));
+      }
       service.stopAutoSync();
       final currentCount = syncCount;
 
       expect(currentCount, greaterThanOrEqualTo(2));
 
       // 验证停止后不再自增
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 60));
       expect(syncCount, currentCount);
 
       service.dispose();

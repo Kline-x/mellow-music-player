@@ -952,47 +952,69 @@ class DesktopPodcastView extends StatelessWidget {
     final radios = mockRadioStations;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 120),
       children: [
         Text('声音电台专区', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: theme.textPrimary)),
         const SizedBox(height: 20),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 2.2,
-          ),
-          itemCount: radios.length,
-          itemBuilder: (context, idx) {
-            final r = radios[idx];
-            return SoftCard(
-              padding: const EdgeInsets.all(16),
-              onTap: () {
-                player.playTrack(r.track);
-              },
-              child: Row(
-                children: [
-                  MellowImage(url: r.coverUrl, width: 90, height: 90, borderRadius: MellowRadii.borderR16),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(r.title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                        const SizedBox(height: 4),
-                        Text(r.sub, style: TextStyle(fontSize: 12, color: theme.textMuted)),
-                        const SizedBox(height: 6),
-                        Text(r.listeners, style: TextStyle(fontSize: 11, color: theme.accentColor, fontWeight: FontWeight.w500)),
-                      ],
-                    ),
-                  ),
-                  Icon(Icons.radio_rounded, color: theme.accentColor, size: 28),
-                ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final crossAxisCount = constraints.maxWidth < 620 ? 1 : 2;
+            final childAspectRatio = constraints.maxWidth < 620 ? 3.0 : 2.5;
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: childAspectRatio,
               ),
+              itemCount: radios.length,
+              itemBuilder: (context, idx) {
+                final r = radios[idx];
+                return SoftCard(
+                  padding: const EdgeInsets.all(12),
+                  onTap: () {
+                    player.playTrack(r.track);
+                  },
+                  child: Row(
+                    children: [
+                      MellowImage(url: r.coverUrl, width: 72, height: 72, borderRadius: MellowRadii.borderR16),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              r.title,
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              r.sub,
+                              style: TextStyle(fontSize: 12, color: theme.textMuted),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              r.listeners,
+                              style: TextStyle(fontSize: 11, color: theme.accentColor, fontWeight: FontWeight.w500),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(Icons.radio_rounded, color: theme.accentColor, size: 26),
+                    ],
+                  ),
+                );
+              },
             );
           },
         ),
@@ -3411,25 +3433,26 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxWidth < 760;
+            final titleWidget = Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('多端协同与云端同步中心', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: theme.textPrimary)),
                 const SizedBox(height: 4),
                 Text('支持 WebDAV 私有云盘实时双向热备，与免网络环境全量 JSON 快照流转', style: TextStyle(fontSize: 13, color: theme.textMuted)),
               ],
-            ),
-            Row(
+            );
+            final actionsWidget = Wrap(
+              spacing: 12,
+              runSpacing: 8,
               children: [
                 SoftButton(
                   label: '离线快照迁移',
                   icon: Icons.swap_horiz_rounded,
                   onTap: _openExportModal,
                 ),
-                const SizedBox(width: 12),
                 SoftButton(
                   label: _isSyncing ? '同步传输中...' : '立即云端备份',
                   icon: Icons.cloud_upload_rounded,
@@ -3438,8 +3461,28 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                   onTap: _isSyncing ? null : _triggerUpload,
                 ),
               ],
-            ),
-          ],
+            );
+
+            if (isCompact) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  titleWidget,
+                  const SizedBox(height: 14),
+                  actionsWidget,
+                ],
+              );
+            }
+
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(child: titleWidget),
+                const SizedBox(width: 16),
+                actionsWidget,
+              ],
+            );
+          },
         ),
         const SizedBox(height: 24),
 
@@ -3537,10 +3580,11 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isCompact = constraints.maxWidth < 840;
+                  final leftWidget = Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
                         padding: const EdgeInsets.all(10),
@@ -3551,16 +3595,22 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                         child: Icon(Icons.cloud_sync_rounded, color: theme.accentColor, size: 24),
                       ),
                       const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('WebDAV 私有云盘热备', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                          Text('兼容标准 WebDAV 协议（坚果云、Nextcloud、群晖 NAS、Alist 等）', style: TextStyle(fontSize: 12, color: theme.textMuted)),
-                        ],
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('WebDAV 私有云盘热备', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                            Text('兼容标准 WebDAV 协议（坚果云、Nextcloud、群晖 NAS、Alist 等）', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                          ],
+                        ),
                       ),
                     ],
-                  ),
-                  Row(
+                  );
+
+                  final rightWidget = Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -3588,15 +3638,34 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 8),
                       SoftButton(
                         label: '配置服务器',
                         icon: Icons.tune_rounded,
                         onTap: _openWebDavConfig,
                       ),
                     ],
-                  ),
-                ],
+                  );
+
+                  if (isCompact) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        leftWidget,
+                        const SizedBox(height: 12),
+                        rightWidget,
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(child: leftWidget),
+                      const SizedBox(width: 16),
+                      rightWidget,
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 20),
               RecessedWell(
@@ -3661,10 +3730,11 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isCompact = constraints.maxWidth < 840;
+                  final leftWidget = Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
                         padding: const EdgeInsets.all(10),
@@ -3675,31 +3745,56 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                         child: const Icon(Icons.file_copy_rounded, color: Colors.amber, size: 24),
                       ),
                       const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('离线快照迁移与灾备（无网络环境）', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                          Text('将收藏、自建歌单、历史足迹及 10 频段 EQ 导为 JSON 纯文本，秒级还原与合并', style: TextStyle(fontSize: 12, color: theme.textMuted)),
-                        ],
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('离线快照迁移与灾备（无网络环境）', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                            Text('将收藏、自建歌单、历史足迹及 10 频段 EQ 导为 JSON 纯文本，秒级还原与合并', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                          ],
+                        ),
                       ),
                     ],
-                  ),
-                  Row(
+                  );
+
+                  final rightWidget = Wrap(
+                    spacing: 10,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       SoftButton(
                         label: '导出快照 JSON',
                         icon: Icons.file_upload_outlined,
                         onTap: _openExportModal,
                       ),
-                      const SizedBox(width: 10),
                       SoftButton(
                         label: '导入快照合并',
                         icon: Icons.file_download_outlined,
                         onTap: _openImportModal,
                       ),
                     ],
-                  ),
-                ],
+                  );
+
+                  if (isCompact) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        leftWidget,
+                        const SizedBox(height: 12),
+                        rightWidget,
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(child: leftWidget),
+                      const SizedBox(width: 16),
+                      rightWidget,
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -3713,10 +3808,11 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isCompact = constraints.maxWidth < 840;
+                  final titleWidget = Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
                         padding: const EdgeInsets.all(10),
@@ -3727,16 +3823,22 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                         child: const Icon(Icons.hub_rounded, color: Colors.indigoAccent, size: 24),
                       ),
                       const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('局域网近场设备协同 (LAN P2P)', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                          Text('同一 Wi-Fi 局域网下免公网服务器，自动发现与双向近场快传', style: TextStyle(fontSize: 12, color: theme.textMuted)),
-                        ],
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('局域网近场设备协同 (LAN P2P)', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                            Text('同一 Wi-Fi 局域网下免公网服务器，自动发现与双向近场快传', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                          ],
+                        ),
                       ),
                     ],
-                  ),
-                  Row(
+                  );
+
+                  final actionsWidget = Wrap(
+                    spacing: 10,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -3756,13 +3858,11 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 10),
                       SoftButton(
                         label: '配对码与手动直连',
                         icon: Icons.qr_code_rounded,
                         onTap: _openLanPairingModal,
                       ),
-                      const SizedBox(width: 8),
                       SoftButton(
                         label: _isScanningLan ? '正在雷达扫描...' : '扫描局域网节点',
                         icon: Icons.radar_rounded,
@@ -3771,8 +3871,28 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                         onTap: _isScanningLan ? null : _scanLanDevices,
                       ),
                     ],
-                  ),
-                ],
+                  );
+
+                  if (isCompact) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        titleWidget,
+                        const SizedBox(height: 14),
+                        actionsWidget,
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(child: titleWidget),
+                      const SizedBox(width: 16),
+                      actionsWidget,
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 20),
               Row(

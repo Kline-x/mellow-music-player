@@ -784,7 +784,7 @@ class _MobileExploreTabState extends State<MobileExploreTab> {
     final player = context.watch<AudioPlayerService>();
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 130),
       children: [
         Text('探索音乐全库', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: theme.textPrimary)),
         const SizedBox(height: 14),
@@ -814,7 +814,7 @@ class _MobileExploreTabState extends State<MobileExploreTab> {
             crossAxisCount: 2,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 0.9,
+            childAspectRatio: 0.78,
           ),
           itemCount: mockPresetTracks.length,
           itemBuilder: (context, idx) {
@@ -834,8 +834,19 @@ class _MobileExploreTabState extends State<MobileExploreTab> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.textPrimary)),
-                  Text(t.artist, style: TextStyle(fontSize: 11, color: theme.textMuted)),
+                  Text(
+                    t.title,
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.textPrimary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    t.artist,
+                    style: TextStyle(fontSize: 11, color: theme.textMuted),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ],
               ),
             );

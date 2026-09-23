@@ -26,11 +26,18 @@
   <meta name="apple-mobile-web-app-title" content="mellow_music">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
-
   <title>mellow_music</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Google Fonts: Noto Sans SC 中文字体注入，防止 CanvasKit 渲染为方块 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body, html {
+      font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+  </style>
 </head>
 <body>
   <!--
