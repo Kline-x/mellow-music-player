@@ -3055,7 +3055,6 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
     if (result.isSuccess) {
       final now = DateTime.now();
       setState(() {
-        _lastSyncTime = now;
         _statusMessage = '云端备份完成 (${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')})';
       });
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
