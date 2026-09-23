@@ -5,18 +5,14 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
-import 'package:mellow_music/design_system/tokens.dart';
 import 'package:mellow_music/design_system/theme_provider.dart';
 import 'package:mellow_music/design_system/mellow_image.dart';
 import 'package:mellow_music/core/audio/audio_player_service.dart';
 import 'package:mellow_music/core/audio/equalizer_manager.dart';
 import 'package:mellow_music/core/audio/track_model.dart';
-import 'package:mellow_music/core/sources/lx_script_sandbox.dart';
-import 'package:mellow_music/core/sources/lx_source_model.dart';
 import 'package:mellow_music/navigation/desktop_scaffold.dart';
 import 'package:mellow_music/navigation/mobile_scaffold.dart';
 import 'package:mellow_music/core/sync/lan_sync_service.dart';
-import 'package:mellow_music/views/common/modals.dart';
 
 void main() {
   setUpAll(() {
@@ -83,7 +79,7 @@ void main() {
 
         File('$sessionArtifactsDir/$filename').writeAsBytesSync(bytes);
         File('$evidenceDir/$filename').writeAsBytesSync(bytes);
-        print('📸 Captured: $filename (${image.width}x${image.height})');
+        debugPrint('📸 Captured: $filename (${image.width}x${image.height})');
       });
     }
 
