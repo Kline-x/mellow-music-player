@@ -1020,3 +1020,486 @@ class _ImportPlaylistModalState extends State<ImportPlaylistModal> {
     );
   }
 }
+
+/// 6. 新建自建歌单对话框 (CreatePlaylistModal)
+class CreatePlaylistModal extends StatefulWidget {
+  final Track? initialTrack;
+  final Function(ImportedPlaylist pl)? onCreated;
+
+  const CreatePlaylistModal({
+    super.key,
+    this.initialTrack,
+    this.onCreated,
+  });
+
+  @override
+  State<CreatePlaylistModal> createState() => _CreatePlaylistModalState();
+}
+
+class _CreatePlaylistModalState extends State<CreatePlaylistModal> {
+  final _titleController = TextEditingController();
+  final _descController = TextEditingController();
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final title = _titleController.text.trim();
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('请输入歌单名称')),
+      );
+      return;
+    }
+
+    final player = context.read<AudioPlayerService>();
+    final pl = player.createCustomPlaylist(
+      title,
+      description: _descController.text.trim().isEmpty ? null : _descController.text.trim(),
+      coverUrl: widget.initialTrack?.coverUrl,
+      initialTracks: widget.initialTrack != null ? [widget.initialTrack!] : null,
+    );
+
+    widget.onCreated?.call(pl);
+    Navigator.of(context).pop(pl);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('已创建自建歌单「$title」${widget.initialTrack != null ? '，并收录单曲' : ''}！')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.watch<ThemeProvider>();
+    final isDark = theme.isDarkMode;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440),
+        child: SoftCard(
+          padding: const EdgeInsets.all(24),
+          borderRadius: MellowRadii.borderR24,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: theme.accentColor.withValues(alpha: 0.15),
+                          borderRadius: MellowRadii.borderR12,
+                        ),
+                        child: Icon(Icons.playlist_add_rounded, color: theme.accentColor, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        '新建自建歌单',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, color: theme.textMuted),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              if (widget.initialTrack != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
+                    borderRadius: MellowRadii.borderR12,
+                  ),
+                  child: Row(
+                    children: [
+                      MellowImage(url: widget.initialTrack!.coverUrl, width: 40, height: 40, borderRadius: MellowRadii.borderR8),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.initialTrack!.title,
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              widget.initialTrack!.artist,
+                              style: TextStyle(fontSize: 11, color: theme.textMuted),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: theme.accentColor.withValues(alpha: 0.15),
+                          borderRadius: MellowRadii.borderPill,
+                        ),
+                        child: Text('收录首曲', style: TextStyle(fontSize: 10.5, color: theme.accentColor, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              Text('歌单名称', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: theme.textSecondary)),
+              const SizedBox(height: 6),
+              RecessedWell(
+                height: 44,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                borderRadius: MellowRadii.borderR12,
+                child: TextField(
+                  controller: _titleController,
+                  autofocus: true,
+                  style: TextStyle(color: theme.textPrimary, fontSize: 14),
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    hintText: '如：深夜疗愈电台 / 节奏运动精选',
+                    hintStyle: TextStyle(color: theme.textMuted, fontSize: 13),
+                    isDense: true,
+                  ),
+                  onSubmitted: (_) => _submit(),
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              Text('歌单描述 (选填)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: theme.textSecondary)),
+              const SizedBox(height: 6),
+              RecessedWell(
+                height: 44,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                borderRadius: MellowRadii.borderR12,
+                child: TextField(
+                  controller: _descController,
+                  style: TextStyle(color: theme.textPrimary, fontSize: 14),
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    hintText: '写一段简短的话记录这份歌单的心情...',
+                    hintStyle: TextStyle(color: theme.textMuted, fontSize: 13),
+                    isDense: true,
+                  ),
+                  onSubmitted: (_) => _submit(),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  SoftButton(
+                    label: '取消',
+                    onTap: () => Navigator.of(context).pop(),
+                  ),
+                  const SizedBox(width: 12),
+                  SoftButton(
+                    label: '立即创建',
+                    icon: Icons.check_rounded,
+                    isActive: true,
+                    onTap: _submit,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 7. 歌曲收录到歌单对话框 (AddToPlaylistModal)
+class AddToPlaylistModal extends StatefulWidget {
+  final Track track;
+
+  const AddToPlaylistModal({super.key, required this.track});
+
+  @override
+  State<AddToPlaylistModal> createState() => _AddToPlaylistModalState();
+}
+
+class _AddToPlaylistModalState extends State<AddToPlaylistModal> {
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.watch<ThemeProvider>();
+    final player = context.watch<AudioPlayerService>();
+    final isDark = theme.isDarkMode;
+    final playlists = player.importedPlaylists;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480, maxHeight: 580),
+        child: SoftCard(
+          padding: const EdgeInsets.all(24),
+          borderRadius: MellowRadii.borderR24,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 顶部头部
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: theme.accentColor.withValues(alpha: 0.15),
+                          borderRadius: MellowRadii.borderR12,
+                        ),
+                        child: Icon(Icons.bookmark_add_rounded, color: theme.accentColor, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('收录到歌单', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                          Text('将单曲归类至您的专属资料库', style: TextStyle(fontSize: 11.5, color: theme.textMuted)),
+                        ],
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, color: theme.textMuted),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // 目标单曲信息预览卡片
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
+                  borderRadius: MellowRadii.borderR12,
+                  border: Border.all(color: theme.borderColor.withValues(alpha: 0.4)),
+                ),
+                child: Row(
+                  children: [
+                    MellowImage(url: widget.track.coverUrl, width: 44, height: 44, borderRadius: MellowRadii.borderR8),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.track.title,
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${widget.track.artist} · ${widget.track.album}',
+                            style: TextStyle(fontSize: 12, color: theme.textMuted),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      widget.track.formattedDuration,
+                      style: TextStyle(fontSize: 12, color: theme.textMuted),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // 快速新建自建歌单入口条目
+              InkWell(
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (_) => CreatePlaylistModal(
+                      initialTrack: widget.track,
+                      onCreated: (_) => setState(() {}),
+                    ),
+                  );
+                },
+                borderRadius: MellowRadii.borderR12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: theme.accentColor.withValues(alpha: 0.08),
+                    borderRadius: MellowRadii.borderR12,
+                    border: Border.all(color: theme.accentColor.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.add_circle_outline_rounded, color: theme.accentColor, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          '新建自建歌单并收录此曲',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: theme.accentColor),
+                        ),
+                      ),
+                      Icon(Icons.arrow_forward_ios_rounded, size: 13, color: theme.accentColor),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              Text('选择要添加的目标歌单', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: theme.textSecondary)),
+              const SizedBox(height: 8),
+
+              // 现有歌单列表
+              Expanded(
+                child: playlists.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.queue_music_rounded, size: 40, color: theme.textMuted),
+                            const SizedBox(height: 10),
+                            Text('暂无自建或导入歌单', style: TextStyle(color: theme.textMuted, fontSize: 13)),
+                            const SizedBox(height: 6),
+                            Text('点击上方按钮即可创建第一个自建歌单', style: TextStyle(color: theme.textMuted, fontSize: 11)),
+                          ],
+                        ),
+                      )
+                    : ListView.separated(
+                        itemCount: playlists.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final pl = playlists[index];
+                          final isContained = player.isTrackInPlaylist(pl.id, widget.track.id);
+
+                          return Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
+                              borderRadius: MellowRadii.borderR12,
+                              border: Border.all(
+                                color: isContained ? theme.accentColor.withValues(alpha: 0.4) : theme.borderColor.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                MellowImage(url: pl.coverUrl, width: 42, height: 42, borderRadius: MellowRadii.borderR8),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Flexible(
+                                            child: Text(
+                                              pl.title,
+                                              style: TextStyle(
+                                                fontSize: 13.5,
+                                                fontWeight: FontWeight.bold,
+                                                color: theme.textPrimary,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                            decoration: BoxDecoration(
+                                              color: (pl.isCustom ? theme.accentColor : const Color(0xFF3B82F6)).withValues(alpha: 0.15),
+                                              borderRadius: MellowRadii.borderPill,
+                                            ),
+                                            child: Text(
+                                              pl.isCustom ? '自建' : '导入',
+                                              style: TextStyle(
+                                                fontSize: 9.5,
+                                                fontWeight: FontWeight.bold,
+                                                color: pl.isCustom ? theme.accentColor : const Color(0xFF3B82F6),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '共 ${pl.trackCount} 首音轨',
+                                        style: TextStyle(fontSize: 11.5, color: theme.textMuted),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (isContained)
+                                  InkWell(
+                                    onTap: () {
+                                      player.removeTrackFromPlaylist(pl.id, widget.track.id);
+                                      setState(() {});
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('已从歌单「${pl.title}」中移除')),
+                                      );
+                                    },
+                                    borderRadius: MellowRadii.borderPill,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                        borderRadius: MellowRadii.borderPill,
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.check_rounded, color: Color(0xFF10B981), size: 14),
+                                          SizedBox(width: 4),
+                                          Text('已收录', style: TextStyle(color: Color(0xFF10B981), fontSize: 11.5, fontWeight: FontWeight.bold)),
+                                        ],
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  SoftButton(
+                                    label: '收录',
+                                    icon: Icons.add_rounded,
+                                    isPill: true,
+                                    isActive: true,
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                                    onTap: () {
+                                      final ok = player.addTrackToPlaylist(pl.id, widget.track);
+                                      if (ok) {
+                                        setState(() {});
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('已成功收录到歌单「${pl.title}」！')),
+                                        );
+                                      }
+                                    },
+                                  ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

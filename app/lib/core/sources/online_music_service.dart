@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../audio/track_model.dart';
 
-/// 导入的外部歌单模型
+/// 导入与自建歌单模型
 class ImportedPlaylist {
   final String id;
   final String title;
@@ -10,6 +10,8 @@ class ImportedPlaylist {
   final String description;
   final int trackCount;
   final List<Track> tracks;
+  final bool isCustom;
+  final int createdAt;
 
   const ImportedPlaylist({
     required this.id,
@@ -18,7 +20,31 @@ class ImportedPlaylist {
     required this.description,
     required this.trackCount,
     required this.tracks,
-  });
+    this.isCustom = false,
+    int? createdAt,
+  }) : createdAt = createdAt ?? 0;
+
+  ImportedPlaylist copyWith({
+    String? id,
+    String? title,
+    String? coverUrl,
+    String? description,
+    int? trackCount,
+    List<Track>? tracks,
+    bool? isCustom,
+    int? createdAt,
+  }) {
+    return ImportedPlaylist(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      coverUrl: coverUrl ?? this.coverUrl,
+      description: description ?? this.description,
+      trackCount: trackCount ?? this.trackCount,
+      tracks: tracks ?? this.tracks,
+      isCustom: isCustom ?? this.isCustom,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
 }
 
 /// 在线音乐与公开歌单服务引擎 (对标 AlgerMusicPlayer 核心能力)

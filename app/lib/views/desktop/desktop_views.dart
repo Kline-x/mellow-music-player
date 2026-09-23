@@ -1031,15 +1031,152 @@ class DesktopFavoriteView extends StatelessWidget {
 }
 
 /// 7.5. 导入与自建歌单中心 (DesktopImportedPlaylistsView - 对标 AlgerMusicPlayer 歌单库)
-class DesktopImportedPlaylistsView extends StatelessWidget {
+class DesktopImportedPlaylistsView extends StatefulWidget {
   final Function(String viewId, [String? extra]) onNavigate;
   const DesktopImportedPlaylistsView({super.key, required this.onNavigate});
+
+  @override
+  State<DesktopImportedPlaylistsView> createState() => _DesktopImportedPlaylistsViewState();
+}
+
+class _DesktopImportedPlaylistsViewState extends State<DesktopImportedPlaylistsView> {
+  int _selectedFilter = 0; // 0: 全部, 1: 自建, 2: 外部导入
+
+  void _showRenameDialog(BuildContext context, ImportedPlaylist pl) {
+    final titleCtrl = TextEditingController(text: pl.title);
+    final descCtrl = TextEditingController(text: pl.description);
+    final player = context.read<AudioPlayerService>();
+    final theme = context.read<ThemeProvider>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: SoftCard(
+            padding: const EdgeInsets.all(22),
+            borderRadius: MellowRadii.borderR24,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('编辑歌单信息', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                const SizedBox(height: 16),
+                Text('歌单名称', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: theme.textSecondary)),
+                const SizedBox(height: 6),
+                RecessedWell(
+                  height: 42,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  borderRadius: MellowRadii.borderR12,
+                  child: TextField(
+                    controller: titleCtrl,
+                    style: TextStyle(color: theme.textPrimary, fontSize: 13.5),
+                    decoration: const InputDecoration(border: InputBorder.none, isDense: true),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text('歌单描述', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: theme.textSecondary)),
+                const SizedBox(height: 6),
+                RecessedWell(
+                  height: 42,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  borderRadius: MellowRadii.borderR12,
+                  child: TextField(
+                    controller: descCtrl,
+                    style: TextStyle(color: theme.textPrimary, fontSize: 13.5),
+                    decoration: const InputDecoration(border: InputBorder.none, isDense: true),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    SoftButton(label: '取消', onTap: () => Navigator.of(ctx).pop()),
+                    const SizedBox(width: 10),
+                    SoftButton(
+                      label: '保存修改',
+                      isActive: true,
+                      onTap: () {
+                        player.renamePlaylist(pl.id, titleCtrl.text, descCtrl.text);
+                        Navigator.of(ctx).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('已更新歌单「${titleCtrl.text}」信息')),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmDialog(BuildContext context, ImportedPlaylist pl) {
+    final player = context.read<AudioPlayerService>();
+    final theme = context.read<ThemeProvider>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 380),
+          child: SoftCard(
+            padding: const EdgeInsets.all(22),
+            borderRadius: MellowRadii.borderR24,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('确认删除歌单？', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                const SizedBox(height: 10),
+                Text('删除歌单「${pl.title}」不会影响歌曲原文件或收藏记录。', style: TextStyle(fontSize: 13, color: theme.textMuted)),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    SoftButton(label: '取消', onTap: () => Navigator.of(ctx).pop()),
+                    const SizedBox(width: 10),
+                    SoftButton(
+                      label: '确认删除',
+                      icon: Icons.delete_outline_rounded,
+                      isActive: true,
+                      onTap: () {
+                        player.deletePlaylist(pl.id);
+                        Navigator.of(ctx).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('已删除歌单「${pl.title}」')),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
-    final playlists = player.importedPlaylists;
+    final allPlaylists = player.importedPlaylists;
+
+    final filteredPlaylists = allPlaylists.where((pl) {
+      if (_selectedFilter == 1) return pl.isCustom;
+      if (_selectedFilter == 2) return !pl.isCustom;
+      return true;
+    }).toList();
+
+    final customCount = allPlaylists.where((p) => p.isCustom).length;
+    final importedCount = allPlaylists.where((p) => !p.isCustom).length;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
@@ -1052,39 +1189,41 @@ class DesktopImportedPlaylistsView extends StatelessWidget {
               children: [
                 Text('导入与自建歌单', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: theme.textPrimary)),
                 const SizedBox(height: 4),
-                Text('支持网易云音乐、QQ音乐分享链接与 ID 一键秒级抓取导入', style: TextStyle(fontSize: 13, color: theme.textMuted)),
+                Text('管理自建精选集，或一键导入网易云音乐、QQ音乐分享链接与公开歌单', style: TextStyle(fontSize: 13, color: theme.textMuted)),
               ],
             ),
-            SoftButton(
-              label: '导入新歌单',
-              icon: Icons.add_link_rounded,
-              isActive: true,
-              isPill: true,
-              onTap: () => showDialog(
-                context: context,
-                builder: (_) => const ImportPlaylistModal(),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-
-        if (playlists.isEmpty)
-          SoftCard(
-            padding: const EdgeInsets.all(40),
-            borderRadius: MellowRadii.borderR24,
-            child: Column(
+            Row(
               children: [
-                Icon(Icons.queue_music_rounded, size: 56, color: theme.accentColor),
-                const SizedBox(height: 16),
-                Text('暂无外部导入歌单', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                const SizedBox(height: 6),
-                Text('点击上方“导入新歌单”，粘贴网易云公开歌单（如官方热歌榜 3778678）即可完整同步！', style: TextStyle(fontSize: 13, color: theme.textMuted)),
-                const SizedBox(height: 20),
                 SoftButton(
-                  label: '立即体验导入',
-                  icon: Icons.download_rounded,
+                  label: '新建自建歌单',
+                  icon: Icons.add_circle_outline_rounded,
                   isActive: true,
+                  isPill: true,
+                  onTap: () => showDialog(
+                    context: context,
+                    builder: (_) => const CreatePlaylistModal(),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                SoftButton(
+                  label: '心动导出',
+                  icon: Icons.favorite_border_rounded,
+                  tooltip: '将我喜欢的音乐批量导出为新歌单',
+                  isPill: true,
+                  onTap: () {
+                    final pl = player.exportFavoritesToPlaylist('心动收藏精选 · ${DateTime.now().month}月');
+                    if (pl != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('已成功导出自建歌单「${pl.title}」（共 ${pl.trackCount} 首）！')),
+                      );
+                    }
+                  },
+                ),
+                const SizedBox(width: 10),
+                SoftButton(
+                  label: '导入新歌单',
+                  icon: Icons.add_link_rounded,
+                  isPill: true,
                   onTap: () => showDialog(
                     context: context,
                     builder: (_) => const ImportPlaylistModal(),
@@ -1092,9 +1231,61 @@ class DesktopImportedPlaylistsView extends StatelessWidget {
                 ),
               ],
             ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // 分类微胶囊过滤器
+        Row(
+          children: [
+            _buildFilterChip('全部 (${allPlaylists.length})', 0, theme),
+            const SizedBox(width: 10),
+            _buildFilterChip('我的自建 ($customCount)', 1, theme),
+            const SizedBox(width: 10),
+            _buildFilterChip('外部导入 ($importedCount)', 2, theme),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        if (filteredPlaylists.isEmpty)
+          SoftCard(
+            padding: const EdgeInsets.all(40),
+            borderRadius: MellowRadii.borderR24,
+            child: Column(
+              children: [
+                Icon(Icons.queue_music_rounded, size: 56, color: theme.accentColor),
+                const SizedBox(height: 16),
+                Text(
+                  _selectedFilter == 1
+                      ? '暂无自建歌单'
+                      : _selectedFilter == 2
+                          ? '暂无外部导入歌单'
+                          : '暂无歌单数据',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _selectedFilter == 1
+                      ? '点击右上角“新建自建歌单”，或在播放歌曲时随时点击“收录到歌单”建立您的专属音乐集！'
+                      : '点击右上角“导入新歌单”，粘贴网易云公开歌单即可完整同步！',
+                  style: TextStyle(fontSize: 13, color: theme.textMuted),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                SoftButton(
+                  label: _selectedFilter == 1 ? '创建第一个歌单' : '立即体验导入',
+                  icon: _selectedFilter == 1 ? Icons.add_rounded : Icons.download_rounded,
+                  isActive: true,
+                  onTap: () => showDialog(
+                    context: context,
+                    builder: (_) => _selectedFilter == 1 ? const CreatePlaylistModal() : const ImportPlaylistModal(),
+                  ),
+                ),
+              ],
+            ),
           )
         else
-          for (final pl in playlists)
+          for (final pl in filteredPlaylists)
             SoftCard(
               margin: const EdgeInsets.only(bottom: 16),
               padding: const EdgeInsets.all(20),
@@ -1110,28 +1301,91 @@ class DesktopImportedPlaylistsView extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              pl.title,
-                              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    pl.title,
+                                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: (pl.isCustom ? theme.accentColor : const Color(0xFF3B82F6)).withValues(alpha: 0.15),
+                                    borderRadius: MellowRadii.borderPill,
+                                  ),
+                                  child: Text(
+                                    pl.isCustom ? '自建' : '外部导入',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: pl.isCustom ? theme.accentColor : const Color(0xFF3B82F6),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 4),
                             Text('包含 ${pl.trackCount} 首完整音轨 · ${pl.description}', style: TextStyle(fontSize: 12.5, color: theme.textMuted)),
                           ],
                         ),
                       ),
-                      SoftButton(
-                        label: '播放全部',
-                        icon: Icons.play_arrow_rounded,
-                        isActive: true,
-                        isPill: true,
-                        onTap: () => player.playPlaylist(pl.tracks),
+                      Row(
+                        children: [
+                          SoftButton(
+                            label: '播放全部',
+                            icon: Icons.play_arrow_rounded,
+                            isActive: true,
+                            isPill: true,
+                            onTap: () => player.playPlaylist(pl.tracks),
+                          ),
+                          const SizedBox(width: 8),
+                          PopupMenuButton<String>(
+                            icon: Icon(Icons.more_vert_rounded, color: theme.textSecondary, size: 20),
+                            color: theme.cardColor,
+                            shape: RoundedRectangleBorder(borderRadius: MellowRadii.borderR12),
+                            onSelected: (action) {
+                              if (action == 'rename') {
+                                _showRenameDialog(context, pl);
+                              } else if (action == 'delete') {
+                                _showDeleteConfirmDialog(context, pl);
+                              }
+                            },
+                            itemBuilder: (ctx) => [
+                              PopupMenuItem(
+                                value: 'rename',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.edit_outlined, size: 16, color: theme.textPrimary),
+                                    const SizedBox(width: 8),
+                                    Text('重命名与描述', style: TextStyle(color: theme.textPrimary, fontSize: 13)),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: const Row(
+                                  children: [
+                                    Icon(Icons.delete_outline_rounded, size: 16, color: Color(0xFFEF4444)),
+                                    SizedBox(width: 8),
+                                    Text('删除此歌单', style: TextStyle(color: Color(0xFFEF4444), fontSize: 13)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ],
                   ),
                   const SizedBox(height: 14),
                   const Divider(height: 1),
                   const SizedBox(height: 10),
-                  // 前 5 首曲目预览
+                  // 前 5 首曲目预览与单曲移除控制
                   for (final t in pl.tracks.take(5))
                     InkWell(
                       onTap: () => player.playTrack(t),
@@ -1146,14 +1400,64 @@ class DesktopImportedPlaylistsView extends StatelessWidget {
                               child: Text('${t.title} - ${t.artist}', style: TextStyle(fontSize: 13, color: theme.textPrimary)),
                             ),
                             Text(t.formattedDuration, style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                            const SizedBox(width: 10),
+                            InkWell(
+                              onTap: () {
+                                player.removeTrackFromPlaylist(pl.id, t.id);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('已从歌单中移除「${t.title}」')),
+                                );
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Padding(
+                                padding: const EdgeInsets.all(4),
+                                child: Icon(Icons.remove_circle_outline_rounded, size: 16, color: theme.textMuted),
+                              ),
+                            ),
                           ],
                         ),
                       ),
                     ),
+                  if (pl.tracks.length > 5) ...[
+                    const SizedBox(height: 6),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: Text(
+                        '还有 ${pl.tracks.length - 5} 首曲目未显示，点击上方“播放全部”即可完整连播',
+                        style: TextStyle(fontSize: 11.5, color: theme.textMuted),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
       ],
+    );
+  }
+
+  Widget _buildFilterChip(String label, int index, ThemeProvider theme) {
+    final isSelected = _selectedFilter == index;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedFilter = index),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? theme.accentColor.withValues(alpha: 0.15) : theme.canvasColor,
+          borderRadius: MellowRadii.borderPill,
+          border: Border.all(
+            color: isSelected ? theme.accentColor : theme.borderColor.withValues(alpha: 0.6),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12.5,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected ? theme.accentColor : theme.textSecondary,
+          ),
+        ),
+      ),
     );
   }
 }

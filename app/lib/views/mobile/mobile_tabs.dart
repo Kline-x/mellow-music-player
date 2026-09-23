@@ -7,6 +7,8 @@ import '../../design_system/soft_card.dart';
 import '../../design_system/soft_button.dart';
 import '../../core/audio/audio_player_service.dart';
 import '../../core/audio/track_model.dart';
+import '../../core/sources/online_music_service.dart';
+import '../common/modals.dart';
 
 /// 1. 移动端 Tab 1: 发现音乐 (MobileDiscoverTab - 1:1 原型复刻)
 class MobileDiscoverTab extends StatelessWidget {
@@ -933,6 +935,169 @@ class MobileLibraryTab extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(height: 22),
+
+        // 自建与导入歌单区域
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('自建与收藏歌单', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: () => showDialog(
+                    context: context,
+                    builder: (_) => const CreatePlaylistModal(),
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: theme.accentColor.withValues(alpha: 0.15),
+                      borderRadius: MellowRadii.borderPill,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.add_rounded, size: 14, color: theme.accentColor),
+                        const SizedBox(width: 2),
+                        Text('新建', style: TextStyle(color: theme.accentColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => showDialog(
+                    context: context,
+                    builder: (_) => const ImportPlaylistModal(),
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: theme.borderColor.withValues(alpha: 0.5),
+                      borderRadius: MellowRadii.borderPill,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.add_link_rounded, size: 14, color: theme.textSecondary),
+                        const SizedBox(width: 2),
+                        Text('导入', style: TextStyle(color: theme.textSecondary, fontSize: 12, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        if (player.importedPlaylists.isEmpty)
+          SoftCard(
+            padding: const EdgeInsets.all(24),
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(Icons.library_music_rounded, size: 36, color: theme.textMuted),
+                  const SizedBox(height: 8),
+                  Text('暂无自建或导入歌单', style: TextStyle(fontSize: 13, color: theme.textMuted)),
+                  const SizedBox(height: 12),
+                  SoftButton(
+                    label: '新建自建歌单',
+                    icon: Icons.add_rounded,
+                    isActive: true,
+                    isPill: true,
+                    onTap: () => showDialog(
+                      context: context,
+                      builder: (_) => const CreatePlaylistModal(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          for (final pl in player.importedPlaylists)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: SoftCard(
+                padding: const EdgeInsets.all(12),
+                onTap: () => player.playPlaylist(pl.tracks),
+                child: Row(
+                  children: [
+                    MellowImage(url: pl.coverUrl, width: 50, height: 50, borderRadius: MellowRadii.borderR12),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  pl.title,
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: theme.textPrimary),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: (pl.isCustom ? theme.accentColor : const Color(0xFF3B82F6)).withValues(alpha: 0.15),
+                                  borderRadius: MellowRadii.borderPill,
+                                ),
+                                child: Text(
+                                  pl.isCustom ? '自建' : '导入',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    color: pl.isCustom ? theme.accentColor : const Color(0xFF3B82F6),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text('包含 ${pl.trackCount} 首曲目', style: TextStyle(fontSize: 11.5, color: theme.textMuted)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.play_circle_fill_rounded, color: theme.accentColor, size: 26),
+                      onPressed: () => player.playPlaylist(pl.tracks),
+                    ),
+                    PopupMenuButton<String>(
+                      icon: Icon(Icons.more_vert_rounded, color: theme.textMuted, size: 18),
+                      color: theme.cardColor,
+                      shape: RoundedRectangleBorder(borderRadius: MellowRadii.borderR12),
+                      onSelected: (action) {
+                        if (action == 'delete') {
+                          player.deletePlaylist(pl.id);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('已删除歌单「${pl.title}」')),
+                          );
+                        }
+                      },
+                      itemBuilder: (ctx) => [
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete_outline_rounded, size: 16, color: Color(0xFFEF4444)),
+                              SizedBox(width: 8),
+                              Text('删除歌单', style: TextStyle(color: Color(0xFFEF4444), fontSize: 13)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
       ],
     );
   }

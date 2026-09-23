@@ -276,6 +276,131 @@ class AudioPlayerService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 创建自建歌单
+  ImportedPlaylist createCustomPlaylist(
+    String title, {
+    String? description,
+    String? coverUrl,
+    List<Track>? initialTracks,
+  }) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final tracks = List<Track>.from(initialTracks ?? []);
+    final defaultCover = tracks.isNotEmpty
+        ? tracks.first.coverUrl
+        : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80';
+
+    final pl = ImportedPlaylist(
+      id: 'custom-$now',
+      title: title.trim().isEmpty ? '我的自建歌单' : title.trim(),
+      coverUrl: (coverUrl != null && coverUrl.isNotEmpty) ? coverUrl : defaultCover,
+      description: description ?? '自建个性化歌单',
+      trackCount: tracks.length,
+      tracks: tracks,
+      isCustom: true,
+      createdAt: now,
+    );
+
+    _importedPlaylists.insert(0, pl);
+    for (final t in tracks) {
+      if (!_playlist.any((p) => p.id == t.id)) {
+        _playlist.add(t);
+      }
+    }
+    StorageService.instance.saveImportedPlaylists(_importedPlaylists);
+    notifyListeners();
+    return pl;
+  }
+
+  /// 删除歌单 (自建或已导入)
+  bool deletePlaylist(String playlistId) {
+    final prevLen = _importedPlaylists.length;
+    _importedPlaylists.removeWhere((p) => p.id == playlistId);
+    if (_importedPlaylists.length != prevLen) {
+      StorageService.instance.saveImportedPlaylists(_importedPlaylists);
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
+  /// 重命名与编辑歌单
+  bool renamePlaylist(String playlistId, String newTitle, [String? newDescription]) {
+    final idx = _importedPlaylists.indexWhere((p) => p.id == playlistId);
+    if (idx != -1) {
+      final old = _importedPlaylists[idx];
+      _importedPlaylists[idx] = old.copyWith(
+        title: newTitle.trim().isEmpty ? old.title : newTitle.trim(),
+        description: newDescription ?? old.description,
+      );
+      StorageService.instance.saveImportedPlaylists(_importedPlaylists);
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
+  /// 将曲目添加到指定歌单 (若已存在则返回 false，未存在则加入并返回 true)
+  bool addTrackToPlaylist(String playlistId, Track track) {
+    final idx = _importedPlaylists.indexWhere((p) => p.id == playlistId);
+    if (idx != -1) {
+      final old = _importedPlaylists[idx];
+      if (old.tracks.any((t) => t.id == track.id)) {
+        return false; // 已收录
+      }
+      final newTracks = List<Track>.from(old.tracks)..add(track);
+      _importedPlaylists[idx] = old.copyWith(
+        tracks: newTracks,
+        trackCount: newTracks.length,
+        coverUrl: (old.tracks.isEmpty && track.coverUrl.isNotEmpty) ? track.coverUrl : old.coverUrl,
+      );
+      if (!_playlist.any((p) => p.id == track.id)) {
+        _playlist.add(track);
+      }
+      StorageService.instance.saveImportedPlaylists(_importedPlaylists);
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
+  /// 从指定歌单中移除曲目
+  bool removeTrackFromPlaylist(String playlistId, String trackId) {
+    final idx = _importedPlaylists.indexWhere((p) => p.id == playlistId);
+    if (idx != -1) {
+      final old = _importedPlaylists[idx];
+      final newTracks = old.tracks.where((t) => t.id != trackId).toList();
+      _importedPlaylists[idx] = old.copyWith(
+        tracks: newTracks,
+        trackCount: newTracks.length,
+      );
+      StorageService.instance.saveImportedPlaylists(_importedPlaylists);
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
+  /// 检查某首歌曲是否已收录在指定歌单中
+  bool isTrackInPlaylist(String playlistId, String trackId) {
+    final pl = _importedPlaylists.where((p) => p.id == playlistId).firstOrNull;
+    if (pl == null) return false;
+    return pl.tracks.any((t) => t.id == trackId);
+  }
+
+  /// 一键将我喜欢的音乐批量导出为自建歌单
+  ImportedPlaylist? exportFavoritesToPlaylist(String playlistTitle) {
+    final favs = _cachedFavoriteTracks.values.toList();
+    if (favs.isEmpty) {
+      final inPlFavs = _playlist.where((t) => _favoriteIds.contains(t.id)).toList();
+      favs.addAll(inPlFavs);
+    }
+    return createCustomPlaylist(
+      playlistTitle.trim().isEmpty ? '我的心动精选歌单' : playlistTitle.trim(),
+      description: '由「我喜欢的音乐」心动收藏一键导出 · 共 ${favs.length} 首',
+      initialTracks: favs,
+    );
+  }
+
   // 一键替换为新歌单并播放
   void playPlaylist(List<Track> tracks, {int startIndex = 0}) {
     if (tracks.isEmpty) return;

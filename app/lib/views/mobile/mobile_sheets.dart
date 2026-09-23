@@ -118,9 +118,17 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
                           ),
                         ],
                       ),
-                      IconButton(
-                        icon: Icon(player.isFavorite(track.id) ? Icons.favorite_rounded : Icons.favorite_border_rounded, color: Colors.pink, size: 22),
-                        onPressed: () => player.toggleFavorite(track.id),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(player.isFavorite(track.id) ? Icons.favorite_rounded : Icons.favorite_border_rounded, color: Colors.pink, size: 22),
+                            onPressed: () => player.toggleFavorite(track.id),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.playlist_add_rounded, color: theme.textSecondary, size: 24),
+                            onPressed: () => showDialog(context: context, builder: (_) => AddToPlaylistModal(track: track)),
+                          ),
+                        ],
                       ),
                     ],
                   ),

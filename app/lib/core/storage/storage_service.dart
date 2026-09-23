@@ -172,6 +172,8 @@ class StorageService {
           description: map['description'] as String? ?? '',
           trackCount: tracksList.length,
           tracks: tracksList,
+          isCustom: map['isCustom'] as bool? ?? false,
+          createdAt: map['createdAt'] as int? ?? 0,
         );
       }).toList();
     } catch (_) {
@@ -185,6 +187,8 @@ class StorageService {
       'title': pl.title,
       'coverUrl': pl.coverUrl,
       'description': pl.description,
+      'isCustom': pl.isCustom,
+      'createdAt': pl.createdAt,
       'tracks': pl.tracks.map((t) => _serializeTrack(t)).toList(),
     }).toList();
     return (await _prefs?.setString(_keyImportedPlaylists, jsonEncode(list))) ?? false;

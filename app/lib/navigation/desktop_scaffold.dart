@@ -648,6 +648,21 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                                   : theme.textMuted,
                             ),
                           ),
+                          const SizedBox(width: 6),
+                          GestureDetector(
+                            onTap: () => showDialog(
+                              context: context,
+                              builder: (_) => AddToPlaylistModal(track: track),
+                            ),
+                            child: Tooltip(
+                              message: '收录到歌单',
+                              child: Icon(
+                                Icons.playlist_add_rounded,
+                                size: 19,
+                                color: theme.textMuted,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 2),
