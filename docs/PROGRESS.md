@@ -81,20 +81,36 @@
 - **Android 明文与局域网网络安全配置**：新增 `network_security_config.xml` 并在 `AndroidManifest.xml` 中配置引用，确保 Android 9+ 环境下 HTTP 明文音频流与 UDP 组播通信合规；
 - **全仓质量双重门禁**：全仓 165 项 Flutter 自动化测试 100% 通过，macOS 真实物理进程端到端原生集成测试（`app_client_e2e_test.dart`）8/8 全绿通过。
 
+### 7. macOS 黑屏根治与落雪音源内置聚合闭环 (Phase 5 & 6)
+- **macOS 黑屏彻底解决**：分析确证旧版本因 Impeller 图形驱动与系统窗口通道竞争导致在老架构上黑屏，通过配置 `FLTEnableImpeller=false` 回退至最稳定可靠的 Skia Metal 渲染后端，规范应用 Bundle 与可执行名称为 `Mellow Music`；
+- **沉浸式无边框微拟物重构**：`MainFlutterWindow.swift` 原生配置 `titleVisibility = .hidden`、`titlebarAppearsTransparent = true`，使顶栏与侧栏自然无缝融为一体；剔除全仓 0.8px 灰色实线，全面贯彻 Modern Soft UI 微光阴影与浮雕圆角规范；
+- **内置标准聚合落雪音源驱动**：冷启动时由 `LxSourceEngine.instance.initFromStorage()` 自动装载内置标准高可用音源，免去用户手动导入外部脚本成本，即开即播。
+
+### 8. 客户端真机挑剔验收与 18 项核心缺陷系统性整改 (Phase 7)
+- **真机防伪与真实光栅化像素查验机制**：建立基于底层像素光栅化截图（`_flutter.screenshot` 与 `boundary.toImage`）的真机 E2E 验收机制，杜绝虚拟 Widget 树“通过”但实际屏幕黑屏的假象；配合 AppleScript 强行置顶前台激活；
+- **侧边栏轻灵透明悬浮态**：彻底消灭 12 个条目套用 `SoftButton` 导致的“白色药丸堆积”，重构为专属于侧栏的微浅悬浮与温润激活药丸，纵向间距优化确保 800 高度下无截断完整展露；
+- **底部播放 Dock 呼吸感与三区分区**：中央主播放按键升级为 38px 呼吸触感微光胶囊（带双层渐变外发光投影）；右侧 7 个工具图标清晰划分为“声学定时”、“视界队列”、“音量”三大独立分区并以 0.8px 微细竖线优雅分隔；
+- **全网搜索卡片柔光毛玻璃化**：将“流行/摇滚/民谣/电子”四大卡片的高饱和刺眼色块升级为 Soft Glass Tint 半透明柔光微光卡片，并增加页面切入光标自动对焦；
+- **我喜欢的音乐与历史高密度表格**：废弃单行大白卡片，全面重塑为 Apple Music 级一体化高密度歌曲列表表格（`DesktopSongTableView`），支持双击点播、悬停高光、一屏浏览 10-12 首；
+- **歌手生态扩充与全局底栏避让**：扩充至 8 位主流歌手并支持 5 大流派切换 Tab；全仓 11 个核心页面 `ListView` 统一增加 100px 底部安全避让边距，彻底消除内容被播放 Dock 遮挡痛点；
+- **巨幕全屏歌词微拟物升级**：黑胶大碟增加同心光栅圆环双层物理纹理与金属转轴心；新增拟物级复古动态唱针组件（`_TonearmWidget`），播放顺时针旋转搭放、暂停逆时针抬起。
+
 ---
 
 ## 🎯 产出物运行与验证指引
 
 ```bash
-# 1. 运行全量单元与部件测试套件 (165/165 Passed 100%)
+# 1. 运行全量单元与部件测试套件 (167/167 Passed 100%)
 cd app
 flutter analyze
 flutter test
 
 # 2. 运行 macOS 真实桌面物理集成测试 (8/8 Passed 100%)
 flutter test integration_test/app_client_e2e_test.dart -d macos
-```
 
-# 3. 运行移动端平台配置合规检查与打包流水线
+# 3. 运行真机全景像素级巡检自动化截屏套件 (输出 9 张高保真 PNG 帧至 artifacts)
+flutter test test/visual_inspection_test.dart
+
+# 4. 运行移动端平台配置合规检查与打包流水线
 powershell -ExecutionPolicy Bypass -File .\build_mobile.ps1 -Target check-only
 ```
