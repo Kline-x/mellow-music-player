@@ -7,6 +7,7 @@ import 'package:mellow_music/core/audio/equalizer_manager.dart';
 import 'package:mellow_music/core/sources/online_music_service.dart';
 import 'package:mellow_music/navigation/desktop_scaffold.dart';
 import 'package:mellow_music/views/common/modals.dart';
+import 'package:mellow_music/views/desktop/desktop_search_view.dart';
 
 void main() {
   group('PC 桌面端对标 AlgerMusicPlayer 现代架构专项验收套件', () {
@@ -85,13 +86,13 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(ImportPlaylistModal), findsNothing);
 
-      // 3. 验证搜索栏点击唤起 QuickSearchOverlay
+      // 3. 验证搜索栏点击唤起独立全屏搜索视图 DesktopSearchView
       final searchBar = find.text('即时搜索全网歌曲、歌手、专辑...');
       expect(searchBar, findsOneWidget);
       await tester.tap(searchBar);
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.byType(QuickSearchOverlay), findsOneWidget);
-      expect(find.text('搜索全网歌曲、歌手、专辑 (按 ESC 退出)...'), findsOneWidget);
+      expect(find.byType(DesktopSearchView), findsOneWidget);
+      expect(find.text('全网音乐搜索'), findsOneWidget);
 
       // 在搜索框中输入“周杰伦”
       await tester.enterText(find.byType(TextField), '周杰伦');

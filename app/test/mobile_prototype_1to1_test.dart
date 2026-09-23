@@ -8,7 +8,7 @@ import 'package:mellow_music/core/audio/audio_player_service.dart';
 import 'package:mellow_music/core/audio/equalizer_manager.dart';
 import 'package:mellow_music/navigation/mobile_scaffold.dart';
 import 'package:mellow_music/views/mobile/mobile_sheets.dart';
-import 'package:mellow_music/views/common/modals.dart';
+import 'package:mellow_music/views/mobile/mobile_pages.dart';
 
 void main() {
   setUpAll(() {
@@ -107,16 +107,17 @@ void main() {
       expect(find.text('搜索歌曲、歌手、专辑、播客...'), findsOneWidget);
       expect(find.byIcon(Icons.mic_none_rounded), findsOneWidget);
 
-      // 4. 点击搜索框弹出全网即时检索弹窗
+      // 4. 点击搜索框进入全屏搜索页面 MobileSearchPage
       await tester.tap(find.text('搜索歌曲、歌手、专辑、播客...'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.byType(QuickSearchOverlay), findsOneWidget);
+      expect(find.byType(MobileSearchPage), findsOneWidget);
 
-      // 关闭搜索弹窗
-      await tester.tap(find.byKey(const Key('quick_search_close_button')));
+      // 返回主界面
+      await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(MobileSearchPage), findsNothing);
     });
 
     testWidgets('MOB-03: 五大彩色渐变金刚区大圆角微矩形卡片与二级页下钻', (tester) async {

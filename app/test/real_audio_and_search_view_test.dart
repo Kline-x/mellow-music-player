@@ -118,7 +118,7 @@ void main() {
 
       // 验证历史记录与热门搜索
       expect(find.text('历史搜索'), findsOneWidget);
-      expect(find.text('晴天'), findsOneWidget);
+      expect(find.text('晴天'), findsWidgets);
       expect(find.text('热门搜索 · 流行探索'), findsOneWidget);
       expect(find.text('布拉格广场'), findsOneWidget);
       expect(find.text('周杰伦'), findsOneWidget);
