@@ -163,7 +163,7 @@ class OnlineMusicService {
       } else if (mvPic != null && mvPic.isNotEmpty) {
         coverUrl = mvPic;
       } else {
-        coverUrl = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80';
+        coverUrl = NeteaseMusicService.fallbackCoverFor(name, artist);
       }
 
       final audioUrl = 'http://music.nxinxz.com/kw.php?id=$mid&level=standard&type=mp3';
@@ -310,7 +310,10 @@ class OnlineMusicService {
             final album = item['album']?['name']?.toString() ?? '未知专辑';
             final durationMs = (item['duration'] as num?)?.toInt() ?? 240000;
             final duration = Duration(milliseconds: durationMs);
-            final itemCover = item['album']?['picUrl']?.toString() ?? coverUrl;
+            final rawItemCover = item['album']?['picUrl']?.toString();
+            final itemCover = (rawItemCover != null && rawItemCover.isNotEmpty)
+                ? rawItemCover
+                : (coverUrl.isNotEmpty ? coverUrl : NeteaseMusicService.fallbackCoverFor(name, artists));
             final audioUrl = 'https://music.163.com/song/media/outer/url?id=$id.mp3';
 
             parsedTracks.add(Track(

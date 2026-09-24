@@ -6,6 +6,14 @@ class MellowImage extends StatelessWidget {
   /// 是否在测试模式下运行（测试模式下跳过网络请求渲染占位）
   static bool isInTest = false;
 
+  /// 标准浏览器防盗链 / 反爬请求头（网易云、酷我、主流 CDN 必备，杜绝 Dart User-Agent 导致的 403 Forbidden）
+  static const Map<String, String> defaultHeaders = {
+    'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+    'Referer': 'https://music.163.com/',
+    'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+  };
+
   final String url;
   final double? width;
   final double? height;
@@ -23,7 +31,9 @@ class MellowImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cleanUrl = url.trim().replaceFirst(RegExp(r'^http://'), 'https://');
     final bool usePlaceholder = isInTest ||
+        cleanUrl.isEmpty ||
         WidgetsBinding.instance.runtimeType.toString().contains('Test');
 
     // 安全计算图标大小，严防 double.infinity 传入 Icon.size
@@ -35,7 +45,10 @@ class MellowImage extends StatelessWidget {
     Widget placeholder = Container(
       width: width,
       height: height,
-      color: Colors.grey.withValues(alpha: 0.15),
+      decoration: BoxDecoration(
+        color: Colors.grey.withValues(alpha: 0.15),
+        borderRadius: borderRadius,
+      ),
       alignment: Alignment.center,
       child: Icon(
         Icons.music_note_rounded,
@@ -49,10 +62,11 @@ class MellowImage extends StatelessWidget {
       img = placeholder;
     } else {
       img = Image.network(
-        url,
+        cleanUrl,
         width: width,
         height: height,
         fit: fit,
+        headers: defaultHeaders,
         errorBuilder: (context, error, stackTrace) => placeholder,
       );
     }

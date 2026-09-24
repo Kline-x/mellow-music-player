@@ -157,6 +157,24 @@ class NeteaseMusicService {
     return match?.group(0);
   }
 
+  /// 声学精选无版权/无封面兜底音符封面池
+  static const List<String> fallbackCovers = [
+    'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80',
+    'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
+    'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80',
+    'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=500&q=80',
+    'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80',
+    'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&q=80',
+    'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&q=80',
+    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&q=80',
+  ];
+
+  /// 依据歌名与歌手生成确定性的精选声学封面兜底
+  static String fallbackCoverFor(String title, String artist) {
+    final idx = (title.hashCode ^ artist.hashCode).abs() % fallbackCovers.length;
+    return fallbackCovers[idx];
+  }
+
   /// 1. 真实关键词搜索：`/api/search/get/web`
   Future<List<Track>> search(String keyword, {int limit = 20}) async {
     final clean = keyword.trim();
@@ -187,13 +205,16 @@ class NeteaseMusicService {
               .join(' / ') ??
           '';
       final album = raw['album'];
+      final trackTitle = raw['name']?.toString() ?? '未知曲目';
+      final initialPic = album is Map ? (album['picUrl']?.toString() ?? '') : '';
+      final initialCover = initialPic.isNotEmpty ? initialPic : fallbackCoverFor(trackTitle, artists);
 
       tracks.add(Track(
         id: 'netease_$id',
-        title: raw['name']?.toString() ?? '未知曲目',
+        title: trackTitle,
         artist: artists.isEmpty ? '未知歌手' : artists,
         album: album is Map ? (album['name']?.toString() ?? '') : '',
-        coverUrl: album is Map ? (album['picUrl']?.toString() ?? '') : '',
+        coverUrl: initialCover,
         duration: Duration(milliseconds: (raw['duration'] as num?)?.toInt() ?? 0),
         source: 'netease-online',
         // 真实直链在播放时通过 resolveStreamUrl 惰性获取，不在此预置假地址。
@@ -234,7 +255,7 @@ class NeteaseMusicService {
       return tracks.map((t) {
         final id = pureSongId(t.id);
         final pic = id == null ? null : covers[id];
-        return (pic == null || pic.isEmpty) ? t : t.copyWith(coverUrl: pic);
+        return (pic != null && pic.isNotEmpty) ? t.copyWith(coverUrl: pic) : t;
       }).toList();
     } catch (_) {
       return tracks;

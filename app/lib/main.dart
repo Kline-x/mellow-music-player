@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'design_system/tokens.dart';
@@ -9,9 +10,22 @@ import 'core/sources/lx_script_sandbox.dart';
 import 'core/window/desktop_floating_lyric_service.dart';
 import 'navigation/adaptive_scaffold.dart';
 
+/// 全局 HTTP 覆盖器：强制所有底层连接（含 Image.network）附带桌面浏览器 User-Agent，
+/// 根治各大国内音乐 CDN（网易云、酷我等）针对 Dart 默认 UA 的 403 Forbidden 屏蔽。
+class MellowHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    final client = super.createHttpClient(context);
+    client.userAgent =
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
+    return client;
+  }
+}
+
 void main() async {
   // ignore: avoid_print
   print('>>> [STEP 1] main started');
+  HttpOverrides.global = MellowHttpOverrides();
   WidgetsFlutterBinding.ensureInitialized();
   // ignore: avoid_print
   print('>>> [STEP 2] WidgetsFlutterBinding ensured');
