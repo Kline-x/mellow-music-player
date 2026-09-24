@@ -3,6 +3,8 @@ import 'package:http/http.dart' as http;
 import '../audio/track_model.dart';
 import 'itunes_music_service.dart';
 import 'netease_music_service.dart';
+import 'lx_script_sandbox.dart';
+import 'lx_source_model.dart';
 
 export 'netease_music_service.dart' show NeteaseMusicService, NeteaseQuality, NeteaseStreamResult;
 export 'itunes_music_service.dart' show ItunesMusicService;
@@ -381,7 +383,7 @@ class OnlineMusicService {
     return defaultUrl;
   }
 
-  /// 针对指定目标音源主动解析 (支持用户主动手动换源)
+  /// 针对指定目标音源主动解析 (支持用户主动手动换源：酷我、网易云、QQ、酷狗、咪咕、润音官方、iTunes、落雪脚本)
   static Future<String?> resolveUrlFromSpecificSource(
     String title,
     String artist,
@@ -392,7 +394,7 @@ class OnlineMusicService {
     final cleanArtist = artist.trim();
     final firstArtist = cleanArtist.split(RegExp(r'[/,&、·]')).first.trim();
 
-    if (targetSource.contains('kuwo')) {
+    if (targetSource.contains('kuwo') || targetSource == 'kw') {
       try {
         final uri = Uri.parse(
           'http://search.kuwo.cn/r.s?client=kt&all=${Uri.encodeComponent('$cleanTitle $firstArtist')}&pn=0&rn=3&vipver=1&ft=music&encoding=utf8&rformat=json&mobi=1',
@@ -416,7 +418,7 @@ class OnlineMusicService {
           }
         }
       } catch (_) {}
-    } else if (targetSource.contains('netease')) {
+    } else if (targetSource.contains('netease') || targetSource == 'wy') {
       try {
         final neTracks = await neteaseService.search('$cleanTitle $firstArtist', limit: 3);
         for (final nt in neTracks) {
@@ -429,6 +431,112 @@ class OnlineMusicService {
           }
         }
       } catch (_) {}
+    } else if (targetSource.contains('qq') || targetSource == 'tx') {
+      try {
+        final lxSong = LxSongInfo(
+          id: trackId ?? 'tx_${cleanTitle.hashCode}',
+          songMid: trackId ?? '${cleanTitle.hashCode}',
+          title: cleanTitle,
+          artist: cleanArtist,
+          album: '',
+          source: LxPlatformId.tx,
+          duration: Duration.zero,
+        );
+        final res = await LxSourceEngine.instance.resolveMusicUrlWithFallback(
+          lxSong,
+          sourceId: LxPlatformId.tx,
+          enableSourceFallback: false,
+        );
+        if (res.url != null && res.url!.isNotEmpty) {
+          return await unwrapRedirects(res.url!);
+        }
+      } catch (_) {}
+    } else if (targetSource.contains('kugou') || targetSource == 'kg') {
+      try {
+        final uri = Uri.parse(
+          'http://mobilecdn.kugou.com/api/v3/search/song?format=json&keyword=${Uri.encodeComponent('$cleanTitle $firstArtist')}&page=1&pagesize=3',
+        );
+        final resp = await http.get(uri, headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        }).timeout(_timeout);
+        if (resp.statusCode == 200) {
+          final data = jsonDecode(utf8.decode(resp.bodyBytes));
+          final songs = data['data']?['info'] as List?;
+          if (songs != null && songs.isNotEmpty) {
+            final hash = (songs.first['hash'] ?? '').toString();
+            if (hash.isNotEmpty) {
+              final infoUri = Uri.parse('http://m.kugou.com/app/i/getSongInfo.php?cmd=playInfo&hash=$hash');
+              final infoResp = await http.get(infoUri).timeout(_timeout);
+              if (infoResp.statusCode == 200) {
+                final infoData = jsonDecode(utf8.decode(infoResp.bodyBytes));
+                final url = (infoData['url'] ?? '').toString();
+                if (url.isNotEmpty && url.startsWith('http')) {
+                  return await unwrapRedirects(url);
+                }
+              }
+            }
+          }
+        }
+      } catch (_) {}
+      try {
+        final lxSong = LxSongInfo(
+          id: trackId ?? 'kg_${cleanTitle.hashCode}',
+          songMid: trackId ?? '${cleanTitle.hashCode}',
+          title: cleanTitle,
+          artist: cleanArtist,
+          album: '',
+          source: LxPlatformId.kg,
+          duration: Duration.zero,
+        );
+        final res = await LxSourceEngine.instance.resolveMusicUrlWithFallback(
+          lxSong,
+          sourceId: LxPlatformId.kg,
+          enableSourceFallback: false,
+        );
+        if (res.url != null && res.url!.isNotEmpty) {
+          return await unwrapRedirects(res.url!);
+        }
+      } catch (_) {}
+    } else if (targetSource.contains('migu') || targetSource == 'mg') {
+      try {
+        final lxSong = LxSongInfo(
+          id: trackId ?? 'mg_${cleanTitle.hashCode}',
+          songMid: trackId ?? '${cleanTitle.hashCode}',
+          title: cleanTitle,
+          artist: cleanArtist,
+          album: '',
+          source: LxPlatformId.mg,
+          duration: Duration.zero,
+        );
+        final res = await LxSourceEngine.instance.resolveMusicUrlWithFallback(
+          lxSong,
+          sourceId: LxPlatformId.mg,
+          enableSourceFallback: false,
+        );
+        if (res.url != null && res.url!.isNotEmpty) {
+          return await unwrapRedirects(res.url!);
+        }
+      } catch (_) {}
+    } else if (targetSource.contains('mellow') || targetSource.contains('preset')) {
+      try {
+        final lxSong = LxSongInfo(
+          id: trackId ?? 'mellow_${cleanTitle.hashCode}',
+          songMid: trackId ?? '${cleanTitle.hashCode}',
+          title: cleanTitle,
+          artist: cleanArtist,
+          album: '',
+          source: LxPlatformId.mellow,
+          duration: Duration.zero,
+        );
+        final res = await LxSourceEngine.instance.resolveMusicUrlWithFallback(
+          lxSong,
+          sourceId: LxPlatformId.mellow,
+          enableSourceFallback: false,
+        );
+        if (res.url != null && res.url!.isNotEmpty) {
+          return await unwrapRedirects(res.url!);
+        }
+      } catch (_) {}
     } else if (targetSource.contains('itunes')) {
       try {
         final itunesList = await itunesService.search('$cleanTitle $firstArtist', limit: 2);
@@ -436,9 +544,30 @@ class OnlineMusicService {
           return itunesList.first.audioUrl!;
         }
       } catch (_) {}
+    } else if (targetSource.startsWith('lx-')) {
+      final scriptId = targetSource.replaceFirst('lx-', '');
+      try {
+        final lxSong = LxSongInfo(
+          id: trackId ?? '${scriptId}_${cleanTitle.hashCode}',
+          songMid: trackId ?? '${cleanTitle.hashCode}',
+          title: cleanTitle,
+          artist: cleanArtist,
+          album: '',
+          source: scriptId,
+          duration: Duration.zero,
+        );
+        final res = await LxSourceEngine.instance.resolveMusicUrlWithFallback(
+          lxSong,
+          sourceId: scriptId,
+          enableSourceFallback: false,
+        );
+        if (res.url != null && res.url!.isNotEmpty) {
+          return await unwrapRedirects(res.url!);
+        }
+      } catch (_) {}
     }
 
-    return resolvePlayableAudioUrl(title, artist, trackId: trackId, forceRefresh: true);
+    return null;
   }
 
   /// 展开任意 HTTP 301/302 重定向，获取最终物理直接可播放地址

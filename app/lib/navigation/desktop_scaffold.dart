@@ -259,10 +259,11 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
               if (player.playbackNotice != null)
                 Positioned(
                   top: 58,
-                  left: 236,
-                  right: 24,
+                  left: 16,
+                  right: 16,
                   child: Center(
                     child: Container(
+                      constraints: const BoxConstraints(maxWidth: 580),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
                         color: Colors.amber.shade900.withValues(alpha: 0.92),

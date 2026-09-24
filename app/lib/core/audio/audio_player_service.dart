@@ -45,6 +45,8 @@ class AudioPlayerService extends ChangeNotifier {
   int _sleepTimerRemainingSeconds = 0;
   bool _pauseAfterCurrent = false;
   String? _playbackNotice;
+  Timer? _playbackNoticeTimer;
+  int _consecutiveFailures = 0;
 
   // Getters
   List<Track> get playlist => List.unmodifiable(_playlist);
@@ -62,7 +64,20 @@ class AudioPlayerService extends ChangeNotifier {
   bool get pauseAfterCurrent => _pauseAfterCurrent;
   String? get playbackNotice => _playbackNotice;
 
+  void _setPlaybackNotice(String message, {int autoDismissSeconds = 4}) {
+    _playbackNoticeTimer?.cancel();
+    _playbackNotice = message;
+    notifyListeners();
+    if (autoDismissSeconds > 0) {
+      _playbackNoticeTimer = Timer(Duration(seconds: autoDismissSeconds), () {
+        _playbackNotice = null;
+        notifyListeners();
+      });
+    }
+  }
+
   void clearPlaybackNotice() {
+    _playbackNoticeTimer?.cancel();
     if (_playbackNotice != null) {
       _playbackNotice = null;
       notifyListeners();
@@ -506,8 +521,9 @@ class AudioPlayerService extends ChangeNotifier {
 
         if (playUrl != null && playUrl.isNotEmpty) {
           await _backend.play(playUrl);
+          _consecutiveFailures = 0;
         } else {
-          await _backend.resume();
+          throw Exception('全网音源暂未匹配到有效可播放音频流');
         }
       }
       await _backend.setVolume(_volume);
@@ -530,6 +546,7 @@ class AudioPlayerService extends ChangeNotifier {
         );
         if (fallbackUrl != null && fallbackUrl.isNotEmpty) {
           await _backend.play(fallbackUrl);
+          _consecutiveFailures = 0;
           final idx = _playlist.indexWhere((t) => t.id == track.id);
           if (idx != -1) {
             final activeSource = _inferSourceFromUrl(fallbackUrl, track.source);
@@ -546,8 +563,22 @@ class AudioPlayerService extends ChangeNotifier {
         debugPrint('[AudioPlayerService] 换源重试亦异常: $retryErr');
       }
 
-      _playbackNotice = '歌曲「${track.title}」音频资源加载失败，可能需要专属授权或网络受限';
-      notifyListeners();
+      // 3. 所有音源均不可用时，给用户清晰浮动提示并自动跳播下一首
+      _consecutiveFailures++;
+      if (_consecutiveFailures >= 5) {
+        _setPlaybackNotice('连续多首歌曲全网暂无可播放音频，已为您自动暂停播放', autoDismissSeconds: 6);
+        _isPlaying = false;
+        _consecutiveFailures = 0;
+        notifyListeners();
+        return;
+      }
+
+      _setPlaybackNotice('「${track.title}」所有音源暂不可用，已自动切换至下一首...', autoDismissSeconds: 4);
+      Future.delayed(const Duration(milliseconds: 1200), () {
+        if (_playlist.isNotEmpty && _isPlaying) {
+          next();
+        }
+      });
     }
   }
 
@@ -555,11 +586,15 @@ class AudioPlayerService extends ChangeNotifier {
   static String _inferSourceFromUrl(String url, String originalSource) {
     if (url.contains('kuwo.cn')) return 'kuwo-sq';
     if (url.contains('126.net') || url.contains('163.com')) return 'netease-online';
+    if (url.contains('qq.com') || url.contains('tencent.com')) return 'qq-online';
+    if (url.contains('kugou.com')) return 'kugou-online';
+    if (url.contains('migu.cn')) return 'migu-online';
     if (url.contains('apple.com') || url.contains('mzstatic.com')) return 'itunes-preview';
+    if (url.contains('mellow') || originalSource.contains('preset') || originalSource.contains('mellow')) return 'mellow-preset';
     return originalSource;
   }
 
-  /// 主动为当前歌曲或指定歌曲切换音源 (酷我高保真 / 网易云音乐 / iTunes官方)
+  /// 主动为当前歌曲或指定歌曲切换音源 (酷我/网易云/QQ/酷狗/咪咕/润音官方/iTunes/落雪脚本)
   Future<bool> switchSource(Track track, String newSource) async {
     final currentPos = _position;
     final isCurrent = currentTrack?.id == track.id;
@@ -584,25 +619,27 @@ class AudioPlayerService extends ChangeNotifier {
           await _backend.resume();
           _isPlaying = true;
         }
-        _playbackNotice = '已成功切换至【${formatSourceDisplayName(newSource)}】音源播放';
-        notifyListeners();
+        _setPlaybackNotice('已成功切换至【${formatSourceDisplayName(newSource)}】音源播放', autoDismissSeconds: 3);
         return true;
       }
     } catch (e) {
       debugPrint('[AudioPlayerService] 主动切换音源失败: $e');
     }
-    _playbackNotice = '切换音源失败，【${formatSourceDisplayName(newSource)}】暂未收录该歌曲';
-    notifyListeners();
+    _setPlaybackNotice('切换音源失败，【${formatSourceDisplayName(newSource)}】暂未收录该歌曲', autoDismissSeconds: 4);
     return false;
   }
 
   static String formatSourceDisplayName(String source) {
-    if (source.contains('kuwo')) return '酷我高保真';
-    if (source.contains('netease')) return '网易云音乐';
-    if (source.contains('itunes')) return 'iTunes官方';
-    if (source.contains('preset')) return '原生高保真';
+    if (source.contains('kuwo') || source == 'kw') return '酷我高保真';
+    if (source.contains('netease') || source == 'wy') return '网易云音乐';
+    if (source.contains('qq') || source.contains('tx') || source.contains('tencent')) return 'QQ音乐';
+    if (source.contains('kugou') || source == 'kg') return '酷狗音乐';
+    if (source.contains('migu') || source == 'mg') return '咪咕音乐';
+    if (source.contains('itunes')) return 'iTunes官方保底';
+    if (source.contains('preset') || source.contains('mellow')) return '润音官方保真源';
+    if (source.contains('lx') || source.contains('custom') || source.contains('script')) return '落雪扩展源';
     if (source.contains('local')) return '本地音频';
-    return '内置音源';
+    return '多源汇聚';
   }
 
   void next() {

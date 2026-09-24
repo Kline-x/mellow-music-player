@@ -2988,6 +2988,8 @@ class _SourceSwitcherModalState extends State<SourceSwitcherModal> {
     final isDark = theme.isDarkMode;
     final currentSource = widget.track.source;
 
+    final customScripts = LxSourceEngine.instance.sources.where((s) => !s.isBuiltIn).toList();
+
     final sources = [
       {
         'id': 'kuwo-sq',
@@ -3000,10 +3002,42 @@ class _SourceSwitcherModalState extends State<SourceSwitcherModal> {
       {
         'id': 'netease-online',
         'name': '网易云音乐 · 在线源',
-        'badge': '官方流',
+        'badge': '官方直连',
         'desc': '主流开放曲库，支持原生高品质 MP3 流与声学专辑匹配',
         'icon': Icons.cloud_queue_rounded,
         'color': const Color(0xFFEF4444),
+      },
+      {
+        'id': 'qq-online',
+        'name': 'QQ音乐 · 在线源',
+        'badge': '腾讯音乐',
+        'desc': '覆盖广泛版权曲库与热门流行金曲，支持高品质流媒体解析',
+        'icon': Icons.music_note_rounded,
+        'color': const Color(0xFF059669),
+      },
+      {
+        'id': 'kugou-online',
+        'name': '酷狗音乐 · 在线源',
+        'badge': '伴奏海量',
+        'desc': '收录丰富中文经典与原版伴奏，极速高保真流直连',
+        'icon': Icons.graphic_eq_rounded,
+        'color': const Color(0xFF0EA5E9),
+      },
+      {
+        'id': 'migu-online',
+        'name': '咪咕音乐 · 高音质源',
+        'badge': '运营商无损',
+        'desc': '传统运营商特权曲库，支持高码率正版原生音轨解析',
+        'icon': Icons.surround_sound_rounded,
+        'color': const Color(0xFFF59E0B),
+      },
+      {
+        'id': 'mellow-preset',
+        'name': '润音官方 · 纯净保真源',
+        'badge': '声学基准',
+        'desc': '润音原生母带高保真音轨，零依赖永不失效，纯净声学享受',
+        'icon': Icons.spa_rounded,
+        'color': const Color(0xFF8B5CF6),
       },
       {
         'id': 'itunes-preview',
@@ -3013,6 +3047,14 @@ class _SourceSwitcherModalState extends State<SourceSwitcherModal> {
         'icon': Icons.apple_rounded,
         'color': const Color(0xFF6366F1),
       },
+      ...customScripts.map((cs) => {
+        'id': 'lx-${cs.id}',
+        'name': '${cs.name} · 落雪脚本源',
+        'badge': '自定义扩展',
+        'desc': cs.description.isNotEmpty ? cs.description : '用户在音源管理中导入的落雪自定义扩展脚本',
+        'icon': Icons.code_rounded,
+        'color': const Color(0xFFEC4899),
+      }),
     ];
 
     return Dialog(
@@ -3020,7 +3062,8 @@ class _SourceSwitcherModalState extends State<SourceSwitcherModal> {
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       child: Center(
         child: Container(
-          width: 480,
+          width: 520,
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: MellowColors.card(isDark),
@@ -3083,128 +3126,141 @@ class _SourceSwitcherModalState extends State<SourceSwitcherModal> {
               ),
               const SizedBox(height: 12),
 
-              // 音源卡片列表
-              ...sources.map((s) {
-                final id = s['id'] as String;
-                final name = s['name'] as String;
-                final badge = s['badge'] as String;
-                final desc = s['desc'] as String;
-                final icon = s['icon'] as IconData;
-                final color = s['color'] as Color;
-                final isCurrent = currentSource.contains(id.replaceAll('-sq', '').replaceAll('-online', '').replaceAll('-preview', ''));
-                final isTarget = _switchingTarget == id;
+              // 可滚动音源卡片列表 (支持全网 6 大平台 + 官方保真 + 落雪扩展脚本)
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: sources.map((s) {
+                      final id = s['id'] as String;
+                      final name = s['name'] as String;
+                      final badge = s['badge'] as String;
+                      final desc = s['desc'] as String;
+                      final icon = s['icon'] as IconData;
+                      final color = s['color'] as Color;
+                      final matchKey = id
+                          .replaceAll('-sq', '')
+                          .replaceAll('-online', '')
+                          .replaceAll('-preview', '')
+                          .replaceAll('-preset', '')
+                          .toLowerCase();
+                      final isCurrent = currentSource.toLowerCase().contains(matchKey);
+                      final isTarget = _switchingTarget == id;
 
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: SoftCard(
-                    padding: const EdgeInsets.all(14),
-                    borderRadius: MellowRadii.borderR16,
-                    onTap: (_isSwitching || isCurrent)
-                        ? null
-                        : () async {
-                            final navigator = Navigator.of(context);
-                            final messenger = ScaffoldMessenger.of(context);
-                            setState(() {
-                              _isSwitching = true;
-                              _switchingTarget = id;
-                            });
-                            final ok = await player.switchSource(widget.track, id);
-                            if (!mounted) return;
-                            navigator.pop();
-                            messenger.showSnackBar(
-                              SnackBar(
-                                content: Text(ok
-                                    ? '已成功切换至【${AudioPlayerService.formatSourceDisplayName(id)}】'
-                                    : '切换失败，该源未匹配到「${widget.track.title}」有效音频'),
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                          },
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(icon, color: color, size: 22),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: SoftCard(
+                          padding: const EdgeInsets.all(14),
+                          borderRadius: MellowRadii.borderR16,
+                          onTap: (_isSwitching || isCurrent)
+                              ? null
+                              : () async {
+                                  final navigator = Navigator.of(context);
+                                  final messenger = ScaffoldMessenger.of(context);
+                                  setState(() {
+                                    _isSwitching = true;
+                                    _switchingTarget = id;
+                                  });
+                                  final ok = await player.switchSource(widget.track, id);
+                                  if (!mounted) return;
+                                  navigator.pop();
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text(ok
+                                          ? '已成功切换至【${AudioPlayerService.formatSourceDisplayName(id)}】'
+                                          : '切换失败，该源未匹配到「${widget.track.title}」有效音频'),
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                },
+                          child: Row(
                             children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    name,
-                                    style: TextStyle(
-                                      fontSize: 13.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: theme.textPrimary,
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: color.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(icon, color: color, size: 22),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          name,
+                                          style: TextStyle(
+                                            fontSize: 13.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: theme.textPrimary,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                          decoration: BoxDecoration(
+                                            color: color.withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            badge,
+                                            style: TextStyle(
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.bold,
+                                              color: color,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      desc,
+                                      style: TextStyle(fontSize: 11, color: theme.textMuted),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              if (isTarget && _isSwitching)
+                                SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: theme.accentColor),
+                                )
+                              else if (isCurrent)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: theme.accentColor.withValues(alpha: 0.15),
+                                    borderRadius: MellowRadii.borderPill,
                                   ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                                    decoration: BoxDecoration(
-                                      color: color.withValues(alpha: 0.15),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      badge,
-                                      style: TextStyle(
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.bold,
-                                        color: color,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.check_rounded, size: 12, color: theme.accentColor),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        '生效中',
+                                        style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: theme.accentColor),
                                       ),
-                                    ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                desc,
-                                style: TextStyle(fontSize: 11, color: theme.textMuted),
-                              ),
+                                )
+                              else
+                                Icon(Icons.chevron_right_rounded, size: 18, color: theme.textMuted),
                             ],
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        if (isTarget && _isSwitching)
-                          SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: theme.accentColor),
-                          )
-                        else if (isCurrent)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: theme.accentColor.withValues(alpha: 0.15),
-                              borderRadius: MellowRadii.borderPill,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.check_rounded, size: 12, color: theme.accentColor),
-                                const SizedBox(width: 3),
-                                Text(
-                                  '生效中',
-                                  style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: theme.accentColor),
-                                ),
-                              ],
-                            ),
-                          )
-                        else
-                          Icon(Icons.chevron_right_rounded, size: 18, color: theme.textMuted),
-                      ],
-                    ),
+                      );
+                    }).toList(),
                   ),
-                );
-              }),
+                ),
+              ),
             ],
           ),
         ),
