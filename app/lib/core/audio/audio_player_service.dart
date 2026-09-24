@@ -475,33 +475,35 @@ class AudioPlayerService extends ChangeNotifier {
   Future<void> _executeRealPlay(Track track) async {
     try {
       _playbackNotice = null;
-      String? playUrl = track.audioUrl;
-
-      // 1. 如果没有有效播放流或为假/受限链接，智能解析真实高保真音源 (消灭 404)
-      if (playUrl == null ||
-          playUrl.isEmpty ||
-          playUrl.contains('soundhelix.com') ||
-          playUrl.contains('music.163.com/song/media/outer/url')) {
-        final resolved = await OnlineMusicService.resolvePlayableAudioUrl(
-          track.title,
-          track.artist,
-          defaultUrl: playUrl,
-        );
-        if (resolved != null && resolved.isNotEmpty) {
-          playUrl = resolved;
-          final idx = _playlist.indexWhere((t) => t.id == track.id);
-          if (idx != -1) {
-            _playlist[idx] = _playlist[idx].copyWith(audioUrl: playUrl);
-          }
-        }
-      }
-
-      if (playUrl != null && playUrl.isNotEmpty) {
-        await _backend.play(playUrl);
-      } else if (track.localPath != null && track.localPath!.isNotEmpty) {
+      // 0. 本地文件优先直接播放，不经过网络音源解析
+      if (track.localPath != null && track.localPath!.isNotEmpty) {
         await _backend.play(track.localPath!);
       } else {
-        await _backend.resume();
+        String? playUrl = track.audioUrl;
+        // 1. 如果没有有效播放流或为假/受限链接，智能解析真实高保真音源 (消灭 404)
+        if (playUrl == null ||
+            playUrl.isEmpty ||
+            playUrl.contains('soundhelix.com') ||
+            playUrl.contains('music.163.com/song/media/outer/url')) {
+          final resolved = await OnlineMusicService.resolvePlayableAudioUrl(
+            track.title,
+            track.artist,
+            defaultUrl: playUrl,
+          );
+          if (resolved != null && resolved.isNotEmpty) {
+            playUrl = resolved;
+            final idx = _playlist.indexWhere((t) => t.id == track.id);
+            if (idx != -1) {
+              _playlist[idx] = _playlist[idx].copyWith(audioUrl: playUrl);
+            }
+          }
+        }
+
+        if (playUrl != null && playUrl.isNotEmpty) {
+          await _backend.play(playUrl);
+        } else {
+          await _backend.resume();
+        }
       }
       await _backend.setVolume(_volume);
       WindowsSmtcService.instance.updateMetadata(track);
@@ -510,6 +512,9 @@ class AudioPlayerService extends ChangeNotifier {
       WindowsTrayService.instance.updateTooltip(track);
     } catch (e) {
       debugPrint('[AudioPlayerService] 初始音频播放失败，尝试静默换源: $e');
+      if (track.localPath != null && track.localPath!.isNotEmpty) {
+        return;
+      }
       // 2. 发生网络波动或 404 限制时，启动静默 Fallback 换源重试
       try {
         final fallbackUrl = await OnlineMusicService.resolvePlayableAudioUrl(

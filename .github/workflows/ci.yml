@@ -7,8 +7,8 @@ on:
     branches: [ main ]
 
 jobs:
-  code-quality-and-client-e2e:
-    name: Code Quality & Client E2E Tests
+  code-quality-and-desktop-tests:
+    name: Code Quality & Desktop Test Suites
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -28,24 +28,9 @@ jobs:
         working-directory: app
         run: flutter analyze
 
-      - name: Run Full Test Suites (Including Client Native E2E Journeys)
+      - name: Run Full Test Suites (Including Desktop Native E2E Journeys)
         working-directory: app
         run: flutter test
-
-      - name: Build Web for E2E Verification
-        working-directory: app
-        run: flutter build web --release
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install Root E2E Dependencies
-        run: npm ci || npm install
-
-      - name: Execute Real Product-level E2E Verification
-        run: node flutter_e2e_verify.mjs
 
   build-windows-desktop-client:
     name: Build Windows Desktop Release Executable

@@ -69,8 +69,14 @@ void main() {
         final image = await boundary.toImage(pixelRatio: 1.0);
         final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
         final bytes = byteData!.buffer.asUint8List();
-        final path = '/Users/yang/.gemini/antigravity/brain/e9c827d9-5def-4d6b-805e-a6d518946b4a/$filename';
-        File(path).writeAsBytesSync(bytes);
+        final envDir = Platform.environment['VISUAL_INSPECT_DIR'];
+        final targetDir = envDir != null && envDir.isNotEmpty
+            ? Directory(envDir)
+            : Directory('${Directory.systemTemp.path}/mellow_visual_inspect');
+        if (!targetDir.existsSync()) {
+          targetDir.createSync(recursive: true);
+        }
+        File('${targetDir.path}/$filename').writeAsBytesSync(bytes);
       });
     }
 

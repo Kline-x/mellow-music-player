@@ -136,25 +136,25 @@ async function runFlutterE2E() {
     await desktopPage.screenshot({ path: desktopScreenshotPath });
     console.log(`✅ [PASS] Desktop E2E verified! Screenshot saved to: ${desktopScreenshotPath}`);
 
-    // 点击侧边栏“巅峰榜单” (坐标 x=100, y=200)
+    // 点击侧边栏“巅峰榜单” (坐标 x=75, y=233)
     console.log('[E2E-1.1] Switching to Toplist view (巅峰榜单)...');
-    await desktopPage.mouse.click(100, 200);
+    await desktopPage.mouse.click(75, 233);
     await new Promise(r => setTimeout(r, 2000));
     const toplistScreenshotPath = path.join(publicDir, 'e2e_flutter_desktop_toplist.png');
     await desktopPage.screenshot({ path: toplistScreenshotPath });
     console.log(`✅ [PASS] Desktop Toplist view verified! Screenshot saved to: ${toplistScreenshotPath}`);
 
-    // 点击侧边栏“多端同步中心” (坐标 x=75, y=630)
+    // 点击侧边栏“多端同步中心” (坐标 x=75, y=590)
     console.log('[E2E-1.2] Switching to Sync view (多端同步中心)...');
-    await desktopPage.mouse.click(75, 630);
+    await desktopPage.mouse.click(75, 590);
     await new Promise(r => setTimeout(r, 2000));
     const syncScreenshotPath = path.join(publicDir, 'e2e_flutter_desktop_sync.png');
     await desktopPage.screenshot({ path: syncScreenshotPath });
     console.log(`✅ [PASS] Desktop Sync view verified! Screenshot saved to: ${syncScreenshotPath}`);
 
-    // 点击侧边栏“LX 音源管理” (坐标 x=75, y=680)
+    // 点击侧边栏“LX 音源管理” (坐标 x=75, y=630)
     console.log('[E2E-1.3] Switching to Sources view (LX音源管理)...');
-    await desktopPage.mouse.click(75, 680);
+    await desktopPage.mouse.click(75, 630);
     await new Promise(r => setTimeout(r, 2000));
     const sourcesScreenshotPath = path.join(publicDir, 'e2e_flutter_desktop_sources.png');
     await desktopPage.screenshot({ path: sourcesScreenshotPath });
