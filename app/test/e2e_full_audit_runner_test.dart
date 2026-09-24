@@ -23,11 +23,18 @@ void main() {
     };
   });
 
-  const sessionArtifactsDir = '/Users/yang/.gemini/antigravity/brain/d345cc7e-a595-4703-9dda-85ad4e5cf8e1';
-  const evidenceDir = '/Users/yang/Documents/code/vibCoding/mellow-music-player/docs/evidence/acceptance-20260924';
+  final envArtifacts = Platform.environment['SESSION_ARTIFACTS_DIR'];
+  final sessionArtifactsDir = envArtifacts != null && envArtifacts.isNotEmpty
+      ? Directory(envArtifacts)
+      : Directory('${Directory.systemTemp.path}/mellow_session_artifacts');
+  final evidenceDir = Directory('docs/evidence/acceptance-20260924');
 
-  Directory(sessionArtifactsDir).createSync(recursive: true);
-  Directory(evidenceDir).createSync(recursive: true);
+  if (!sessionArtifactsDir.existsSync()) {
+    sessionArtifactsDir.createSync(recursive: true);
+  }
+  if (!evidenceDir.existsSync()) {
+    evidenceDir.createSync(recursive: true);
+  }
 
   testWidgets('真机全量端到端验收与高保真像素帧捕获套件 (Desktop 1440x900 & Mobile 390x844)', (tester) async {
     final repaintKey = GlobalKey();
@@ -77,8 +84,8 @@ void main() {
         final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
         final bytes = byteData!.buffer.asUint8List();
 
-        File('$sessionArtifactsDir/$filename').writeAsBytesSync(bytes);
-        File('$evidenceDir/$filename').writeAsBytesSync(bytes);
+        File('${sessionArtifactsDir.path}/$filename').writeAsBytesSync(bytes);
+        File('${evidenceDir.path}/$filename').writeAsBytesSync(bytes);
         debugPrint('📸 Captured: $filename (${image.width}x${image.height})');
       });
     }
