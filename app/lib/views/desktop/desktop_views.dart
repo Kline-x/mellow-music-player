@@ -599,8 +599,11 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 16,
+          runSpacing: 12,
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -636,10 +639,11 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
         // 1. 四大核心官方权威榜单 (响应式自适应：超宽屏4列并行，常规屏2列，紧凑屏1列)
         LayoutBuilder(
           builder: (context, constraints) {
-            final isUltraWide = constraints.maxWidth >= 1200;
-            final isNarrow = constraints.maxWidth < 680;
+            final isUltraWide = constraints.maxWidth >= 1440;
+            final isNarrow = constraints.maxWidth < 720;
             final crossAxisCount = isUltraWide ? 4 : (isNarrow ? 1 : 2);
-            final childAspectRatio = isUltraWide ? 1.45 : (isNarrow ? 2.8 : 2.25);
+            final childAspectRatio = isUltraWide ? 1.55 : (isNarrow ? 2.8 : 2.3);
+            final bannerWidth = isUltraWide ? 118.0 : 138.0;
 
             return GridView.builder(
               shrinkWrap: true,
@@ -659,7 +663,7 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
             final chartTracks = _liveToplists[chartTitle] ?? toplistTracksMap[chartTitle] ?? mockPresetTracks;
 
             return SoftCard(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(12),
               borderRadius: MellowRadii.borderR20,
               onTap: () {
                 if (chartTracks.isNotEmpty) {
@@ -669,7 +673,7 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
               child: Row(
                 children: [
                   Container(
-                    width: 146,
+                    width: bannerWidth,
                     height: double.infinity,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -691,7 +695,7 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
                         Positioned(
                           right: -10,
                           bottom: -10,
-                          child: Icon(iconData, size: 76, color: Colors.white.withValues(alpha: 0.16)),
+                          child: Icon(iconData, size: isUltraWide ? 64 : 76, color: Colors.white.withValues(alpha: 0.16)),
                         ),
                         Padding(
                           padding: const EdgeInsets.all(12),
@@ -715,7 +719,12 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
                                 children: [
                                   Text(
                                     c['title'] as String,
-                                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1),
+                                    style: TextStyle(
+                                      fontSize: isUltraWide ? 18 : 20,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                      letterSpacing: 1,
+                                    ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
@@ -727,8 +736,8 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
                               Align(
                                 alignment: Alignment.bottomRight,
                                 child: Container(
-                                  width: 32,
-                                  height: 32,
+                                  width: 30,
+                                  height: 30,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     color: Colors.white.withValues(alpha: 0.92),
@@ -740,7 +749,7 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
                                       ),
                                     ],
                                   ),
-                                  child: Icon(Icons.play_arrow_rounded, color: gradientColors[0], size: 22),
+                                  child: Icon(Icons.play_arrow_rounded, color: gradientColors[0], size: 20),
                                 ),
                               ),
                             ],
@@ -749,7 +758,7 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -769,15 +778,15 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
                           onTap: () => player.playPlaylist(chartTracks, startIndex: i),
                           borderRadius: BorderRadius.circular(6),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
                             child: Row(
                               children: [
                                 SizedBox(
-                                  width: 20,
+                                  width: 18,
                                   child: Text(
                                     '$rank',
                                     style: TextStyle(
-                                      fontSize: 13,
+                                      fontSize: 12.5,
                                       fontWeight: rank <= 3 ? FontWeight.w900 : FontWeight.bold,
                                       color: rankColor,
                                     ),
@@ -785,10 +794,11 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
                                 ),
                                 const SizedBox(width: 4),
                                 Expanded(
+                                  flex: 6,
                                   child: Text(
                                     t.title,
                                     style: TextStyle(
-                                      fontSize: 12.5,
+                                      fontSize: 12,
                                       fontWeight: rank <= 3 ? FontWeight.w600 : FontWeight.normal,
                                       color: theme.textPrimary,
                                     ),
@@ -796,17 +806,20 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  t.artist,
-                                  style: TextStyle(fontSize: 11, color: theme.textMuted),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  flex: 4,
+                                  child: Text(
+                                    t.artist,
+                                    style: TextStyle(fontSize: 11, color: theme.textMuted),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 6),
                                 Icon(
                                   Icons.play_circle_fill_rounded,
-                                  size: 16,
+                                  size: 15,
                                   color: theme.accentColor.withValues(alpha: 0.65),
                                 ),
                               ],
@@ -827,8 +840,11 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
         const SizedBox(height: 36),
 
         // 2. 全量 60+ 权威与特色榜单分区
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 16,
+          runSpacing: 12,
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -842,19 +858,22 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
               ],
             ),
             // 分类筛选 Tab 栏
-            Row(
-              children: _categories.map((cat) {
-                final isSel = _selectedCategory == cat;
-                return Padding(
-                  padding: const EdgeInsets.only(left: 8),
-                  child: SoftButton(
-                    label: cat,
-                    isActive: isSel,
-                    isPill: true,
-                    onTap: () => setState(() => _selectedCategory = cat),
-                  ),
-                );
-              }).toList(),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _categories.map((cat) {
+                  final isSel = _selectedCategory == cat;
+                  return Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: SoftButton(
+                      label: cat,
+                      isActive: isSel,
+                      isPill: true,
+                      onTap: () => setState(() => _selectedCategory = cat),
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
           ],
         ),
@@ -1474,10 +1493,14 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
         ),
         const SizedBox(height: 24),
         // Tab 栏：热门代表作 (Top 50) 与 全量作品 (突破 50 首限制)
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 16,
+          runSpacing: 10,
           children: [
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 _buildTabButton(
                   title: '热门代表作 (${_topTracks.isNotEmpty ? _topTracks.length : 50})',
@@ -1740,7 +1763,9 @@ class DesktopFavoriteView extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text('共收藏 ${favTracks.length} 首心动单曲 · 本地安全持久化存储', style: TextStyle(color: theme.textSecondary, fontSize: 13)),
                     const SizedBox(height: 14),
-                    Row(
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 8,
                       children: [
                         SoftButton(
                           label: '一键播放全部',
@@ -1751,7 +1776,6 @@ class DesktopFavoriteView extends StatelessWidget {
                             if (favTracks.isNotEmpty) player.playPlaylist(favTracks);
                           },
                         ),
-                        const SizedBox(width: 10),
                         SoftButton(
                           label: '导入更多',
                           icon: Icons.add_link_rounded,
@@ -1813,63 +1837,71 @@ class DesktopSongTableView extends StatelessWidget {
       );
     }
 
-    return SoftCard(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      borderRadius: MellowRadii.borderR20,
-      child: Column(
-        children: [
-          // 优雅表头
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 32,
-                  child: Text('#', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.textMuted)),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 5,
-                  child: Text('音乐标题', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.textMuted)),
-                ),
-                Expanded(
-                  flex: 3,
-                  child: Text('歌手', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.textMuted)),
-                ),
-                Expanded(
-                  flex: 3,
-                  child: Text('专辑', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.textMuted)),
-                ),
-                Container(
-                  width: 50,
-                  alignment: Alignment.centerRight,
-                  child: Text('时长', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.textMuted)),
-                ),
-                const SizedBox(width: 44),
-              ],
-            ),
-          ),
-          Divider(
-            height: 1,
-            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
-          ),
-          // 数据行
-          ...tracks.asMap().entries.map((entry) {
-            final idx = entry.key + 1;
-            final t = entry.value;
-            final isPlaying = player.currentTrack?.id == t.id;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final showAlbum = constraints.maxWidth >= 650;
 
-            return _DesktopSongTableRow(
-              index: idx,
-              track: t,
-              isPlaying: isPlaying,
-              onTap: () => onTrackTap != null ? onTrackTap!(t) : player.playTrack(t),
-              onFavoriteToggle: () => player.toggleFavorite(t.id, t),
-              isFavorite: player.isFavorite(t.id),
-            );
-          }),
-        ],
-      ),
+        return SoftCard(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          borderRadius: MellowRadii.borderR20,
+          child: Column(
+            children: [
+              // 优雅表头
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 32,
+                      child: Text('#', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.textMuted)),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: showAlbum ? 5 : 6,
+                      child: Text('音乐标题', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.textMuted)),
+                    ),
+                    Expanded(
+                      flex: showAlbum ? 3 : 4,
+                      child: Text('歌手', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.textMuted)),
+                    ),
+                    if (showAlbum)
+                      Expanded(
+                        flex: 3,
+                        child: Text('专辑', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.textMuted)),
+                      ),
+                    Container(
+                      width: 50,
+                      alignment: Alignment.centerRight,
+                      child: Text('时长', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.textMuted)),
+                    ),
+                    const SizedBox(width: 44),
+                  ],
+                ),
+              ),
+              Divider(
+                height: 1,
+                color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
+              ),
+              // 数据行
+              ...tracks.asMap().entries.map((entry) {
+                final idx = entry.key + 1;
+                final t = entry.value;
+                final isPlaying = player.currentTrack?.id == t.id;
+
+                return _DesktopSongTableRow(
+                  index: idx,
+                  track: t,
+                  isPlaying: isPlaying,
+                  showAlbum: showAlbum,
+                  onTap: () => onTrackTap != null ? onTrackTap!(t) : player.playTrack(t),
+                  onFavoriteToggle: () => player.toggleFavorite(t.id, t),
+                  isFavorite: player.isFavorite(t.id),
+                );
+              }),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -1878,6 +1910,7 @@ class _DesktopSongTableRow extends StatefulWidget {
   final int index;
   final Track track;
   final bool isPlaying;
+  final bool showAlbum;
   final VoidCallback onTap;
   final VoidCallback onFavoriteToggle;
   final bool isFavorite;
@@ -1886,6 +1919,7 @@ class _DesktopSongTableRow extends StatefulWidget {
     required this.index,
     required this.track,
     required this.isPlaying,
+    this.showAlbum = true,
     required this.onTap,
     required this.onFavoriteToggle,
     required this.isFavorite,
@@ -1948,7 +1982,7 @@ class _DesktopSongTableRowState extends State<_DesktopSongTableRow> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                flex: 5,
+                flex: widget.showAlbum ? 5 : 6,
                 child: Text(
                   widget.track.title,
                   maxLines: 1,
@@ -1960,8 +1994,9 @@ class _DesktopSongTableRowState extends State<_DesktopSongTableRow> {
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
               Expanded(
-                flex: 3,
+                flex: widget.showAlbum ? 3 : 4,
                 child: Text(
                   widget.track.artist,
                   maxLines: 1,
@@ -1969,15 +2004,18 @@ class _DesktopSongTableRowState extends State<_DesktopSongTableRow> {
                   style: TextStyle(fontSize: 12, color: theme.textSecondary),
                 ),
               ),
-              Expanded(
-                flex: 3,
-                child: Text(
-                  widget.track.album,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12, color: theme.textMuted),
+              if (widget.showAlbum) ...[
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    widget.track.album,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, color: theme.textMuted),
+                  ),
                 ),
-              ),
+              ],
               Container(
                 width: 50,
                 alignment: Alignment.centerRight,
@@ -2160,8 +2198,11 @@ class _DesktopImportedPlaylistsViewState extends State<DesktopImportedPlaylistsV
     return ListView(
       padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 16,
+          runSpacing: 12,
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2171,7 +2212,9 @@ class _DesktopImportedPlaylistsViewState extends State<DesktopImportedPlaylistsV
                 Text('管理自建精选集，或一键导入网易云音乐、QQ音乐分享链接与公开歌单', style: TextStyle(fontSize: 13, color: theme.textMuted)),
               ],
             ),
-            Row(
+            Wrap(
+              spacing: 10,
+              runSpacing: 8,
               children: [
                 SoftButton(
                   label: '新建自建歌单',
@@ -2183,7 +2226,6 @@ class _DesktopImportedPlaylistsViewState extends State<DesktopImportedPlaylistsV
                     builder: (_) => const CreatePlaylistModal(),
                   ),
                 ),
-                const SizedBox(width: 10),
                 SoftButton(
                   label: '心动导出',
                   icon: Icons.favorite_border_rounded,
@@ -2198,7 +2240,6 @@ class _DesktopImportedPlaylistsViewState extends State<DesktopImportedPlaylistsV
                     }
                   },
                 ),
-                const SizedBox(width: 10),
                 SoftButton(
                   label: '导入新歌单',
                   icon: Icons.add_link_rounded,
@@ -2309,7 +2350,12 @@ class _DesktopImportedPlaylistsViewState extends State<DesktopImportedPlaylistsV
                               ],
                             ),
                             const SizedBox(height: 4),
-                            Text('包含 ${pl.trackCount} 首完整音轨 · ${pl.description}', style: TextStyle(fontSize: 12.5, color: theme.textMuted)),
+                            Text(
+                              '包含 ${pl.trackCount} 首完整音轨 · ${pl.description}',
+                              style: TextStyle(fontSize: 12.5, color: theme.textMuted),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ],
                         ),
                       ),
@@ -2454,8 +2500,11 @@ class DesktopHistoryView extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 16,
+          runSpacing: 10,
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2587,8 +2636,11 @@ class _DesktopLocalMusicViewState extends State<DesktopLocalMusicView> {
       padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
       children: [
         // 1. 顶部标题栏
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 16,
+          runSpacing: 12,
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2598,7 +2650,9 @@ class _DesktopLocalMusicViewState extends State<DesktopLocalMusicView> {
                 Text('支持 FLAC / WAV / MP3 / OGG 无损音频直接声卡解码回放', style: TextStyle(color: theme.textMuted, fontSize: 13)),
               ],
             ),
-            Row(
+            Wrap(
+              spacing: 10,
+              runSpacing: 8,
               children: [
                 if (localTracks.isNotEmpty) ...[
                   SoftButton(
@@ -2607,14 +2661,12 @@ class _DesktopLocalMusicViewState extends State<DesktopLocalMusicView> {
                     isPill: true,
                     onTap: () => player.playLocalMusic(),
                   ),
-                  const SizedBox(width: 10),
                   SoftButton(
                     label: '清空曲库',
                     icon: Icons.delete_sweep_rounded,
                     isPill: true,
                     onTap: () => player.clearLocalTracks(),
                   ),
-                  const SizedBox(width: 10),
                 ],
                 SoftButton(
                   label: '扫描目录',

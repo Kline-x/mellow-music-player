@@ -630,217 +630,228 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 顶部操作栏
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final showAlbum = constraints.maxWidth >= 720;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            // 顶部操作栏
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 16,
+              runSpacing: 10,
               children: [
-                Text(
-                  '搜索「$_currentQuery」',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: theme.accentColor.withValues(alpha: 0.15),
-                    borderRadius: MellowRadii.borderPill,
-                  ),
-                  child: Text(
-                    '${_searchResults.length} 首高保真单曲',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.accentColor),
-                  ),
-                ),
-              ],
-            ),
-            Row(
-              children: [
-                SoftButton(
-                  label: '播放全部',
-                  icon: Icons.play_arrow_rounded,
-                  isActive: true,
-                  isPill: true,
-                  onTap: () {
-                    if (_searchResults.isNotEmpty) {
-                      player.playPlaylist(_searchResults, startIndex: 0);
-                    }
-                  },
-                ),
-                const SizedBox(width: 10),
-                SoftButton(
-                  label: '加入待播队列',
-                  icon: Icons.queue_music_rounded,
-                  isPill: true,
-                  onTap: () {
-                    for (final track in _searchResults) {
-                      if (!player.playlist.any((t) => t.id == track.id)) {
-                        player.playPlaylist([...player.playlist, track], startIndex: player.currentIndex);
-                      }
-                    }
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('已将 ${_searchResults.length} 首歌曲加入播放队列'),
-                        duration: const Duration(seconds: 2),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '搜索「$_currentQuery」',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: theme.accentColor.withValues(alpha: 0.15),
+                        borderRadius: MellowRadii.borderPill,
                       ),
-                    );
-                  },
+                      child: Text(
+                        '${_searchResults.length} 首高保真单曲',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.accentColor),
+                      ),
+                    ),
+                  ],
+                ),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 8,
+                  children: [
+                    SoftButton(
+                      label: '播放全部',
+                      icon: Icons.play_arrow_rounded,
+                      isActive: true,
+                      isPill: true,
+                      onTap: () {
+                        if (_searchResults.isNotEmpty) {
+                          player.playPlaylist(_searchResults, startIndex: 0);
+                        }
+                      },
+                    ),
+                    SoftButton(
+                      label: '加入待播队列',
+                      icon: Icons.queue_music_rounded,
+                      isPill: true,
+                      onTap: () {
+                        for (final track in _searchResults) {
+                          if (!player.playlist.any((t) => t.id == track.id)) {
+                            player.playPlaylist([...player.playlist, track], startIndex: player.currentIndex);
+                          }
+                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('已将 ${_searchResults.length} 首歌曲加入播放队列'),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-        const SizedBox(height: 18),
+            const SizedBox(height: 18),
 
-        // 结果列表表头
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 36,
-                child: Text('#', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.textMuted)),
-              ),
-              const SizedBox(width: 56), // 封面占位
-              Expanded(
-                flex: 4,
-                child: Text('歌曲标题', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.textMuted)),
-              ),
-              Expanded(
-                flex: 3,
-                child: Text('歌手', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.textMuted)),
-              ),
-              Expanded(
-                flex: 3,
-                child: Text('专辑', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.textMuted)),
-              ),
-              SizedBox(
-                width: 60,
-                child: Text('时长', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.textMuted)),
-              ),
-              const SizedBox(width: 80), // 操作区占位
-            ],
-          ),
-        ),
-        Divider(
-          height: 1,
-          thickness: 0.5,
-          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
-        ),
-        const SizedBox(height: 8),
-
-        // 歌曲列表
-        ...List.generate(_searchResults.length, (index) {
-          final track = _searchResults[index];
-          final isPlayingCurrent = player.currentTrack?.id == track.id && player.isPlaying;
-
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: SoftCard(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              borderRadius: MellowRadii.borderR12,
-              onTap: () => player.playTrack(track),
+            // 结果列表表头
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
-                  // 序号
                   SizedBox(
                     width: 36,
-                    child: isPlayingCurrent
-                        ? Icon(Icons.volume_up_rounded, size: 16, color: theme.accentColor)
-                        : Text(
-                            (index + 1).toString().padLeft(2, '0'),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: theme.textMuted,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                    child: Text('#', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.textMuted)),
                   ),
-                  // 封面大图 (带悬浮圆角)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: MellowImage(
-                      url: track.coverUrl,
-                      width: 44,
-                      height: 44,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  // 标题与音质角标 + 音源标签
+                  const SizedBox(width: 56), // 封面占位
                   Expanded(
-                    flex: 4,
-                    child: Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            track.title,
-                            style: TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w600,
-                              color: isPlayingCurrent ? theme.accentColor : theme.textPrimary,
+                    flex: showAlbum ? 4 : 6,
+                    child: Text('歌曲标题', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.textMuted)),
+                  ),
+                  Expanded(
+                    flex: showAlbum ? 3 : 4,
+                    child: Text('歌手', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.textMuted)),
+                  ),
+                  if (showAlbum)
+                    Expanded(
+                      flex: 3,
+                      child: Text('专辑', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.textMuted)),
+                    ),
+                  SizedBox(
+                    width: 60,
+                    child: Text('时长', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.textMuted)),
+                  ),
+                  const SizedBox(width: 80), // 操作区占位
+                ],
+              ),
+            ),
+            Divider(
+              height: 1,
+              thickness: 0.5,
+              color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
+            ),
+            const SizedBox(height: 8),
+
+            // 歌曲列表
+            ...List.generate(_searchResults.length, (index) {
+              final track = _searchResults[index];
+              final isPlayingCurrent = player.currentTrack?.id == track.id && player.isPlaying;
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: SoftCard(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  borderRadius: MellowRadii.borderR12,
+                  onTap: () => player.playTrack(track),
+                  child: Row(
+                    children: [
+                      // 序号
+                      SizedBox(
+                        width: 36,
+                        child: isPlayingCurrent
+                            ? Icon(Icons.volume_up_rounded, size: 16, color: theme.accentColor)
+                            : Text(
+                                (index + 1).toString().padLeft(2, '0'),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: theme.textMuted,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                      ),
+                      // 封面大图 (带悬浮圆角)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: MellowImage(
+                          url: track.coverUrl,
+                          width: 44,
+                          height: 44,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      // 标题与音质角标 + 音源标签
+                      Expanded(
+                        flex: showAlbum ? 4 : 6,
+                        child: Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                track.title,
+                                style: TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: isPlayingCurrent ? theme.accentColor : theme.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: theme.accentColor.withValues(alpha: 0.5), width: 0.8),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'SQ',
+                                style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: theme.accentColor),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: theme.accentColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                AudioPlayerService.formatSourceDisplayName(track.source),
+                                style: TextStyle(fontSize: 8.5, color: theme.accentColor, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // 歌手
+                      Expanded(
+                        flex: showAlbum ? 3 : 4,
+                        child: Text(
+                          track.artist,
+                          style: TextStyle(fontSize: 13, color: theme.textSecondary),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      // 专辑
+                      if (showAlbum)
+                        Expanded(
+                          flex: 3,
+                          child: Text(
+                            track.album,
+                            style: TextStyle(fontSize: 12.5, color: theme.textMuted),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: theme.accentColor.withValues(alpha: 0.5), width: 0.8),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            'SQ',
-                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: theme.accentColor),
-                          ),
+                      // 时长
+                      SizedBox(
+                        width: 60,
+                        child: Text(
+                          '${track.duration.inMinutes.remainder(60).toString().padLeft(2, '0')}:${track.duration.inSeconds.remainder(60).toString().padLeft(2, '0')}',
+                          style: TextStyle(fontSize: 12, color: theme.textMuted),
                         ),
-                        const SizedBox(width: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                          decoration: BoxDecoration(
-                            color: theme.accentColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            AudioPlayerService.formatSourceDisplayName(track.source),
-                            style: TextStyle(fontSize: 8.5, color: theme.accentColor, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // 歌手
-                  Expanded(
-                    flex: 3,
-                    child: Text(
-                      track.artist,
-                      style: TextStyle(fontSize: 13, color: theme.textSecondary),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  // 专辑
-                  Expanded(
-                    flex: 3,
-                    child: Text(
-                      track.album,
-                      style: TextStyle(fontSize: 12.5, color: theme.textMuted),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  // 时长
-                  SizedBox(
-                    width: 60,
-                    child: Text(
-                      '${track.duration.inMinutes.remainder(60).toString().padLeft(2, '0')}:${track.duration.inSeconds.remainder(60).toString().padLeft(2, '0')}',
-                      style: TextStyle(fontSize: 12, color: theme.textMuted),
-                    ),
-                  ),
+                      ),
                   // 操作按钮群
                   Row(
                     mainAxisSize: MainAxisSize.min,
@@ -911,8 +922,9 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
               style: TextStyle(fontSize: 12, color: theme.textMuted),
             ),
           ),
-        ],
-      ],
+          ],
+        );
+      },
     );
   }
 

@@ -965,31 +965,33 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // 群组 A：声学与定时
-              IconButton(
-                icon: const Icon(Icons.tune_rounded, size: 17),
-                color: theme.textSecondary,
-                tooltip: '10 频段专业声学 EQ',
-                visualDensity: VisualDensity.compact,
-                onPressed: () => showDialog(context: context, builder: (_) => const EqualizerModal()),
-              ),
-              IconButton(
-                icon: const Icon(Icons.hourglass_bottom_rounded, size: 17),
-                color: player.sleepTimerMinutes != null ? theme.accentColor : theme.textSecondary,
-                tooltip: player.sleepTimerMinutes != null
-                    ? '睡眠定时进行中 (${player.sleepTimerRemainingSeconds ~/ 60}分)'
-                    : '设置睡眠定时器',
-                visualDensity: VisualDensity.compact,
-                onPressed: () => showDialog(context: context, builder: (_) => const SleepTimerModal()),
-              ),
+              // 群组 A：声学与定时 (在中宽屏以上完整展示，紧凑小屏收起以保护主进度条)
+              if (screenWidth >= 920) ...[
+                IconButton(
+                  icon: const Icon(Icons.tune_rounded, size: 17),
+                  color: theme.textSecondary,
+                  tooltip: '10 频段专业声学 EQ',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => showDialog(context: context, builder: (_) => const EqualizerModal()),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.hourglass_bottom_rounded, size: 17),
+                  color: player.sleepTimerMinutes != null ? theme.accentColor : theme.textSecondary,
+                  tooltip: player.sleepTimerMinutes != null
+                      ? '睡眠定时进行中 (${player.sleepTimerRemainingSeconds ~/ 60}分)'
+                      : '设置睡眠定时器',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => showDialog(context: context, builder: (_) => const SleepTimerModal()),
+                ),
 
-              // 优雅微细分隔线
-              Container(
-                width: 0.8,
-                height: 14,
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                color: isDark ? Colors.white12 : Colors.black12,
-              ),
+                // 优雅微细分隔线
+                Container(
+                  width: 0.8,
+                  height: 14,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  color: isDark ? Colors.white12 : Colors.black12,
+                ),
+              ],
 
               // 群组 B：视界与队列
               IconButton(
@@ -1038,7 +1040,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
               ),
               const SizedBox(width: 4),
               SizedBox(
-                width: 76,
+                width: screenWidth < 920 ? 54 : 76,
                 child: SliderTheme(
                   data: SliderTheme.of(context).copyWith(
                     trackHeight: 2.8,
