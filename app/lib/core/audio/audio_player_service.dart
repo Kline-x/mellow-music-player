@@ -46,6 +46,7 @@ class AudioPlayerService extends ChangeNotifier {
   bool _pauseAfterCurrent = false;
   String? _playbackNotice;
   Timer? _playbackNoticeTimer;
+  Timer? _autoSkipTimer;
   int _consecutiveFailures = 0;
 
   // Getters
@@ -464,6 +465,7 @@ class AudioPlayerService extends ChangeNotifier {
   }
 
   void pause() {
+    _autoSkipTimer?.cancel();
     _isPlaying = false;
     _backend.pause();
     WindowsSmtcService.instance.updatePlaybackState(false);
@@ -574,7 +576,8 @@ class AudioPlayerService extends ChangeNotifier {
       }
 
       _setPlaybackNotice('「${track.title}」所有音源暂不可用，已自动切换至下一首...', autoDismissSeconds: 4);
-      Future.delayed(const Duration(milliseconds: 1200), () {
+      _autoSkipTimer?.cancel();
+      _autoSkipTimer = Timer(const Duration(milliseconds: 1200), () {
         if (_playlist.isNotEmpty && _isPlaying) {
           next();
         }
@@ -635,11 +638,12 @@ class AudioPlayerService extends ChangeNotifier {
     if (source.contains('qq') || source.contains('tx') || source.contains('tencent')) return 'QQ音乐';
     if (source.contains('kugou') || source == 'kg') return '酷狗音乐';
     if (source.contains('migu') || source == 'mg') return '咪咕音乐';
-    if (source.contains('itunes')) return 'iTunes官方保底';
-    if (source.contains('preset') || source.contains('mellow')) return '润音官方保真源';
+    if (source.contains('itunes')) return 'iTunes官方';
+    if (source.contains('preset')) return '原生高保真';
+    if (source.contains('mellow')) return '润音官方保真源';
     if (source.contains('lx') || source.contains('custom') || source.contains('script')) return '落雪扩展源';
     if (source.contains('local')) return '本地音频';
-    return '多源汇聚';
+    return '内置音源';
   }
 
   void next() {
@@ -828,6 +832,8 @@ class AudioPlayerService extends ChangeNotifier {
     _playingSub?.cancel();
     _completeSub?.cancel();
     _sleepTimer?.cancel();
+    _playbackNoticeTimer?.cancel();
+    _autoSkipTimer?.cancel();
     _backend.dispose();
     WindowsSmtcService.instance.dispose();
     super.dispose();
