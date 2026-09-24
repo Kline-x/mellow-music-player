@@ -373,46 +373,49 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
               ),
               const SizedBox(width: 10),
 
-              // 居中/全局全网即时搜索栏 (弹性自适应防溢出，Ctrl/Cmd+K)
-              Expanded(
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 380),
-                    child: GestureDetector(
-                      onTap: () => _navigateTo('search'),
-                      child: RecessedWell(
-                        height: 38,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        borderRadius: MellowRadii.borderPill,
-                        child: Row(
-                          children: [
-                            Icon(Icons.search_rounded, size: 18, color: theme.accentColor),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                isCompact ? '搜索歌曲/歌手...' : '即时搜索全网歌曲、歌手、专辑...',
-                                style: TextStyle(fontSize: 12.5, color: theme.textMuted),
-                                overflow: TextOverflow.ellipsis,
+              // 居中/全局全网即时搜索栏 (如果在搜索页则不重复展示，其余页面点击直达搜索页)
+              if (_activeView != 'search')
+                Expanded(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 380),
+                      child: GestureDetector(
+                        onTap: () => _navigateTo('search'),
+                        child: RecessedWell(
+                          height: 38,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          borderRadius: MellowRadii.borderPill,
+                          child: Row(
+                            children: [
+                              Icon(Icons.search_rounded, size: 18, color: theme.accentColor),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  isCompact ? '搜索歌曲/歌手...' : '即时搜索全网歌曲、歌手、专辑...',
+                                  style: TextStyle(fontSize: 12.5, color: theme.textMuted),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
-                                borderRadius: MellowRadii.borderR8,
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+                                  borderRadius: MellowRadii.borderR8,
+                                ),
+                                child: Text(
+                                  '⌘K',
+                                  style: TextStyle(fontSize: 10, color: theme.textSecondary, fontWeight: FontWeight.bold),
+                                ),
                               ),
-                              child: Text(
-                                '⌘K',
-                                style: TextStyle(fontSize: 10, color: theme.textSecondary, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ),
+                )
+              else
+                const Spacer(),
               const SizedBox(width: 10),
 
               // 右侧专业工具集 (对标 AlgerMusicPlayer)
@@ -648,7 +651,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
         children: [
           // 1. 左侧：正在播放曲目信息 (若空闲则展示优雅空状态)
           SizedBox(
-            width: screenWidth < 900 ? 190 : 250,
+            width: screenWidth < 900 ? 220 : 280,
             child: track == null
                 ? Row(
                     children: [
@@ -753,11 +756,54 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                               ],
                             ),
                             const SizedBox(height: 2),
-                            Text(
-                              '${track.artist} · ${track.album}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 11.5, color: theme.textSecondary),
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    '${track.artist} · ${track.album}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(fontSize: 11.5, color: theme.textSecondary),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                // 真实音源徽章与主动换源胶囊
+                                Tooltip(
+                                  message: '当前音源：${AudioPlayerService.formatSourceDisplayName(track.source)} (点击主动换源)',
+                                  child: GestureDetector(
+                                    onTap: () => showDialog(
+                                      context: context,
+                                      builder: (_) => SourceSwitcherModal(track: track),
+                                    ),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                      decoration: BoxDecoration(
+                                        color: theme.accentColor.withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(
+                                          color: theme.accentColor.withValues(alpha: 0.35),
+                                          width: 0.6,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            AudioPlayerService.formatSourceDisplayName(track.source),
+                                            style: TextStyle(
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.bold,
+                                              color: theme.accentColor,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 2),
+                                          Icon(Icons.swap_horiz_rounded, size: 10, color: theme.accentColor),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),

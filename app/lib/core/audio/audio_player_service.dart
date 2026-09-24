@@ -485,6 +485,8 @@ class AudioPlayerService extends ChangeNotifier {
             playUrl.isEmpty ||
             playUrl.contains('soundhelix.com') ||
             playUrl.contains('nxinxz.com') ||
+            playUrl.contains('588957081') ||
+            playUrl.contains('/nf/') ||
             playUrl.contains('music.163.com/song/media/outer/url')) {
           final resolved = await OnlineMusicService.resolvePlayableAudioUrl(
             track.title,
@@ -496,7 +498,8 @@ class AudioPlayerService extends ChangeNotifier {
             playUrl = resolved;
             final idx = _playlist.indexWhere((t) => t.id == track.id);
             if (idx != -1) {
-              _playlist[idx] = _playlist[idx].copyWith(audioUrl: playUrl);
+              final activeSource = _inferSourceFromUrl(playUrl, track.source);
+              _playlist[idx] = _playlist[idx].copyWith(audioUrl: playUrl, source: activeSource);
             }
           }
         }
@@ -529,7 +532,8 @@ class AudioPlayerService extends ChangeNotifier {
           await _backend.play(fallbackUrl);
           final idx = _playlist.indexWhere((t) => t.id == track.id);
           if (idx != -1) {
-            _playlist[idx] = _playlist[idx].copyWith(audioUrl: fallbackUrl);
+            final activeSource = _inferSourceFromUrl(fallbackUrl, track.source);
+            _playlist[idx] = _playlist[idx].copyWith(audioUrl: fallbackUrl, source: activeSource);
           }
           await _backend.setVolume(_volume);
           WindowsSmtcService.instance.updateMetadata(track);
@@ -545,6 +549,60 @@ class AudioPlayerService extends ChangeNotifier {
       _playbackNotice = '歌曲「${track.title}」音频资源加载失败，可能需要专属授权或网络受限';
       notifyListeners();
     }
+  }
+
+  /// 依据解析出的物理音频直链，诚实推断真实的声学音源标签
+  static String _inferSourceFromUrl(String url, String originalSource) {
+    if (url.contains('kuwo.cn')) return 'kuwo-sq';
+    if (url.contains('126.net') || url.contains('163.com')) return 'netease-online';
+    if (url.contains('apple.com') || url.contains('mzstatic.com')) return 'itunes-preview';
+    return originalSource;
+  }
+
+  /// 主动为当前歌曲或指定歌曲切换音源 (酷我高保真 / 网易云音乐 / iTunes官方)
+  Future<bool> switchSource(Track track, String newSource) async {
+    final currentPos = _position;
+    final isCurrent = currentTrack?.id == track.id;
+    try {
+      final newUrl = await OnlineMusicService.resolveUrlFromSpecificSource(
+        track.title,
+        track.artist,
+        newSource,
+        trackId: track.id,
+      );
+      if (newUrl != null && newUrl.isNotEmpty) {
+        final updated = track.copyWith(source: newSource, audioUrl: newUrl);
+        final idx = _playlist.indexWhere((t) => t.id == track.id);
+        if (idx != -1) {
+          _playlist[idx] = updated;
+        }
+        if (isCurrent) {
+          await _backend.play(newUrl);
+          if (currentPos > Duration.zero) {
+            await _backend.seek(currentPos);
+          }
+          await _backend.play();
+          _isPlaying = true;
+        }
+        _playbackNotice = '已成功切换至【${formatSourceDisplayName(newSource)}】音源播放';
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('[AudioPlayerService] 主动切换音源失败: $e');
+    }
+    _playbackNotice = '切换音源失败，【${formatSourceDisplayName(newSource)}】暂未收录该歌曲';
+    notifyListeners();
+    return false;
+  }
+
+  static String formatSourceDisplayName(String source) {
+    if (source.contains('kuwo')) return '酷我高保真';
+    if (source.contains('netease')) return '网易云音乐';
+    if (source.contains('itunes')) return 'iTunes官方';
+    if (source.contains('preset')) return '原生高保真';
+    if (source.contains('local')) return '本地音频';
+    return '内置音源';
   }
 
   void next() {

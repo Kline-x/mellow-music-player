@@ -83,7 +83,7 @@ class OnlineMusicService {
   }
 
   /// 1. 全网多音源真实音乐并发实时检索 (网易云 + 酷我高保真 + iTunes 官方保底，消灭 404)
-  static Future<List<Track>> searchOnlineTracks(String query, {int limit = 30}) async {
+  static Future<List<Track>> searchOnlineTracks(String query, {int page = 1, int limit = 30}) async {
     final cleanQuery = query.trim();
     if (cleanQuery.isEmpty) return [];
 
@@ -98,11 +98,16 @@ class OnlineMusicService {
       }
     }
 
-    final neteaseFuture = trySource(() => neteaseService.search(cleanQuery, limit: limit));
+    final offset = (page - 1) * limit;
+    final kuwoPn = page - 1;
+
+    final neteaseFuture = trySource(() => neteaseService.search(cleanQuery, limit: limit, offset: offset));
     final kuwoFuture = enableKuwoSearch
-        ? trySource(() => _searchKuwoTracks(cleanQuery, limit: limit))
+        ? trySource(() => _searchKuwoTracks(cleanQuery, limit: limit, page: kuwoPn))
         : Future<List<Track>?>.value(null);
-    final itunesFuture = trySource(() => itunesService.search(cleanQuery, limit: limit));
+    final itunesFuture = page == 1
+        ? trySource(() => itunesService.search(cleanQuery, limit: limit))
+        : Future<List<Track>?>.value(null);
 
     final perSource = await Future.wait([neteaseFuture, kuwoFuture, itunesFuture]);
 
@@ -119,9 +124,33 @@ class OnlineMusicService {
     return dedupeByTitleArtist(merged);
   }
 
-  static Future<List<Track>> _searchKuwoTracks(String cleanQuery, {required int limit}) async {
+  /// 真实全网公开歌单搜索 (网易云千万优质歌单)
+  static Future<List<ImportedPlaylist>> searchOnlinePlaylists(String query, {int limit = 20, int page = 1}) async {
+    final cleanQuery = query.trim();
+    if (cleanQuery.isEmpty) return [];
+    try {
+      final offset = (page - 1) * limit;
+      return await neteaseService.searchPlaylists(cleanQuery, limit: limit, offset: offset);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// 真实全网歌手档案搜索
+  static Future<List<ArtistProfile>> searchOnlineArtists(String query, {int limit = 20, int page = 1}) async {
+    final cleanQuery = query.trim();
+    if (cleanQuery.isEmpty) return [];
+    try {
+      final offset = (page - 1) * limit;
+      return await neteaseService.searchArtists(cleanQuery, limit: limit, offset: offset);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<List<Track>> _searchKuwoTracks(String cleanQuery, {required int limit, int page = 0}) async {
     final kwUri = Uri.parse(
-      'http://search.kuwo.cn/r.s?client=kt&all=${Uri.encodeComponent(cleanQuery)}&pn=0&rn=$limit&vipver=1&ft=music&encoding=utf8&rformat=json&mobi=1',
+      'http://search.kuwo.cn/r.s?client=kt&all=${Uri.encodeComponent(cleanQuery)}&pn=$page&rn=$limit&vipver=1&ft=music&encoding=utf8&rformat=json&mobi=1',
     );
     final kwResp = await http.get(kwUri, headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -184,7 +213,7 @@ class OnlineMusicService {
     return results;
   }
 
-  /// 真实高保真音源智能解析与 Fallback 调度 (消灭 404 与播放受限)
+  /// 真实高保真音源智能解析与 Fallback 调度 (严格过滤失效提示音，精准匹配原声)
   static Future<String?> resolvePlayableAudioUrl(
     String title,
     String artist, {
@@ -198,7 +227,9 @@ class OnlineMusicService {
 
     if (!forceRefresh && _urlCache.containsKey(cacheKey)) {
       final cached = _urlCache[cacheKey]!;
-      if (cached.isNotEmpty) return cached;
+      if (cached.isNotEmpty && !cached.contains('588957081') && !cached.contains('/nf/')) {
+        return cached;
+      }
     }
 
     // 若原有链接为有效外部独立链接且不是已知 404/302 的网易云 outer 或 soundhelix 或 nxinxz
@@ -207,9 +238,13 @@ class OnlineMusicService {
         defaultUrl.isNotEmpty &&
         !defaultUrl.contains('soundhelix.com') &&
         !defaultUrl.contains('nxinxz.com') &&
+        !defaultUrl.contains('588957081') &&
+        !defaultUrl.contains('/nf/') &&
         !defaultUrl.contains('music.163.com/song/media/outer/url')) {
       final unwrapped = await unwrapRedirects(defaultUrl);
-      return unwrapped;
+      if (!unwrapped.contains('588957081') && !unwrapped.contains('/nf/')) {
+        return unwrapped;
+      }
     }
 
     // 0. 若为网易云真实曲目 ID，优先尝试网易云原生高品质增强流
@@ -235,11 +270,14 @@ class OnlineMusicService {
       if (strippedTitle.isNotEmpty && strippedTitle != cleanTitle) strippedTitle,
     };
 
+    final targetTitleNorm = _normalizeForMatch(cleanTitle);
+    final targetArtistNorm = _normalizeForMatch(cleanArtist);
+
     for (final q in candidateQueries) {
       if (q.isEmpty) continue;
       try {
         final uri = Uri.parse(
-          'http://search.kuwo.cn/r.s?client=kt&all=${Uri.encodeComponent(q)}&pn=0&rn=3&vipver=1&ft=music&encoding=utf8&rformat=json&mobi=1',
+          'http://search.kuwo.cn/r.s?client=kt&all=${Uri.encodeComponent(q)}&pn=0&rn=5&vipver=1&ft=music&encoding=utf8&rformat=json&mobi=1',
         );
         final resp = await http.get(uri, headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -249,11 +287,26 @@ class OnlineMusicService {
           final data = jsonDecode(utf8.decode(resp.bodyBytes));
           final songs = data['abslist'] as List?;
           if (songs != null && songs.isNotEmpty) {
-            final top = songs.first;
-            final rawMid = (top['DC_TARGETID'] ?? top['MUSICRID'] ?? '').toString();
+            // 智能挑选最契合目标曲目名称与歌手的原曲，避免误取 live/remix 或无关歌曲
+            Map<String, dynamic>? bestSong;
+            for (final item in songs) {
+              if (item is! Map) continue;
+              final sName = _normalizeForMatch(item['SONGNAME']?.toString() ?? '');
+              final sArtist = _normalizeForMatch(item['ARTIST']?.toString() ?? '');
+              if (sName == targetTitleNorm && (sArtist.contains(targetArtistNorm) || targetArtistNorm.contains(sArtist))) {
+                bestSong = (item as Map).cast<String, dynamic>();
+                break;
+              }
+              if (sName.contains(targetTitleNorm) && (sArtist.contains(targetArtistNorm) || targetArtistNorm.contains(sArtist))) {
+                bestSong ??= (item as Map).cast<String, dynamic>();
+              }
+            }
+            bestSong ??= (songs.first as Map).cast<String, dynamic>();
+
+            final rawMid = (bestSong['DC_TARGETID'] ?? bestSong['MUSICRID'] ?? '').toString();
             final mid = rawMid.replaceAll('MUSIC_', '');
             if (mid.isNotEmpty) {
-              // 1.1 优先使用 Kuwo 官方 direct convert_url 直链生成器 (直接返回可播 mp3，无重定向)
+              // 1.1 尝试 Kuwo convert_url，但严格过滤兜底失效提示音（588957081.mp3 / /nf/ 占位流）
               try {
                 final antiUri = Uri.parse(
                   'http://antiserver.kuwo.cn/anti.s?type=convert_url&rid=$mid&format=mp3&response=url',
@@ -263,25 +316,50 @@ class OnlineMusicService {
                 }).timeout(const Duration(seconds: 4));
                 if (antiResp.statusCode == 200) {
                   final antiUrl = antiResp.body.trim();
-                  if (antiUrl.startsWith('http://') || antiUrl.startsWith('https://')) {
+                  if ((antiUrl.startsWith('http://') || antiUrl.startsWith('https://')) &&
+                      !antiUrl.contains('588957081') &&
+                      !antiUrl.contains('/nf/')) {
                     _urlCache[cacheKey] = antiUrl;
                     return antiUrl;
                   }
                 }
               } catch (_) {}
 
-              // 1.2 降级使用 nxinxz 并跟进 302 重定向
-              final streamUrl = 'http://music.nxinxz.com/kw.php?id=$mid&level=standard&type=mp3';
-              final unwrapped = await unwrapRedirects(streamUrl);
-              _urlCache[cacheKey] = unwrapped;
-              return unwrapped;
+              // 1.2 若 anti.s 为 VIP 占位流或失败，跟进 nxinxz 真实直链
+              try {
+                final streamUrl = 'http://music.nxinxz.com/kw.php?id=$mid&level=standard&type=mp3';
+                final unwrapped = await unwrapRedirects(streamUrl);
+                if (unwrapped.isNotEmpty &&
+                    !unwrapped.contains('nxinxz.com') &&
+                    !unwrapped.contains('588957081') &&
+                    !unwrapped.contains('/nf/')) {
+                  _urlCache[cacheKey] = unwrapped;
+                  return unwrapped;
+                }
+              } catch (_) {}
             }
           }
         }
       } catch (_) {}
     }
 
-    // 2. iTunes 官方高可用试听流兜底（确保列表必定有声）
+    // 2. 真实网易云原生音频流 Fallback
+    try {
+      final neTracks = await neteaseService.search('$cleanTitle $firstArtist', limit: 3);
+      for (final nt in neTracks) {
+        final pureId = NeteaseMusicService.pureSongId(nt.id);
+        if (pureId != null) {
+          final res = await neteaseService.resolveStreamUrl(pureId);
+          if (res.isPlayable && res.url != null && res.url!.isNotEmpty) {
+            final directUrl = await unwrapRedirects(res.url!);
+            _urlCache[cacheKey] = directUrl;
+            return directUrl;
+          }
+        }
+      }
+    } catch (_) {}
+
+    // 3. iTunes 官方高可用试听流兜底（确保列表必定有声）
     try {
       final itunesList = await itunesService.search('$cleanTitle $firstArtist', limit: 2);
       if (itunesList.isNotEmpty && itunesList.first.audioUrl != null) {
@@ -296,6 +374,66 @@ class OnlineMusicService {
       return await unwrapRedirects(defaultUrl);
     }
     return defaultUrl;
+  }
+
+  /// 针对指定目标音源主动解析 (支持用户主动手动换源)
+  static Future<String?> resolveUrlFromSpecificSource(
+    String title,
+    String artist,
+    String targetSource, {
+    String? trackId,
+  }) async {
+    final cleanTitle = title.trim();
+    final cleanArtist = artist.trim();
+    final firstArtist = cleanArtist.split(RegExp(r'[/,&、·]')).first.trim();
+
+    if (targetSource.contains('kuwo')) {
+      try {
+        final uri = Uri.parse(
+          'http://search.kuwo.cn/r.s?client=kt&all=${Uri.encodeComponent('$cleanTitle $firstArtist')}&pn=0&rn=3&vipver=1&ft=music&encoding=utf8&rformat=json&mobi=1',
+        );
+        final resp = await http.get(uri, headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        }).timeout(_timeout);
+        if (resp.statusCode == 200) {
+          final data = jsonDecode(utf8.decode(resp.bodyBytes));
+          final songs = data['abslist'] as List?;
+          if (songs != null && songs.isNotEmpty) {
+            final rawMid = (songs.first['DC_TARGETID'] ?? songs.first['MUSICRID'] ?? '').toString();
+            final mid = rawMid.replaceAll('MUSIC_', '');
+            if (mid.isNotEmpty) {
+              final streamUrl = 'http://music.nxinxz.com/kw.php?id=$mid&level=standard&type=mp3';
+              final unwrapped = await unwrapRedirects(streamUrl);
+              if (unwrapped.isNotEmpty && !unwrapped.contains('nxinxz.com') && !unwrapped.contains('588957081')) {
+                return unwrapped;
+              }
+            }
+          }
+        }
+      } catch (_) {}
+    } else if (targetSource.contains('netease')) {
+      try {
+        final neTracks = await neteaseService.search('$cleanTitle $firstArtist', limit: 3);
+        for (final nt in neTracks) {
+          final pureId = NeteaseMusicService.pureSongId(nt.id);
+          if (pureId != null) {
+            final res = await neteaseService.resolveStreamUrl(pureId);
+            if (res.isPlayable && res.url != null && res.url!.isNotEmpty) {
+              return await unwrapRedirects(res.url!);
+            }
+          }
+        }
+      } catch (_) {}
+    } else if (targetSource.contains('itunes')) {
+      try {
+        final itunesList = await itunesService.search('$cleanTitle $firstArtist', limit: 2);
+        if (itunesList.isNotEmpty && itunesList.first.audioUrl != null) {
+          return itunesList.first.audioUrl!;
+        }
+      } catch (_) {}
+    }
+
+    return resolvePlayableAudioUrl(title, artist, trackId: trackId, forceRefresh: true);
   }
 
   /// 展开任意 HTTP 301/302 重定向，获取最终物理直接可播放地址

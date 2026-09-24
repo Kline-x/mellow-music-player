@@ -181,7 +181,7 @@ final List<Track> mockPresetTracks = [
     coverUrl: 'https://p1.music.126.net/STWQpRLgUBOcXQIDPoEL_A==/109951163533011733.jpg',
     duration: const Duration(minutes: 4, seconds: 36),
     source: 'preset-flac',
-    audioUrl: 'http://music.nxinxz.com/kw.php?id=228913&level=standard&type=mp3',
+    audioUrl: 'http://music.nxinxz.com/kw.php?id=228907&level=standard&type=mp3',
     isFavorite: false,
     lyrics: [
       LyricLine(time: Duration.zero, text: '夜的第七章 - 周杰伦'),

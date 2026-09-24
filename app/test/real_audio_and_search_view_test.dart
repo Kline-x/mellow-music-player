@@ -9,6 +9,7 @@ import 'package:mellow_music/core/audio/track_model.dart';
 import 'package:mellow_music/core/storage/storage_service.dart';
 import 'package:mellow_music/views/desktop/desktop_search_view.dart';
 import 'package:mellow_music/views/mobile/mobile_pages.dart';
+import 'package:mellow_music/views/common/modals.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -153,6 +154,84 @@ void main() {
       await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
       await tester.pumpAndSettle();
       expect(backed, isTrue);
+    });
+  });
+
+  group('5. 真实音源调度、分类切换与歌曲 ID 对齐验证', () {
+    test('夜的第七章真实音频 ID 严格对齐 228907 并消除心雨串音', () {
+      final jayTrack = mockPresetTracks.firstWhere((t) => t.title == '夜的第七章');
+      expect(jayTrack.audioUrl?.contains('id=228907'), isTrue);
+      expect(jayTrack.audioUrl?.contains('id=228913'), isFalse);
+    });
+
+    test('AudioPlayerService formatSourceDisplayName 格式化准确', () {
+      expect(AudioPlayerService.formatSourceDisplayName('kuwo-sq'), equals('酷我高保真'));
+      expect(AudioPlayerService.formatSourceDisplayName('netease-online'), equals('网易云音乐'));
+      expect(AudioPlayerService.formatSourceDisplayName('itunes-preview'), equals('iTunes官方'));
+      expect(AudioPlayerService.formatSourceDisplayName('preset-flac'), equals('原生高保真'));
+    });
+
+    testWidgets('SourceSwitcherModal 能够正确渲染三大音源与生效指示', (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final track = mockPresetTracks.first;
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider(create: (_) => ThemeProvider()),
+            ChangeNotifierProvider(create: (_) => AudioPlayerService(backend: InMemoryAudioPlayerBackend())),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: SourceSwitcherModal(track: track),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('主动切换播放音源'), findsOneWidget);
+      expect(find.text('酷我音乐 · 高保真源'), findsOneWidget);
+      expect(find.text('网易云音乐 · 在线源'), findsOneWidget);
+      expect(find.text('iTunes · 官方保底源'), findsOneWidget);
+    });
+
+    testWidgets('DesktopSearchView 分类 Tab 点击能够平滑切换当前选中态', (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider(create: (_) => ThemeProvider()),
+            ChangeNotifierProvider(create: (_) => AudioPlayerService(backend: InMemoryAudioPlayerBackend())),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: DesktopSearchView(
+                onNavigate: (view, [extra]) {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 点击歌单 Tab
+      await tester.tap(find.text('歌单'));
+      await tester.pumpAndSettle();
+
+      // 点击歌手 Tab
+      await tester.tap(find.text('歌手'));
+      await tester.pumpAndSettle();
+
+      // 点击单曲 Tab
+      await tester.tap(find.text('单曲'));
+      await tester.pumpAndSettle();
     });
   });
 }

@@ -2968,4 +2968,249 @@ class ViewScriptSourceModal extends StatelessWidget {
   }
 }
 
+/// 8. 真实音源主动切换与调度弹窗 (SourceSwitcherModal)
+class SourceSwitcherModal extends StatefulWidget {
+  final Track track;
+  const SourceSwitcherModal({super.key, required this.track});
+
+  @override
+  State<SourceSwitcherModal> createState() => _SourceSwitcherModalState();
+}
+
+class _SourceSwitcherModalState extends State<SourceSwitcherModal> {
+  bool _isSwitching = false;
+  String? _switchingTarget;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.watch<ThemeProvider>();
+    final player = context.watch<AudioPlayerService>();
+    final isDark = theme.isDarkMode;
+    final currentSource = widget.track.source;
+
+    final sources = [
+      {
+        'id': 'kuwo-sq',
+        'name': '酷我音乐 · 高保真源',
+        'badge': '推荐 · SQ无损',
+        'desc': '主打高保真音质，收录海量流行歌曲原声，高清晰度流媒体',
+        'icon': Icons.album_rounded,
+        'color': const Color(0xFF10B981),
+      },
+      {
+        'id': 'netease-online',
+        'name': '网易云音乐 · 在线源',
+        'badge': '官方流',
+        'desc': '主流开放曲库，支持原生高品质 MP3 流与声学专辑匹配',
+        'icon': Icons.cloud_queue_rounded,
+        'color': const Color(0xFFEF4444),
+      },
+      {
+        'id': 'itunes-preview',
+        'name': 'iTunes · 官方保底源',
+        'badge': '全球高可用',
+        'desc': '苹果官方 CDN 高可用试听流，网络受限时稳定兜底播放',
+        'icon': Icons.apple_rounded,
+        'color': const Color(0xFF6366F1),
+      },
+    ];
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: Center(
+        child: Container(
+          width: 480,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: MellowColors.card(isDark),
+            borderRadius: MellowRadii.borderR24,
+            boxShadow: isDark ? MellowShadows.floatingPillDark : MellowShadows.floatingPillLight,
+            border: Border.all(
+              color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
+              width: 0.5,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 头部标题与曲目信息
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: theme.accentColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.swap_calls_rounded, color: theme.accentColor, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '主动切换播放音源',
+                          style: TextStyle(
+                            fontSize: 16.5,
+                            fontWeight: FontWeight.bold,
+                            color: theme.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '正在播放：「${widget.track.title}」 - ${widget.track.artist}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 12, color: theme.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, size: 18, color: theme.textMuted),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+
+              Text(
+                '选择目标音频源（切换后将保持当前进度平滑重播）：',
+                style: TextStyle(fontSize: 12.5, color: theme.textMuted),
+              ),
+              const SizedBox(height: 12),
+
+              // 音源卡片列表
+              ...sources.map((s) {
+                final id = s['id'] as String;
+                final name = s['name'] as String;
+                final badge = s['badge'] as String;
+                final desc = s['desc'] as String;
+                final icon = s['icon'] as IconData;
+                final color = s['color'] as Color;
+                final isCurrent = currentSource.contains(id.replaceAll('-sq', '').replaceAll('-online', '').replaceAll('-preview', ''));
+                final isTarget = _switchingTarget == id;
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: SoftCard(
+                    padding: const EdgeInsets.all(14),
+                    borderRadius: MellowRadii.borderR16,
+                    onTap: (_isSwitching || isCurrent)
+                        ? null
+                        : () async {
+                            setState(() {
+                              _isSwitching = true;
+                              _switchingTarget = id;
+                            });
+                            final ok = await player.switchSource(widget.track, id);
+                            if (mounted) {
+                              Navigator.of(context).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(ok
+                                      ? '已成功切换至【${AudioPlayerService.formatSourceDisplayName(id)}】'
+                                      : '切换失败，该源未匹配到「${widget.track.title}」有效音频'),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          },
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(icon, color: color, size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    name,
+                                    style: TextStyle(
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: theme.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                    decoration: BoxDecoration(
+                                      color: color.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      badge,
+                                      style: TextStyle(
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: color,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                desc,
+                                style: TextStyle(fontSize: 11, color: theme.textMuted),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (isTarget && _isSwitching)
+                          SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: theme.accentColor),
+                          )
+                        else if (isCurrent)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: theme.accentColor.withValues(alpha: 0.15),
+                              borderRadius: MellowRadii.borderPill,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.check_rounded, size: 12, color: theme.accentColor),
+                                const SizedBox(width: 3),
+                                Text(
+                                  '生效中',
+                                  style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: theme.accentColor),
+                                ),
+                              ],
+                            ),
+                          )
+                        else
+                          Icon(Icons.chevron_right_rounded, size: 18, color: theme.textMuted),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
 

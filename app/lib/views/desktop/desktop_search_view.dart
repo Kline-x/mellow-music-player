@@ -34,6 +34,13 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
   String _currentQuery = '';
   bool _isLoading = false;
   List<Track> _searchResults = [];
+  List<ImportedPlaylist> _playlistResults = [];
+  List<ArtistProfile> _artistResults = [];
+  bool _isLoadingPlaylists = false;
+  bool _isLoadingArtists = false;
+  int _songPage = 1;
+  bool _isLoadingMoreSongs = false;
+  bool _hasMoreSongs = true;
   String _activeCategory = 'songs'; // 'songs', 'playlists', 'artists'
   List<String> _history = [];
 
@@ -85,18 +92,81 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
     setState(() {
       _isLoading = true;
       _currentQuery = cleanQuery;
+      _songPage = 1;
+      _hasMoreSongs = true;
+      _playlistResults = [];
+      _artistResults = [];
     });
 
     await StorageService.instance.addSearchHistory(cleanQuery);
     _loadHistory();
 
-    final results = await OnlineMusicService.searchOnlineTracks(cleanQuery, limit: 40);
+    final tracksFuture = OnlineMusicService.searchOnlineTracks(cleanQuery, page: 1, limit: 35);
+    final playlistsFuture = OnlineMusicService.searchOnlinePlaylists(cleanQuery, limit: 20);
+    final artistsFuture = OnlineMusicService.searchOnlineArtists(cleanQuery, limit: 20);
+
+    final res = await Future.wait([tracksFuture, playlistsFuture, artistsFuture]);
 
     if (mounted) {
       setState(() {
         _isLoading = false;
-        _searchResults = results;
+        _searchResults = res[0] as List<Track>;
+        _playlistResults = res[1] as List<ImportedPlaylist>;
+        _artistResults = res[2] as List<ArtistProfile>;
       });
+    }
+  }
+
+  Future<void> _loadMoreSongs() async {
+    if (_isLoadingMoreSongs || !_hasMoreSongs || _currentQuery.isEmpty) return;
+    setState(() => _isLoadingMoreSongs = true);
+
+    try {
+      final nextPage = _songPage + 1;
+      final more = await OnlineMusicService.searchOnlineTracks(_currentQuery, page: nextPage, limit: 30);
+      if (mounted) {
+        setState(() {
+          _isLoadingMoreSongs = false;
+          _songPage = nextPage;
+          if (more.isEmpty) {
+            _hasMoreSongs = false;
+          } else {
+            _searchResults = OnlineMusicService.dedupeByTitleArtist([..._searchResults, ...more]);
+          }
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingMoreSongs = false);
+    }
+  }
+
+  Future<void> _fetchPlaylistsOnly(String query) async {
+    setState(() => _isLoadingPlaylists = true);
+    try {
+      final res = await OnlineMusicService.searchOnlinePlaylists(query, limit: 20);
+      if (mounted) {
+        setState(() {
+          _isLoadingPlaylists = false;
+          _playlistResults = res;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingPlaylists = false);
+    }
+  }
+
+  Future<void> _fetchArtistsOnly(String query) async {
+    setState(() => _isLoadingArtists = true);
+    try {
+      final res = await OnlineMusicService.searchOnlineArtists(query, limit: 20);
+      if (mounted) {
+        setState(() {
+          _isLoadingArtists = false;
+          _artistResults = res;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingArtists = false);
     }
   }
 
@@ -105,6 +175,8 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
     setState(() {
       _currentQuery = '';
       _searchResults.clear();
+      _playlistResults.clear();
+      _artistResults.clear();
       _isLoading = false;
     });
     _focusNode.requestFocus();
@@ -218,9 +290,9 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
         // 3. 搜索内容区
         if (_isLoading)
           _buildLoadingState(theme)
-        else if (_currentQuery.isNotEmpty && _searchResults.isNotEmpty)
+        else if (_currentQuery.isNotEmpty && (_searchResults.isNotEmpty || _playlistResults.isNotEmpty || _artistResults.isNotEmpty))
           _buildResultsView(theme, player)
-        else if (_currentQuery.isNotEmpty && _searchResults.isEmpty)
+        else if (_currentQuery.isNotEmpty)
           _buildEmptyResultsView(theme)
         else
           _buildPreSearchView(theme),
@@ -233,7 +305,16 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
     final isSelected = _activeCategory == id;
 
     return GestureDetector(
-      onTap: () => setState(() => _activeCategory = id),
+      onTap: () {
+        setState(() => _activeCategory = id);
+        if (_currentQuery.isNotEmpty) {
+          if (id == 'playlists' && _playlistResults.isEmpty && !_isLoadingPlaylists) {
+            _fetchPlaylistsOnly(_currentQuery);
+          } else if (id == 'artists' && _artistResults.isEmpty && !_isLoadingArtists) {
+            _fetchArtistsOnly(_currentQuery);
+          }
+        }
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -523,7 +604,32 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
   }
 
   Widget _buildResultsView(ThemeProvider theme, AudioPlayerService player) {
+    if (_activeCategory == 'playlists') {
+      return _buildPlaylistsResultsView(theme, player);
+    } else if (_activeCategory == 'artists') {
+      return _buildArtistsResultsView(theme, player);
+    }
+    return _buildSongsResultsView(theme, player);
+  }
+
+  Widget _buildSongsResultsView(ThemeProvider theme, AudioPlayerService player) {
     final isDark = theme.isDarkMode;
+
+    if (_searchResults.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 40),
+          child: Column(
+            children: [
+              Icon(Icons.music_off_rounded, size: 48, color: theme.textMuted),
+              const SizedBox(height: 12),
+              Text('未找到相关单曲，请尝试其它关键词', style: TextStyle(color: theme.textMuted, fontSize: 13)),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -663,7 +769,7 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
                     ),
                   ),
                   const SizedBox(width: 14),
-                  // 标题与音质角标
+                  // 标题与音质角标 + 音源标签
                   Expanded(
                     flex: 4,
                     child: Row(
@@ -690,6 +796,18 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
                           child: Text(
                             'SQ',
                             style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: theme.accentColor),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: theme.accentColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            AudioPlayerService.formatSourceDisplayName(track.source),
+                            style: TextStyle(fontSize: 8.5, color: theme.accentColor, fontWeight: FontWeight.bold),
                           ),
                         ),
                       ],
@@ -771,6 +889,247 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
             ),
           );
         }),
+
+        // 底部“加载更多”控制条
+        if (_hasMoreSongs && _searchResults.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          Center(
+            child: SoftButton(
+              label: _isLoadingMoreSongs ? '正在拉取更多高品质单曲...' : '加载更多歌曲 (已呈现 ${_searchResults.length} 首)',
+              icon: _isLoadingMoreSongs ? Icons.hourglass_top_rounded : Icons.expand_more_rounded,
+              isPill: true,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+              onTap: _isLoadingMoreSongs ? null : _loadMoreSongs,
+            ),
+          ),
+          const SizedBox(height: 20),
+        ] else if (_searchResults.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          Center(
+            child: Text(
+              '已为您呈现全部 ${_searchResults.length} 首相关高保真单曲',
+              style: TextStyle(fontSize: 12, color: theme.textMuted),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPlaylistsResultsView(ThemeProvider theme, AudioPlayerService player) {
+    if (_isLoadingPlaylists) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 40),
+          child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(theme.accentColor)),
+        ),
+      );
+    }
+
+    if (_playlistResults.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 40),
+          child: Column(
+            children: [
+              Icon(Icons.queue_music_rounded, size: 48, color: theme.textMuted),
+              const SizedBox(height: 12),
+              Text('未找到相关公开歌单', style: TextStyle(color: theme.textMuted, fontSize: 13)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              '相关歌单',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: theme.accentColor.withValues(alpha: 0.15),
+                borderRadius: MellowRadii.borderPill,
+              ),
+              child: Text(
+                '${_playlistResults.length} 个公开歌单',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.accentColor),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: _playlistResults.map((pl) {
+            return SizedBox(
+              width: 190,
+              child: SoftCard(
+                padding: const EdgeInsets.all(12),
+                borderRadius: MellowRadii.borderR16,
+                onTap: () async {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('正在解析导入歌单「${pl.title}」...'), duration: const Duration(seconds: 1)),
+                  );
+                  final imported = await OnlineMusicService.importNeteasePlaylist(pl.id.replaceAll('netease_', ''));
+                  if (imported != null && imported.tracks.isNotEmpty) {
+                    player.addImportedPlaylist(imported);
+                    player.playPlaylist(imported.tracks, startIndex: 0);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('已导入并开始播放歌单「${pl.title}」（共 ${imported.tracks.length} 首）')),
+                      );
+                    }
+                  }
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: MellowImage(
+                        url: pl.coverUrl,
+                        width: 166,
+                        height: 166,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      pl.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.bold,
+                        color: theme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${pl.trackCount} 首歌曲 · ${pl.description}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 11.5, color: theme.textMuted),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildArtistsResultsView(ThemeProvider theme, AudioPlayerService player) {
+    if (_isLoadingArtists) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 40),
+          child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(theme.accentColor)),
+        ),
+      );
+    }
+
+    if (_artistResults.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 40),
+          child: Column(
+            children: [
+              Icon(Icons.person_off_rounded, size: 48, color: theme.textMuted),
+              const SizedBox(height: 12),
+              Text('未找到相关歌手档案', style: TextStyle(color: theme.textMuted, fontSize: 13)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              '相关歌手',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: theme.accentColor.withValues(alpha: 0.15),
+                borderRadius: MellowRadii.borderPill,
+              ),
+              child: Text(
+                '${_artistResults.length} 位歌手',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.accentColor),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: _artistResults.map((a) {
+            return SizedBox(
+              width: 175,
+              child: SoftCard(
+                padding: const EdgeInsets.all(16),
+                borderRadius: MellowRadii.borderR16,
+                onTap: () => widget.onNavigate('artist_detail', a.name),
+                child: Column(
+                  children: [
+                    ClipOval(
+                      child: MellowImage(
+                        url: a.avatarUrl,
+                        width: 90,
+                        height: 90,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      a.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.bold,
+                        color: theme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${a.musicSize} 首单曲 · ${a.albumSize} 专辑',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 11.5, color: theme.textMuted),
+                    ),
+                    const SizedBox(height: 10),
+                    SoftButton(
+                      label: '进入歌手页',
+                      icon: Icons.arrow_forward_rounded,
+                      isPill: true,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                      onTap: () => widget.onNavigate('artist_detail', a.name),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
       ],
     );
   }
