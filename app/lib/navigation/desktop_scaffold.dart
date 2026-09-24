@@ -585,7 +585,11 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
       case 'artists':
         return DesktopArtistsView(onNavigate: _navigateTo);
       case 'artist_detail':
-        return DesktopArtistDetailView(artistName: _artistDetailParam ?? '巫娜', onNavigate: _navigateTo);
+        return DesktopArtistDetailView(
+          key: ValueKey(_artistDetailParam),
+          artistName: _artistDetailParam ?? '巫娜',
+          onNavigate: _navigateTo,
+        );
       case 'podcast':
         return DesktopPodcastView(onNavigate: _navigateTo);
       case 'favorite':

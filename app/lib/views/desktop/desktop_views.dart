@@ -1177,8 +1177,11 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
 
     final profile = getArtistProfileByName(_artistName);
     if (profile.tracks.isNotEmpty) {
-      _artistTracks = profile.tracks;
+      _artistTracks = List.from(profile.tracks);
+    } else {
+      _artistTracks = [];
     }
+    _isLoadingTracks = _artistTracks.isEmpty;
 
     _loadSongs();
   }

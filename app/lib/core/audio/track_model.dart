@@ -502,6 +502,17 @@ final List<Track> mockBoYuanTracks = [
 /// 真实核心歌手档案列表（真实 NetEase CDN 头像与真实艺术家元数据）
 final List<ArtistProfile> mockArtistsProfiles = [
   ArtistProfile(
+    id: '6468',
+    name: '巫娜',
+    role: '古琴演奏家 / 音乐制作人',
+    fans: '86.4万',
+    bio: '当代古琴领军名家 · 禅意东方声学开创者 · 累计播放量突破 3000 万',
+    avatarUrl: 'https://p1.music.126.net/d0eG24yqB78o23jVn0aF8Q==/109951163111162486.jpg',
+    musicSize: 62,
+    albumSize: 18,
+    tracks: mockWuNaTracks,
+  ),
+  ArtistProfile(
     id: '6452',
     name: '周杰伦',
     role: '华语流行音乐天王',
@@ -511,17 +522,6 @@ final List<ArtistProfile> mockArtistsProfiles = [
     musicSize: 128,
     albumSize: 45,
     tracks: mockJayChouTracks,
-  ),
-  ArtistProfile(
-    id: '2116',
-    name: '陈奕迅',
-    role: '华语乐坛情歌歌神',
-    fans: '2980.5万',
-    bio: '殿堂级情歌巨匠 · 抚慰无数都市心灵 · 华语音乐传世经典',
-    avatarUrl: 'https://p1.music.126.net/5KJI2mq0G0OQHQaAfAJfwg==/109951173289563385.jpg',
-    musicSize: 310,
-    albumSize: 68,
-    tracks: mockPresetTracks,
   ),
   ArtistProfile(
     id: '11127',
@@ -535,6 +535,28 @@ final List<ArtistProfile> mockArtistsProfiles = [
     tracks: mockBeyondTracks,
   ),
   ArtistProfile(
+    id: '34484084',
+    name: '伯远',
+    role: '流行歌手 / 唱跳创作人',
+    fans: '512.6万',
+    bio: '实力流行唱作人 · 舞台全能先锋 · 巡演热度榜 TOP 级',
+    avatarUrl: 'https://p1.music.126.net/b7kQ7jG0u8f7_w8c9_yQ==/109951168923046977.jpg',
+    musicSize: 45,
+    albumSize: 8,
+    tracks: mockBoYuanTracks,
+  ),
+  ArtistProfile(
+    id: '2116',
+    name: '陈奕迅',
+    role: '华语乐坛情歌歌神',
+    fans: '2980.5万',
+    bio: '殿堂级情歌巨匠 · 抚慰无数都市心灵 · 华语音乐传世经典',
+    avatarUrl: 'https://p1.music.126.net/5KJI2mq0G0OQHQaAfAJfwg==/109951173289563385.jpg',
+    musicSize: 310,
+    albumSize: 68,
+    tracks: const [],
+  ),
+  ArtistProfile(
     id: '3684',
     name: '林俊杰',
     role: '华语行走的 CD',
@@ -543,7 +565,7 @@ final List<ArtistProfile> mockArtistsProfiles = [
     avatarUrl: 'https://p1.music.126.net/78q0jUUJ0h08GxAs2G-tCA==/109951168529051968.jpg',
     musicSize: 240,
     albumSize: 52,
-    tracks: mockPresetTracks,
+    tracks: const [],
   ),
   ArtistProfile(
     id: '9272',
@@ -554,7 +576,7 @@ final List<ArtistProfile> mockArtistsProfiles = [
     avatarUrl: 'https://p1.music.126.net/VED2XoZcISpeGUTE_Q6lTA==/109951170045683199.jpg',
     musicSize: 180,
     albumSize: 36,
-    tracks: mockPresetTracks,
+    tracks: const [],
   ),
   ArtistProfile(
     id: '5781',
@@ -565,7 +587,7 @@ final List<ArtistProfile> mockArtistsProfiles = [
     avatarUrl: 'https://p1.music.126.net/Z2x6knGRr7eRrZeOlgCngA==/109951172414270313.jpg',
     musicSize: 195,
     albumSize: 40,
-    tracks: mockPresetTracks,
+    tracks: const [],
   ),
   ArtistProfile(
     id: '4292',
@@ -576,7 +598,7 @@ final List<ArtistProfile> mockArtistsProfiles = [
     avatarUrl: 'https://p1.music.126.net/uXZ3qG0Q5zX0iN4i9p1c7A==/109951168923055977.jpg',
     musicSize: 150,
     albumSize: 28,
-    tracks: mockPresetTracks,
+    tracks: const [],
   ),
   ArtistProfile(
     id: '12174059',
@@ -587,7 +609,7 @@ final List<ArtistProfile> mockArtistsProfiles = [
     avatarUrl: 'https://p1.music.126.net/Gk_h13Yv5f-u01iZ7a72cA==/109951168051792618.jpg',
     musicSize: 76,
     albumSize: 14,
-    tracks: mockPresetTracks,
+    tracks: const [],
   ),
   ArtistProfile(
     id: '9269',
@@ -598,7 +620,7 @@ final List<ArtistProfile> mockArtistsProfiles = [
     avatarUrl: 'https://p1.music.126.net/l58hM0mK7d4Y50w9i1F06Q==/109951163111162486.jpg',
     musicSize: 185,
     albumSize: 34,
-    tracks: mockPresetTracks,
+    tracks: const [],
   ),
   ArtistProfile(
     id: '12138269',
@@ -609,29 +631,7 @@ final List<ArtistProfile> mockArtistsProfiles = [
     avatarUrl: 'https://p1.music.126.net/4WlYd5k6G0u7x1lE0e2-wQ==/109951168923054977.jpg',
     musicSize: 110,
     albumSize: 20,
-    tracks: mockPresetTracks,
-  ),
-  ArtistProfile(
-    id: '6468',
-    name: '巫娜',
-    role: '古琴演奏家 / 音乐制作人',
-    fans: '86.4万',
-    bio: '当代古琴领军名家 · 禅意东方声学开创者 · 累计播放量突破 3000 万',
-    avatarUrl: 'https://p1.music.126.net/d0eG24yqB78o23jVn0aF8Q==/109951163111162486.jpg',
-    musicSize: 62,
-    albumSize: 18,
-    tracks: mockWuNaTracks,
-  ),
-  ArtistProfile(
-    id: '34484084',
-    name: '伯远',
-    role: '流行歌手 / 唱跳创作人',
-    fans: '512.6万',
-    bio: '实力流行唱作人 · 舞台全能先锋 · 巡演热度榜 TOP 级',
-    avatarUrl: 'https://p1.music.126.net/b7kQ7jG0u8f7_w8c9_yQ==/109951168923046977.jpg',
-    musicSize: 45,
-    albumSize: 8,
-    tracks: mockBoYuanTracks,
+    tracks: const [],
   ),
 ];
 
@@ -1130,6 +1130,16 @@ List<Track> getAllKnownTracks() {
 Track? findKnownTrackById(String id) {
   for (final t in getAllKnownTracks()) {
     if (t.id == id) return t;
+  }
+  // 兼容老版本预设曲目索引 ID（例如 track-1 对应首支预设曲目 云水禅心）
+  if (id == 'track-1') {
+    return mockPresetTracks.firstWhere((t) => t.title == '云水禅心', orElse: () => mockPresetTracks.first);
+  }
+  if (id.startsWith('track-')) {
+    final idx = int.tryParse(id.substring(6));
+    if (idx != null && idx > 0 && idx <= mockPresetTracks.length) {
+      return mockPresetTracks[idx - 1];
+    }
   }
   return null;
 }
