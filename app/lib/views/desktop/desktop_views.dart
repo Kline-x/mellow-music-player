@@ -149,54 +149,45 @@ class DesktopDiscoverView extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 14),
-        GridView.count(
-          crossAxisCount: 4,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 0.82,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          children: [
-            _buildPlaylistCard(
-              context,
-              '东方禅境 · 幽篁古筝琴韵精选',
-              '48.6万播放 · 巫娜 / 常静',
-              'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80',
-              () => player.playPlaylist(mockWuNaTracks, startIndex: 0),
-            ),
-            _buildPlaylistCard(
-              context,
-              '夜幕降临时的华语流行浪漫',
-              '129.4万播放 · 周杰伦 / 伯远',
-              'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
-              () => player.playPlaylist(mockJayChouTracks, startIndex: 0),
-            ),
-            _buildPlaylistCard(
-              context,
-              '岁月如歌 · 粤语传世经典不朽巡礼',
-              '98.2万播放 · Beyond / 传奇殿堂',
-              'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80',
-              () => player.playPlaylist(mockBeyondTracks, startIndex: 0),
-            ),
-            _buildPlaylistCard(
-              context,
-              '原创独立先锋 · 诗意民谣声线',
-              '45.1万播放 · 独立音乐人代表作',
-              'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=500&q=80',
-              () => player.playPlaylist(toplistOriginTracks, startIndex: 0),
-            ),
-          ],
+        // 推荐歌单网格 (自适应多分辨率列数，宽屏优雅延展)
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final crossAxisCount = (constraints.maxWidth / 220).floor().clamp(2, 6);
+            final displayPlaylists = mockSquarePlaylists.take(crossAxisCount).toList();
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 0.82,
+              ),
+              itemCount: displayPlaylists.length,
+              itemBuilder: (context, idx) {
+                final pl = displayPlaylists[idx];
+                return _buildPlaylistCard(
+                  context,
+                  pl.title,
+                  '${pl.tracks.length} 首 · ${pl.description}',
+                  pl.coverUrl,
+                  () => player.playPlaylist(pl.tracks, startIndex: 0),
+                );
+              },
+            );
+          },
         ),
         const SizedBox(height: 32),
 
-        // 热门歌手推荐环 (统一从 mockArtistsProfiles 单点源读取)
+        // 热门歌手推荐环 (统一从 mockArtistsProfiles 读取，Wrap 优雅聚拢避免宽屏过大空白)
         Text(
           '热门入驻与关注歌手',
           style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: theme.textPrimary),
         ),
         const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          spacing: 24,
+          runSpacing: 16,
           children: mockArtistsProfiles.map((a) {
             return _buildArtistAvatar(
               context,
@@ -335,11 +326,11 @@ class _DesktopPlaylistSquareViewState extends State<DesktopPlaylistSquareView> {
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 220,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
-            childAspectRatio: 0.82,
+            childAspectRatio: 0.80,
           ),
           itemCount: playlists.length,
           itemBuilder: (context, idx) {
@@ -617,18 +608,25 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
         ),
         const SizedBox(height: 20),
 
-        // 1. 四大核心官方权威榜单
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 20,
-            mainAxisSpacing: 20,
-            childAspectRatio: 2.25,
-          ),
-          itemCount: coreCharts.length,
-          itemBuilder: (context, idx) {
+        // 1. 四大核心官方权威榜单 (响应式自适应：超宽屏4列并行，常规屏2列，紧凑屏1列)
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isUltraWide = constraints.maxWidth >= 1200;
+            final isNarrow = constraints.maxWidth < 680;
+            final crossAxisCount = isUltraWide ? 4 : (isNarrow ? 1 : 2);
+            final childAspectRatio = isUltraWide ? 1.45 : (isNarrow ? 2.8 : 2.25);
+
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: childAspectRatio,
+              ),
+              itemCount: coreCharts.length,
+              itemBuilder: (context, idx) {
             final c = coreCharts[idx];
             final gradientColors = c['gradient'] as List<Color>;
             final iconData = c['icon'] as IconData;
@@ -797,7 +795,9 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
               ),
             );
           },
-        ),
+        );
+      },
+    ),
 
         const SizedBox(height: 36),
 
@@ -847,8 +847,8 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 5,
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 210,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
               childAspectRatio: 0.78,
@@ -1072,22 +1072,22 @@ class _DesktopArtistsViewState extends State<DesktopArtistsView> {
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 220,
+            mainAxisExtent: 225,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
-            childAspectRatio: 0.85,
           ),
           itemCount: _artists.length,
           itemBuilder: (context, idx) {
             final a = _artists[idx];
             return SoftCard(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
               onTap: () => widget.onNavigate('artist_detail', '${a.id}:::${a.name}:::${a.avatarUrl}'),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  MellowAvatar(radius: 46, url: a.avatarUrl),
+                  MellowAvatar(radius: 44, url: a.avatarUrl),
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1095,13 +1095,13 @@ class _DesktopArtistsViewState extends State<DesktopArtistsView> {
                       Flexible(
                         child: Text(
                           a.name,
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: theme.textPrimary),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 4),
-                      Icon(Icons.verified_rounded, size: 16, color: theme.accentColor),
+                      Icon(Icons.verified_rounded, size: 15, color: theme.accentColor),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -1112,7 +1112,7 @@ class _DesktopArtistsViewState extends State<DesktopArtistsView> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text('粉丝 ${a.fans}', style: TextStyle(fontSize: 11, color: theme.textSecondary)),
                 ],
               ),
@@ -1398,20 +1398,16 @@ class DesktopPodcastView extends StatelessWidget {
       children: [
         Text('声音电台专区', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: theme.textPrimary)),
         const SizedBox(height: 20),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final crossAxisCount = constraints.maxWidth < 620 ? 1 : 2;
-            final childAspectRatio = constraints.maxWidth < 620 ? 3.0 : 2.5;
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: childAspectRatio,
-              ),
-              itemCount: radios.length,
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 380,
+            mainAxisExtent: 96,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+          ),
+          itemCount: radios.length,
               itemBuilder: (context, idx) {
                 final r = radios[idx];
                 return SoftCard(
@@ -1457,9 +1453,7 @@ class DesktopPodcastView extends StatelessWidget {
                   ),
                 );
               },
-            );
-          },
-        ),
+            ),
       ],
     );
   }

@@ -13,16 +13,14 @@ class AdaptiveScaffold extends StatelessWidget {
     print('>>> [STEP 8] AdaptiveScaffold build called');
     return LayoutBuilder(
       builder: (context, constraints) {
-        // ignore: avoid_print
-        print('>>> [STEP 8.1] AdaptiveScaffold constraints: maxWidth=${constraints.maxWidth}, maxHeight=${constraints.maxHeight}');
-        final isDesktopWidth = constraints.maxWidth >= 1024;
-        if (isDesktopWidth) {
-          // ignore: avoid_print
-          print('>>> [STEP 8.2] Choosing DesktopScaffold');
+        // 在桌面平台（Windows/macOS/Linux）或视口宽度 >= 720 时，保持现代桌面级工作台架构
+        final isDesktopPlatform = Theme.of(context).platform == TargetPlatform.windows ||
+            Theme.of(context).platform == TargetPlatform.macOS ||
+            Theme.of(context).platform == TargetPlatform.linux;
+        final isDesktopWidth = constraints.maxWidth >= 720;
+        if (isDesktopPlatform || isDesktopWidth) {
           return const DesktopScaffold();
         } else {
-          // ignore: avoid_print
-          print('>>> [STEP 8.2] Choosing MobileScaffold');
           return const MobileScaffold();
         }
       },

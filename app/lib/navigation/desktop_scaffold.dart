@@ -218,18 +218,23 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
 
                     // 主体区域：左侧微凹胶囊侧边栏 + 中央页面插槽
                     Expanded(
-                      child: Row(
-                        children: [
-                          // 左侧侧边栏
-                          _buildSidebar(context),
+                      child: LayoutBuilder(
+                        builder: (context, mainConstraints) {
+                          final isCompactSidebar = mainConstraints.maxWidth < 900;
+                          return Row(
+                            children: [
+                              // 左侧侧边栏 (自适应宽屏全展开 / 紧凑屏图标坞)
+                              _buildSidebar(context, isCompact: isCompactSidebar),
 
-                          // 中央工作区
-                          Expanded(
-                            child: ClipRRect(
-                              child: _buildCurrentView(),
-                            ),
-                          ),
-                        ],
+                              // 中央工作区
+                              Expanded(
+                                child: ClipRRect(
+                                  child: _buildCurrentView(),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
 
@@ -503,12 +508,12 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
     );
   }
 
-  // 左侧现代化自适应侧边栏 (轻灵优雅透明底，支持完整呈现，消除白色药丸堆积)
-  Widget _buildSidebar(BuildContext context) {
+  // 左侧现代化自适应侧边栏 (轻灵优雅透明底，支持完整呈现，宽屏全量/紧凑屏图标坞)
+  Widget _buildSidebar(BuildContext context, {bool isCompact = false}) {
     final theme = context.watch<ThemeProvider>();
     final isDark = theme.isDarkMode;
     return Container(
-      width: 220,
+      width: isCompact ? 68 : 210,
       decoration: BoxDecoration(
         color: MellowColors.card(isDark).withValues(alpha: 0.35),
         border: Border(
@@ -519,28 +524,28 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
         ),
       ),
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 20),
+        padding: EdgeInsets.fromLTRB(isCompact ? 8 : 12, 12, isCompact ? 8 : 12, 20),
         children: [
-          _buildNavGroupTitle('在线音乐'),
-          _buildNavItem('discover', '发现音乐', Icons.explore_rounded),
-          _buildNavItem('search', '全网搜索', Icons.search_rounded),
-          _buildNavItem('playlists', '歌单广场', Icons.queue_music_rounded),
-          _buildNavItem('toplist', '巅峰榜单', Icons.leaderboard_rounded),
-          _buildNavItem('artists', '热门歌手', Icons.people_alt_rounded),
-          _buildNavItem('podcast', '声音电台', Icons.radio_rounded),
+          if (!isCompact) _buildNavGroupTitle('在线音乐'),
+          _buildNavItem('discover', '发现音乐', Icons.explore_rounded, isCompact: isCompact),
+          _buildNavItem('search', '全网搜索', Icons.search_rounded, isCompact: isCompact),
+          _buildNavItem('playlists', '歌单广场', Icons.queue_music_rounded, isCompact: isCompact),
+          _buildNavItem('toplist', '巅峰榜单', Icons.leaderboard_rounded, isCompact: isCompact),
+          _buildNavItem('artists', '热门歌手', Icons.people_alt_rounded, isCompact: isCompact),
+          _buildNavItem('podcast', '声音电台', Icons.radio_rounded, isCompact: isCompact),
           const SizedBox(height: 12),
 
-          _buildNavGroupTitle('我的资料库'),
-          _buildNavItem('favorite', '我喜欢的音乐', Icons.favorite_rounded),
-          _buildNavItem('imported', '导入与自建歌单', Icons.library_music_rounded),
-          _buildNavItem('history', '播放历史', Icons.history_rounded),
-          _buildNavItem('local', '本地与下载', Icons.folder_special_rounded),
+          if (!isCompact) _buildNavGroupTitle('我的资料库'),
+          _buildNavItem('favorite', '我喜欢的音乐', Icons.favorite_rounded, isCompact: isCompact),
+          _buildNavItem('imported', '导入与自建歌单', Icons.library_music_rounded, isCompact: isCompact),
+          _buildNavItem('history', '播放历史', Icons.history_rounded, isCompact: isCompact),
+          _buildNavItem('local', '本地与下载', Icons.folder_special_rounded, isCompact: isCompact),
           const SizedBox(height: 12),
 
-          _buildNavGroupTitle('系统与生态'),
-          _buildNavItem('sync', '多端同步中心', Icons.cloud_sync_rounded),
-          _buildNavItem('sources', 'LX 音源管理', Icons.integration_instructions_rounded),
-          _buildNavItem('settings', '个性化设置', Icons.tune_rounded),
+          if (!isCompact) _buildNavGroupTitle('系统与生态'),
+          _buildNavItem('sync', '多端同步中心', Icons.cloud_sync_rounded, isCompact: isCompact),
+          _buildNavItem('sources', 'LX 音源管理', Icons.integration_instructions_rounded, isCompact: isCompact),
+          _buildNavItem('settings', '个性化设置', Icons.tune_rounded, isCompact: isCompact),
         ],
       ),
     );
@@ -563,13 +568,14 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
     );
   }
 
-  Widget _buildNavItem(String id, String label, IconData icon) {
+  Widget _buildNavItem(String id, String label, IconData icon, {bool isCompact = false}) {
     final isSelected = _activeView == id;
     return _DesktopSidebarNavItem(
       id: id,
       label: label,
       icon: icon,
       isSelected: isSelected,
+      isCompact: isCompact,
       onTap: () => _navigateTo(id),
     );
   }
@@ -1061,12 +1067,13 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
   }
 }
 
-/// 专为桌面端打造的轻灵现代侧栏导航项 (告别白色药丸堆积，支持极简透明/微浅浮动/高亮激活)
+/// 专为桌面端打造的轻灵现代侧栏导航项 (告别白色药丸堆积，支持极简透明/微浅浮动/高亮激活/紧凑图标坞)
 class _DesktopSidebarNavItem extends StatefulWidget {
   final String id;
   final String label;
   final IconData icon;
   final bool isSelected;
+  final bool isCompact;
   final VoidCallback onTap;
 
   const _DesktopSidebarNavItem({
@@ -1074,6 +1081,7 @@ class _DesktopSidebarNavItem extends StatefulWidget {
     required this.label,
     required this.icon,
     required this.isSelected,
+    this.isCompact = false,
     required this.onTap,
   });
 
@@ -1124,35 +1132,46 @@ class _DesktopSidebarNavItemState extends State<_DesktopSidebarNavItem> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8.5),
+            padding: EdgeInsets.symmetric(horizontal: widget.isCompact ? 8 : 14, vertical: 8.5),
             decoration: BoxDecoration(
               color: bgColor,
               borderRadius: MellowRadii.borderPill,
               boxShadow: shadows,
             ),
-            child: Row(
-              children: [
-                Icon(
-                  widget.icon,
-                  size: 18,
-                  color: fgColor,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    widget.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.w500,
-                      color: fgColor,
-                      letterSpacing: -0.2,
+            child: widget.isCompact
+                ? Tooltip(
+                    message: widget.label,
+                    child: Center(
+                      child: Icon(
+                        widget.icon,
+                        size: 20,
+                        color: fgColor,
+                      ),
                     ),
+                  )
+                : Row(
+                    children: [
+                      Icon(
+                        widget.icon,
+                        size: 18,
+                        color: fgColor,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          widget.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.w500,
+                            color: fgColor,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
         ),
       ),
