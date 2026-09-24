@@ -15,9 +15,13 @@ Thumbs.db
 # Scratch & Temporary Test Artifacts
 scratch/
 test_*.png
+*.png
 .system_generated/
 release_windows/
+release_windows_ci/
 verify_windows_app.ps1
 __pycache__/
 *.pyc
 docs/tools/state.json
+*.py
+app/docs/

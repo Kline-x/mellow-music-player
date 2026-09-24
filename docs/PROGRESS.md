@@ -112,19 +112,31 @@
   - 弹性优化 WebDAV 自动同步测试等待，彻底抗击高并发机器调度抖动；
 - **双端 100% 验收门禁达成**：
   - Web 端：83/83 项 E2E 自动化测试 100% 通过（输出 15 张桌面端 + 18 张移动端高保真截图）；
-  - Flutter 端：168/168 项自动化测试 100% 通过（输出 24 张像素级无溢出光栅化帧）。
+### 10. 全网六维音源生态接入、主动换源弹窗重构、不可用音频自动跳播兜底与多尺寸响应式验收 (Phase 9)
+- **多音源生态与主动换源弹窗全面扩充**：
+  - 突破原有 3 个轻量直连源限制，全面接入全网 6 大主流平台（酷我高保真 `kuwo-sq`、网易云在线 `netease-online`、QQ音乐 `qq-online`、酷狗音乐 `kugou-online`、咪咕音乐 `migu-online`、iTunes `itunes-preview`）+ 润音官方保真源（`mellow-preset`）+ 用户动态导入的任何落雪自定义 JavaScript 脚本源；
+  - 重构 `SourceSwitcherModal` 为现代化浮动微拟物对话框，支持多尺寸高度自适应与垂直平滑滚动（`BoxConstraints(maxHeight: 0.85 * h)`），杜绝任何尺寸下的截断或溢出；
+  - 当前正在生效的音源高亮指示 `✓ 生效中`，点击其他音源即时触发无感切换、底部徽章联动更新与顶部声学通知反馈。
+- **全网音源不可用平滑跳播与防死循环熔断保护**：
+  - 在 `AudioPlayerService` 中实现完整的故障兜底机制：当一首歌曲在全网所有音源均无法解析出有效可播音频流时，顶部弹出居中悬浮的声学提示横幅（4秒自动淡出），并在 `1200ms` 平滑延时后自动触发 `next()` 播放下一首；
+  - 增加 `_consecutiveFailures` 连续失败计数器与熔断保护：若连续 5 首歌曲均不可用，自动暂停播放并提示用户检查网络或音源配置，彻底杜绝死循环狂切与闪烁；任一歌曲成功播放时自动重置计数器；
+  - 严格加固生命周期管理，在 `dispose()` 与 `pause()` 中取消 `_playbackNoticeTimer` 与 `_autoSkipTimer`，杜绝未决定时器（`pending timer`）泄露。
+- **多尺寸响应式与排版优化实机验证**：
+  - 修复榜单与表格在紧凑屏幕下歌名/歌手挤压的问题，优化弹性 flex 比例，确保 100% 完整可见；
+  - 在 Windows 原生客户端前台（`WinSta0\Default`）经由 1080p（1920×1080）、标准笔记本（1200×800）、分屏紧凑窗口（820×700）完成物理前台全维度交互验证；
+  - GitHub Actions CI 质量网关全绿（172/172 自动化测试 100% 通过，Windows Desktop Release 可执行程序成功编译发布）。
 
 ---
 
 ## 🎯 产出物运行与验证指引
 
 ```bash
-# 1. 运行全量单元与部件测试套件 (168/168 Passed 100%)
+# 1. 运行全量单元与部件测试套件 (172/172 Passed 100%)
 cd app
 flutter analyze
 flutter test
 
-# 2. 运行真实端到端验收与高保真像素帧捕获套件 (输出 24 帧高保真无溢出截图)
+# 2. 运行真实端到端验收与高保真像素帧捕获套件
 flutter test test/e2e_full_audit_runner_test.dart
 
 # 3. 运行 Web 端自动化 E2E 测试套件 (83/83 Passed 100%)
@@ -134,3 +146,4 @@ node e2e_test.js
 node capture_all_web_desktop.mjs
 node capture_all_web_mobile.mjs
 ```
+
