@@ -306,40 +306,42 @@ class OnlineMusicService {
               bestSong = firstSong.cast<String, dynamic>();
             }
 
-            final rawMid = (bestSong['DC_TARGETID'] ?? bestSong['MUSICRID'] ?? '').toString();
-            final mid = rawMid.replaceAll('MUSIC_', '');
-            if (mid.isNotEmpty) {
-              // 1.1 尝试 Kuwo convert_url，但严格过滤兜底失效提示音（588957081.mp3 / /nf/ 占位流）
-              try {
-                final antiUri = Uri.parse(
-                  'http://antiserver.kuwo.cn/anti.s?type=convert_url&rid=$mid&format=mp3&response=url',
-                );
-                final antiResp = await http.get(antiUri, headers: {
-                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                }).timeout(const Duration(seconds: 4));
-                if (antiResp.statusCode == 200) {
-                  final antiUrl = antiResp.body.trim();
-                  if ((antiUrl.startsWith('http://') || antiUrl.startsWith('https://')) &&
-                      !antiUrl.contains('588957081') &&
-                      !antiUrl.contains('/nf/')) {
-                    _urlCache[cacheKey] = antiUrl;
-                    return antiUrl;
+            if (bestSong != null) {
+              final rawMid = (bestSong['DC_TARGETID'] ?? bestSong['MUSICRID'] ?? '').toString();
+              final mid = rawMid.replaceAll('MUSIC_', '');
+              if (mid.isNotEmpty) {
+                // 1.1 尝试 Kuwo convert_url，但严格过滤兜底失效提示音（588957081.mp3 / /nf/ 占位流）
+                try {
+                  final antiUri = Uri.parse(
+                    'http://antiserver.kuwo.cn/anti.s?type=convert_url&rid=$mid&format=mp3&response=url',
+                  );
+                  final antiResp = await http.get(antiUri, headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                  }).timeout(const Duration(seconds: 4));
+                  if (antiResp.statusCode == 200) {
+                    final antiUrl = antiResp.body.trim();
+                    if ((antiUrl.startsWith('http://') || antiUrl.startsWith('https://')) &&
+                        !antiUrl.contains('588957081') &&
+                        !antiUrl.contains('/nf/')) {
+                      _urlCache[cacheKey] = antiUrl;
+                      return antiUrl;
+                    }
                   }
-                }
-              } catch (_) {}
+                } catch (_) {}
 
-              // 1.2 若 anti.s 为 VIP 占位流或失败，跟进 nxinxz 真实直链
-              try {
-                final streamUrl = 'http://music.nxinxz.com/kw.php?id=$mid&level=standard&type=mp3';
-                final unwrapped = await unwrapRedirects(streamUrl);
-                if (unwrapped.isNotEmpty &&
-                    !unwrapped.contains('nxinxz.com') &&
-                    !unwrapped.contains('588957081') &&
-                    !unwrapped.contains('/nf/')) {
-                  _urlCache[cacheKey] = unwrapped;
-                  return unwrapped;
-                }
-              } catch (_) {}
+                // 1.2 若 anti.s 为 VIP 占位流或失败，跟进 nxinxz 真实直链
+                try {
+                  final streamUrl = 'http://music.nxinxz.com/kw.php?id=$mid&level=standard&type=mp3';
+                  final unwrapped = await unwrapRedirects(streamUrl);
+                  if (unwrapped.isNotEmpty &&
+                      !unwrapped.contains('nxinxz.com') &&
+                      !unwrapped.contains('588957081') &&
+                      !unwrapped.contains('/nf/')) {
+                    _urlCache[cacheKey] = unwrapped;
+                    return unwrapped;
+                  }
+                } catch (_) {}
+              }
             }
           }
         }
