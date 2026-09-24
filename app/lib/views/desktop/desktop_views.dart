@@ -1323,7 +1323,7 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isActive ? theme.accentColor : theme.surfaceColor,
+          color: isActive ? theme.accentColor : theme.cardColor,
           borderRadius: BorderRadius.circular(20),
           boxShadow: isActive ? [BoxShadow(color: theme.accentColor.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 2))] : null,
         ),
@@ -1417,7 +1417,7 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
                           decoration: BoxDecoration(
-                            color: theme.surfaceColor,
+                            color: theme.cardColor,
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(color: theme.textMuted.withValues(alpha: 0.2)),
                           ),
@@ -1430,7 +1430,7 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
                             decoration: BoxDecoration(
-                              color: theme.surfaceColor,
+                              color: theme.cardColor,
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(color: theme.textMuted.withValues(alpha: 0.2)),
                             ),
