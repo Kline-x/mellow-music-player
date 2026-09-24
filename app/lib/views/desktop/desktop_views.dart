@@ -591,11 +591,11 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
               children: [
                 Text('官方巅峰排行榜', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: theme.textPrimary)),
                 const SizedBox(height: 4),
-                Text('汇聚全网 60+ 权威榜单，多源数据实时追踪流行脉搏', style: TextStyle(fontSize: 13, color: theme.textMuted)),
+                Text('汇聚全网多源权威数据，实时追踪流行脉搏', style: TextStyle(fontSize: 13, color: theme.textMuted)),
               ],
             ),
             SoftButton(
-              label: '播放精选榜单',
+              label: '播放全部榜单',
               icon: Icons.play_arrow_rounded,
               isActive: true,
               isPill: true,
@@ -958,13 +958,14 @@ class DesktopArtistsView extends StatefulWidget {
 }
 
 class _DesktopArtistsViewState extends State<DesktopArtistsView> {
-  int _selectedArea = 7;
-  int _selectedType = 1;
-  String _selectedCategoryName = '华语男歌手';
+  int _selectedArea = -1;
+  int _selectedType = -1;
+  String _selectedCategoryName = '全部热门';
   List<ArtistProfile> _artists = [];
   bool _isLoading = false;
 
   final List<Map<String, dynamic>> _artistCategories = [
+    {'name': '全部热门', 'area': -1, 'type': -1},
     {'name': '华语男歌手', 'area': 7, 'type': 1},
     {'name': '华语女歌手', 'area': 7, 'type': 2},
     {'name': '华语乐队/组合', 'area': 7, 'type': 3},
@@ -973,7 +974,6 @@ class _DesktopArtistsViewState extends State<DesktopArtistsView> {
     {'name': '欧美乐队/组合', 'area': 96, 'type': 3},
     {'name': '日本歌手', 'area': 8, 'type': -1},
     {'name': '韩国歌手', 'area': 16, 'type': -1},
-    {'name': '全部热门', 'area': -1, 'type': -1},
   ];
 
   @override
@@ -1136,7 +1136,7 @@ class DesktopArtistDetailView extends StatefulWidget {
 
 class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
   bool _isFollowing = true;
-  bool _isLoadingTracks = true;
+  bool _isLoadingTracks = false;
   List<Track> _artistTracks = [];
   String _artistId = '';
   String _artistName = '';
@@ -1175,15 +1175,24 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
       if (profile.avatarUrl.isNotEmpty) _artistAvatar = profile.avatarUrl;
     }
 
+    final profile = getArtistProfileByName(_artistName);
+    if (profile.tracks.isNotEmpty) {
+      _artistTracks = profile.tracks;
+    }
+
     _loadSongs();
   }
 
   void _loadSongs() async {
-    setState(() => _isLoadingTracks = true);
+    final profile = getArtistProfileByName(_artistName);
     final songs = await OnlineMusicService.fetchArtistTopSongs(_artistId, artistName: _artistName);
     if (mounted) {
       setState(() {
-        _artistTracks = songs;
+        if (songs.isNotEmpty) {
+          _artistTracks = songs;
+        } else if (_artistTracks.isEmpty) {
+          _artistTracks = profile.tracks;
+        }
         _isLoadingTracks = false;
       });
     }
@@ -1193,6 +1202,8 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
+    final artistProfile = getArtistProfileByName(_artistName);
+    final avatarToUse = _artistAvatar.isNotEmpty ? _artistAvatar : artistProfile.avatarUrl;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
@@ -1223,7 +1234,7 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
             children: [
               MellowAvatar(
                 radius: 60,
-                url: _artistAvatar,
+                url: avatarToUse,
               ),
               const SizedBox(width: 24),
               Expanded(
@@ -1239,9 +1250,7 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      _artistTracks.isNotEmpty
-                          ? '官方认证知名音乐人 · 收录热门代表作 ${_artistTracks.length} 首'
-                          : '官方认证知名音乐人 · 汇聚华语经典与流行巅峰代表作',
+                      artistProfile.bio,
                       style: TextStyle(color: theme.textSecondary, fontSize: 13),
                     ),
                     const SizedBox(height: 16),
@@ -1283,7 +1292,7 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
           ],
         ),
         const SizedBox(height: 12),
-        if (_isLoadingTracks)
+        if (_isLoadingTracks && _artistTracks.isEmpty)
           const Center(
             child: Padding(
               padding: EdgeInsets.all(40),
