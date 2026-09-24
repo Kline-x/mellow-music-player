@@ -922,10 +922,11 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
               style: TextStyle(fontSize: 12, color: theme.textMuted),
             ),
           ),
-          ],
-        );
-      },
+        ],
+      ],
     );
+  },
+);
   }
 
   Widget _buildPlaylistsResultsView(ThemeProvider theme, AudioPlayerService player) {
