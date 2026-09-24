@@ -169,7 +169,7 @@ class DesktopDiscoverView extends StatelessWidget {
                 return _buildPlaylistCard(
                   context,
                   pl.title,
-                  '${pl.tracks.length} 首 · ${pl.description}',
+                  '${pl.desc} · 共${pl.tracks.length}首',
                   pl.coverUrl,
                   () => player.playPlaylist(pl.tracks, startIndex: 0),
                 );
