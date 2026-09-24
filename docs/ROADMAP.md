@@ -4,6 +4,30 @@
 
 ---
 
+## 🚦 零、实现状态总览 (Implementation Status · 2026-09-24)
+
+> 本表是 ROADMAP 的**唯一可信状态口径**；下文蓝图若与本表冲突，一律以本表为准。
+> 图例：✅ **已实现**（有生产代码且被调用） · 🟡 **部分实现**（框架/UI 真实但能力不完整） · 🧭 **规划中**（仅设计，无实现）。
+
+| 蓝图模块 | 蓝图设计 | 实际实现 | 状态 |
+| :--- | :--- | :--- | :---: |
+| 音频播放底座 | media_kit (libmpv) + audio_service 双流 | `audioplayers: ^6.8.1` + 自研 `AudioPlayerService`（真实声卡发声、自动跳播、连续失败熔断） | 🟡 部分（换用 audioplayers） |
+| 系统媒体通道 | audio_service（SMTC / MediaSession） | Windows SMTC 平台通道 + 系统托盘（`windows_smtc_service.dart` / `windows_tray_service.dart`） | 🟡 部分（仅 Windows） |
+| 音源聚合与解析 | QuickJS 六音脚本沙箱 + Dart Polyfill | 酷我 / 网易云 / QQ / 酷狗 / 咪咕 / iTunes **平台直连解析** + 音质阶梯降级 | ✅ 已实现（**不执行外部 JS**） |
+| 自定义音源脚本 | flutter_js (QuickJS) 运行时沙箱 | `LxCustomScriptDriver` 仅做危险模式正则扫描 + 注释头元数据登记 | 🟡 部分（**不执行脚本**，UI 已如实标注） |
+| 10 频段均衡器 | libmpv `firequalizer` 滤镜实时注入 | `EqualizerManager` 参数模型 + UI + 多端同步；`toLibmpvFilterString()` **无生产调用方** | 🟡 部分（未接入音频滤镜） |
+| 本地数据库 | Drift (SQLite3 + FTS5) 5 张表 | `StorageService`（`shared_preferences` 键值持久化） | 🟡 部分（无 SQL / FTS5） |
+| 桌面透明穿透歌词 | desktop_multi_window 独立窗口 | Win32 原生通道 `SetWindowPos(HWND_TOPMOST)` + `WS_EX_TRANSPARENT` \| `WS_EX_LAYERED`（`flutter_window.cpp`） | ✅ 已实现（Windows） |
+| 局域网 P2P 同步 | LX-Sync UDP 组播 + HTTP | `LanSyncService`（UDP 组播发现 + HTTP 传输） | ✅ 已实现 |
+| WebDAV 云同步 | 增量双向加密同步 | `WebdavSyncService` | ✅ 已实现 |
+| 外部歌单链接导入 | 网易云/QQ/酷狗歌单链接解析 | `OnlineMusicService.importPlaylist`（网易云） | 🟡 部分（仅网易云） |
+| 平台矩阵 | Windows / macOS / Linux / Android / iOS / HarmonyOS | Windows / macOS / Android / iOS 有工程与验证；Linux 仅 stock 脚手架；**HarmonyOS 仅一个 README.md** | 🟡 部分（鸿蒙未实现） |
+| CI/CD 流水线 | PR 门禁 + 多平台 Release | `ci.yml`（Ubuntu 全量测试 + Windows Release 编译）、`release.yml`（多平台，**无 iOS / HarmonyOS job**） | 🟡 部分 |
+
+**当前质量门禁（实测）**：`flutter analyze` 0 issue · `flutter test` **172/172** · `node e2e_test.js` **83/83** · 最新 CI（含 Windows Release 编译）绿灯。
+
+---
+
 ## 🏛️ 一、整体技术架构全景图 (System Architecture)
 
 ```mermaid
@@ -43,6 +67,8 @@ graph TD
     Engine_Layer --> Infra_Layer
 ```
 
+> ⚠️ 上图为**完整架构蓝图**，其中 media_kit / audio_service / QuickJS(flutter_js) / Drift / desktop_multi_window 均为**规划中**，尚未落地；实际实现以「零、实现状态总览」为准。
+
 ---
 
 ## 📋 二、1:1 原型与全功能零遗漏对齐矩阵 (Zero-Omission View Matrix)
@@ -62,7 +88,7 @@ graph TD
 | `viewLocal` | `DesktopLocalMusicView` | `/desktop/local` | **本地与下载**：微凹拖拽/点击导入区、音频格式与比特率解析、本地曲库管理与离线播放 | ✅ 1:1 对齐 |
 | `viewSettings` | `DesktopSettingsView` | `/desktop/settings` | **个性化设置**：深石墨/温润白瓷切换、五大柔光强调色、光晕浓度调节、音源与音质偏好 | ✅ 1:1 对齐 |
 | `fullscreenLyrics` | `DesktopFullscreenLyricsView` | `/desktop/lyrics` | **巨幕沉浸歌词 (MusicFull)**：左侧微凹黑胶大碟+旋转唱臂，右侧 Apple Music 式动效歌词与点击跳播 | ✅ 1:1 对齐 |
-| `viewSourceManager` | `DesktopSourceManagerView` | `/desktop/sources` | **LX 音源脚本管理**：自定义音源脚本导入、在线解析、启用/禁用切换与版本自动更新 | ✅ 深度集成 |
+| `viewSourceManager` | `DesktopSourceManagerView` | `/desktop/sources` | **音源引擎与外部脚本管理**：多平台音源切换、脚本元数据导入（**不执行 JS**）、启用/禁用切换 | 🟡 部分 |
 | `queueDrawer` | `PlaybackQueueDrawer` | 侧滑抽屉 | **右侧播放队列抽屉**：当前播放列表、正在播放高亮、删除单曲、一键清空列表 | ✅ 1:1 对齐 |
 | `eqModal` | `EqualizerModal` | 模态弹窗 | **声学 10 频段 EQ 调节窗**：31Hz~16kHz 频段滑块、重低音/人声/纯净等预设一键切换 | ✅ 1:1 对齐 |
 | `sleepTimerModal` | `SleepTimerModal` | 模态弹窗 | **睡眠定时器**：15/30/45/60 分钟定时暂停、播放完当前歌曲后再停止选项 | ✅ 1:1 对齐 |
@@ -99,7 +125,7 @@ graph TD
 
 | 特性模块 | 涉及视图/组件 | 详细规划说明 |
 | :--- | :--- | :--- |
-| **LX 音源脚本引擎** | `DesktopSourceManagerView` & `ScriptEditor` | 集成 `flutter_js` QuickJS 运行时沙箱，支持解析 LX-Music 六音脚本的 `search`、`getMusicUrl`、`getLyric`、`getPic` 规范，提供脚本链接一键导入与测试功能。 |
+| **LX 音源脚本引擎** | `DesktopSourceManagerView` & `ScriptEditor` | 🧭 **规划中**：原计划集成 `flutter_js` QuickJS 运行时。**当前实现**：仅做危险模式正则扫描与注释头元数据登记（`LxCustomScriptDriver`，**不执行 JS**），真实解析由平台直连音源完成。 |
 | **外部歌单链接导入** | `ExternalPlaylistImportDialog` | 支持用户直接粘贴网易云音乐、QQ 音乐、酷狗歌单公开分享链接，自动解析歌曲名与歌手列表，并利用当前可用音源全网搜索匹配并建立本地歌单。 |
 | **多端云同步 & LAN 扫码直连** | `CloudSyncView` & `QrSyncModal` | 1. **WebDAV**：配置坚果云/Nextcloud/群晖，实现歌单增量双向加密同步；<br>2. **局域网直连 (LX-Sync)**：桌面端开启内置 HTTP 服务生成配对二维码，移动端扫码瞬间同屏互传歌单。 |
 | **独立桌面透明穿透悬浮歌词** | `DesktopFloatingLyricWindow` | 基于 Flutter 多窗口机制，在 Windows / macOS 上生成可置顶、无边框、支持鼠标防误触点击穿透（`WS_EX_TRANSPARENT`）的桌面动效歌词小组件。 |
@@ -108,7 +134,8 @@ graph TD
 
 ## 💎 三、核心工程实施方案 (深水区架构规范)
 
-### 1. 音源引擎：Dart 注入 Polyfill 桥接 QuickJS 沙箱
+### 1. 🧭 规划中 · 音源引擎：Dart 注入 Polyfill 桥接 QuickJS 沙箱
+> **未实现**：仓库无 `flutter_js` / QuickJS 依赖，`globalThis.lx` 注入、`lx.utils.crypto` 等均不存在。下方为原始设计，保留供未来实现参考。当前音源解析见「零」表中的“平台直连解析”。
 - **运行时环境**：集成 `flutter_js`（底层为轻量级 QuickJS C 原生沙箱），纯原生内存隔离，零端口占用，全平台极速冷启动。
 - **Dart Polyfill 桥接层**：
   - 由 Dart 向 JS 上下文注入标准 `globalThis.lx` 对象；
@@ -129,6 +156,7 @@ graph TD
   - 通过 `libmpv` 的 `equalizer` 滤镜实时注入频响调校参数，包含 Flat、Bass Boost、Clear Vocal、Warm Jazz、Spatial 3D 预设与自定义调节。
 
 ### 3. 双模动效歌词系统：应用内全屏大幕 + 独立透明穿透子窗口
+> **实现口径**：应用内全屏大幕 ✅ 已实现；桌面独立穿透歌词 ✅ 已实现，但走 **Win32 原生通道**（`flutter_window.cpp`），**未使用 `desktop_multi_window`**（该依赖未引入）。
 - **应用内全屏动效大幕 (`MusicFull`)**：
   - Apple Music 级动态流体光晕背景（提取唱片 3 处主色 + `CustomPainter` + `BackdropFilter`）。
   - 逐字/逐句高帧率自适应插值平滑贝塞尔滚动。
@@ -139,7 +167,8 @@ graph TD
   - 主窗口与悬浮歌词窗口通过跨窗口通信总线秒级同步歌词进度。
   - Android 端使用 `SYSTEM_ALERT_WINDOW` 实现系统级浮窗歌词。
 
-### 4. 本地数据库：Drift (基于 SQLite3) 响应式存储架构
+### 4. 🧭 规划中 · 本地数据库：Drift (基于 SQLite3) 响应式存储架构
+> **未实现**：无 `drift` / `sqlite3_flutter_libs` 依赖，无 5 张表与 FTS5。当前持久化为 `StorageService`（`shared_preferences` KV）。
 - **选型决议**：选用 Flutter 官方主推的 `Drift` 响应式数据库取代 Isar，消除未来新版本 Flutter/Dart 的 C++ FFI 符号冲突风险。
 - **核心数据模型**：
   - `SongsTable`：管理本地与在线歌曲元数据、比特率、本地缓存路径；
@@ -155,6 +184,7 @@ graph TD
   - 移动端扫码直连，遵循 LX-Music 原生数据包规范（公私钥签名、gzip 压缩传输），**原生兼容与现有 LX-Music 电脑版/手机版双向互相同步歌单**！
 
 ### 6. 六端矩阵原生支持与 HarmonyOS NEXT 架构
+> **实现口径**：Windows / macOS / Android / iOS 有真实工程；Linux 仅 `flutter create` stock 脚手架；**HarmonyOS 仅有 `app/harmonyos/README.md`，无任何工程文件**，列为规划中。
 - **全平台支持矩阵**：
   - **桌面三端**：Windows (x64 / Win32 Runner)、macOS (Universal / Cocoa Runner)、Linux (x64 / GTK3 & CMake Runner)；
   - **移动三端**：Android (ARM64 & x86_64 APK)、iOS (Runner / Xcode Workspace)、HarmonyOS NEXT (OpenHarmony Stage 架构与 ArkUI 运行时适配)；

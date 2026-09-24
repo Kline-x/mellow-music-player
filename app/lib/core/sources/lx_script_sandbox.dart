@@ -374,7 +374,7 @@ class PlatformPresetSourceDriver implements LxSourceDriver {
             LxSourceMetadata(
               id: platformId,
               name: platformName,
-              description: '$platformName 标准高保真六维音源解析引擎',
+              description: '$platformName 平台直连解析引擎',
               version: version ?? '2.1.0',
               author: author ?? 'LX Community',
               isBuiltIn: true,
@@ -555,7 +555,25 @@ class PlatformPresetSourceDriver implements LxSourceDriver {
 
 /// 第三方自定义脚本驱动器 (Custom Script Driver with Sandbox Polyfill)
 /// 遵循 SPEC.md 5.1 & 5.2 规范
+/// 自定义 LX 脚本驱动 —— **仅登记元数据，不执行脚本**。
+///
+/// 诚实化声明（2026-09-24）：本仓库未集成 QuickJS / flutter_js 等 JS 运行时，
+/// 因此导入的 LX-Music 脚本代码**不会被加载或执行**。本驱动只做：
+///   1. 对脚本文本做危险模式正则扫描（`eval` / `new Function` / `child_process` /
+///      `process.exit` / `require('fs')`）；
+///   2. 解析 `/*! @name @version @id ... */` 注释头，得到音源名称与版本等元数据；
+///   3. 以占位数据把该音源登记进 `LxSourceEngine`，供 UI 展示与启用/停用管理。
+///
+/// 真实可播直链由 [MellowPresetSourceDriver] / [PlatformPresetSourceDriver] 以及
+/// `OnlineMusicService` 的平台直连解析提供。请勿在 UI 中宣称 “QuickJS 沙箱” 或
+/// “原生兼容 LX-Music 六音脚本”。
 class LxCustomScriptDriver implements LxSourceDriver {
+  /// 恒为 false：本驱动不执行导入脚本的 JavaScript。
+  static const bool executesJavaScript = false;
+
+  /// 供 UI 展示的执行模式标签，避免再次出现不实技术名词。
+  static const String executionModeLabel = '脚本元数据解析（不执行 JS）';
+
   @override
   final LxSourceMetadata metadata;
   final Map<String, dynamic>? config;
@@ -757,7 +775,7 @@ class LxCustomScriptDriver implements LxSourceDriver {
 /// 开箱即用的落雪官方/社区标准默认聚合源脚本 (方案 A)
 const String kDefaultLxAggregateScript = '''/*!
  * @name 默认落雪聚合音源
- * @description 开箱即用内置落雪聚合解析驱动，支持六维全网聚合与全音质无损降级
+ * @description 内置落雪聚合解析驱动（平台直连），支持多平台聚合与音质阶梯降级
  * @version 2.0.0
  * @author MellowLxCommunity
  * @homepage https://github.com/lyswhut/lx-music-desktop

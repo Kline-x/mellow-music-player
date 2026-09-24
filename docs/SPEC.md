@@ -3,16 +3,16 @@
 > 截至 2026-09-23，本项目已完成五大核心能力专项闭环交付，所有虚假实现已全部清理并完成真实系统级贯通。工程实际落地架构与技术映射关系如下：
 > - **音频播放引擎**：基于 `audioplayers: ^6.8.1` 物理驱动与 `player_backend.dart` 双层架构，物理声卡真实发声，内置 33 首立体声音频，支持测试无头隔离；
 > - **本地数据持久化**：采用 `StorageService`（基于 `shared_preferences`），冷重启 100% 无损恢复深浅主题、强调色、播放队列、收藏曲目、自定义音源脚本、桌面歌词坐标与置顶状态；
-> - **自定义音源沙箱与降级**：采用 `LxSourceEngine`（ChangeNotifier 单例），提供 AST/正则静态安全沙箱与音质（128k/320k/flac/flac24bit）逐级自动降级重试机制；
+> - **自定义音源与降级**：采用 `LxSourceEngine`（ChangeNotifier 单例），提供正则静态安全校验与音质（128k/320k/flac/flac24bit）逐级自动降级重试机制；**未集成 JS 运行时，导入脚本不会被加载或执行**，仅解析注释头元数据；
 > - **桌面置顶穿透歌词**：采用 Windows C++ 原生 Win32 API（`SetWindowPos` HWND_TOPMOST、`WS_EX_TRANSPARENT | WS_EX_LAYERED`）与系统托盘双向通道直接贯通；
 > - **局域网近场同步**：采用原生 `dart:io` UDP 组播探活广播与 HTTP P2P 双向传输，无任何虚假设备或 Mock Toast；
-> - **质量保障**：全仓 146 项单元与部件测试 100% 通过，Windows 真实可执行程序保活脚本 `verify_windows_app.ps1` 稳定运行。
+> - **质量保障**：全仓 172 项单元与部件测试 100% 通过，Windows 真实可执行程序保活脚本 `verify_windows_app.ps1` 稳定运行。
 >
 > ---
 
 # Mellow Music · 润音 · 跨平台生产级客户端系统工程规范说明书 (System Specification)
 
-> **版本**：v1.2.0 (Verified Implementation & Architecture Alignment)  
+> **版本**：v1.8.0 (Verified Implementation & Architecture Alignment)  
 > **生效时间**：2026-09-23  
 > **系统定位**：融合 **AlgerMusicPlayer** 的极致视觉美学（Modern Soft UI 现代柔和质感、声学生态流体光晕、巨幕动效歌词）与 **LX-Music (洛雪音乐)** 音源生态与多端协同能力，面向 **Windows、macOS、Linux、Android、iOS** 的全平台高保真音乐播放系统。
 
@@ -58,7 +58,7 @@
 |                  3. 核心引擎层 (Core Engines & Runtime)                 |
 |  - 音频底座：media_kit (C 原生 libmpv，支持 FLAC/APE/DSD/Hi-Res 无损解码)    |
 |  - 系统通道：audio_service (Win SMTC / Android MediaSession / iOS Control) |
-|  - 脚本沙箱：flutter_js (QuickJS 原生内存沙箱 + Dart Polyfill 桥接层)     |
+|  - 脚本沙箱：🧭规划中 flutter_js/QuickJS（当前仅元数据解析，不执行脚本）  |
 |  - 歌词引擎：LRC/QRC 毫秒级解析器 + 60fps 贝塞尔插值平滑渲染驱动器           |
 |  - 悬浮窗口：desktop_multi_window + Win32/macOS 鼠标透明穿透通道          |
 +-------------------------------------------------------------------------+
@@ -214,6 +214,10 @@ firequalizer=gain='if(between(f,31,62),G1,if(between(f,63,125),G2,...))'
 ---
 
 ## 5. QuickJS 音源脚本沙箱与接口规范 (Source Script Sandbox)
+
+> 🧭 **规划中（未实现）**：本仓库未引入 `flutter_js` / QuickJS，本章为**未来实现设计稿**，不是当前能力。
+> 当前 `LxCustomScriptDriver` 仅做危险模式正则扫描与 `/*! @name @version */` 注释头元数据解析，
+> **不加载、不执行**导入的脚本；真实播放解析由 `OnlineMusicService` 平台直连完成。
 
 ### 5.1 沙箱环境与 Dart Polyfill 注入规范
 采用 `flutter_js` 构建 QuickJS 独立实例。在载入任何脚本前，Dart 必须向引擎全局空间注入以下标准桥接对象：

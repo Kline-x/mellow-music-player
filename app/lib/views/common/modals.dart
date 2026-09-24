@@ -2463,8 +2463,8 @@ class _ImportScriptSourceModalState extends State<ImportScriptSourceModal>
   LxSourceMetadata? _parsedMeta;
 
   static const String _sampleTemplate = '''/*!
- * @name 六维高清云解析
- * @description 支持全网六维音乐高品质无损音源解析与智能降级
+ * @name 示例音源（仅登记元数据）
+ * @description 示例：脚本代码不会被执行，仅上方注释头会被登记为音源元数据
  * @version 1.0.0
  * @author AudioGeek
  * @homepage https://github.com/mellow-music/custom-sources
@@ -2570,7 +2570,7 @@ on(EVENT_NAMES.request, async ({ source, action, info }) => {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('成功导入并挂载自定义脚本: ${meta.name} (v${meta.version})'),
+            content: Text('已登记自定义音源: ${meta.name} (v${meta.version}) · 仅解析元数据，未执行脚本'),
             backgroundColor: Colors.teal.shade700,
           ),
         );
@@ -2627,7 +2627,7 @@ on(EVENT_NAMES.request, async ({ source, action, info }) => {
                         children: [
                           Text('导入外部自定义音源脚本',
                               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                          Text('支持遵循 LX-Music 开放音源标准规范的 JavaScript 扩展脚本',
+                          Text('仅解析脚本注释头元数据用于登记音源；无 JS 运行时，脚本代码不会被执行',
                               style: TextStyle(fontSize: 12, color: theme.textMuted)),
                         ],
                       ),
@@ -2699,7 +2699,7 @@ on(EVENT_NAMES.request, async ({ source, action, info }) => {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  '安全沙箱承诺：所有外部脚本均在内存严格沙箱环境中解析，剥离 process、child_process 等敏感危险 API，确保客户端与系统环境 100% 安全。',
+                                  '诚实说明：导入脚本仅做危险模式正则扫描与注释头解析，脚本代码不会被加载或执行；真实播放由平台直连音源（酷我/网易云/QQ/酷狗/咪咕/iTunes）提供。',
                                   style: TextStyle(fontSize: 12, color: theme.textSecondary, height: 1.4),
                                 ),
                               ),
@@ -2716,7 +2716,7 @@ on(EVENT_NAMES.request, async ({ source, action, info }) => {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('JavaScript 音源脚本内容:',
+                            Text('音源脚本源码（仅登记元数据，不执行）:',
                                 style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: theme.textPrimary)),
                             InkWell(
                               onTap: _pasteFromClipboard,
@@ -2746,7 +2746,7 @@ on(EVENT_NAMES.request, async ({ source, action, info }) => {
                               height: 1.4,
                             ),
                             decoration: InputDecoration(
-                              hintText: '粘贴符合规范的音源 JS 源码...',
+                              hintText: '粘贴音源脚本源码（仅解析注释头，不执行）...',
                               hintStyle: TextStyle(fontSize: 12, color: theme.textMuted),
                               filled: true,
                               fillColor: isDark ? const Color(0xFF1E1E24) : const Color(0xFFF8FAFC),

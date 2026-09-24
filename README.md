@@ -4,10 +4,10 @@
 > - **① 真实物理音频驱动**：彻底清除 50ms 定时器伪造逻辑，采用 `audioplayers: ^6.8.1` 物理引擎驱动，内置 33 首完整立体声音频全量物理发声；
 > - **② 全面本地持久化**：采用 `StorageService`，冷重启 100% 无损恢复深浅主题、5 大强调色、音量、播放队列、收藏曲目、自定义音源脚本、桌面歌词坐标与置顶状态；
 > - **③ 局域网 P2P 近场即时传输**：基于原生 `dart:io` UDP 组播发现与 HTTP P2P 传输，彻底根除虚假备份弹窗与假在线设备；
-> - **④ LX-Music 自定义音源沙箱与降级调度**：内置静态 AST/正则防注入安全校验，实现 128k/320k/flac/flac24bit 音质自动阶梯降级；
+> - **④ LX 音源元数据解析与平台直连降级调度**：内置静态正则防注入校验；**外部 LX-Music 脚本仅解析注释头元数据，脚本代码不会被执行**（仓库无 QuickJS/flutter_js 运行时）；128k/320k/flac/flac24bit 音质阶梯降级由平台直连音源提供；
 > - **⑤ 桌面独立置顶穿透歌词**：Windows C++ 原生 Win32 API（`SetWindowPos` HWND_TOPMOST、`WS_EX_TRANSPARENT | WS_EX_LAYERED`）系统级贯通；
-> - **⑦ 跨平台真机 E2E 与多源高可用**：macOS 沙箱出站网络权限与 Android 安全通信配置，酷我 + 网易云 + iTunes 三源并发聚合去重；
-> - **质量门禁**：全仓 **165 项** Flutter 自动化测试 100% 全部通过，macOS 真实物理进程集成测试 8/8 全绿。
+> - **⑥ 跨平台真机 E2E 与多源高可用**：macOS 沙箱出站网络权限与 Android 安全通信配置，酷我 + 网易云 + iTunes 三源并发聚合去重；
+> - **质量门禁**：全仓 **172 项** Flutter 自动化测试 100% 全部通过，macOS 真实物理进程集成测试 8/8 全绿。当前版本 **v1.8.0**。
 >
 > ---
 
@@ -15,7 +15,7 @@
 
 > 专为全平台高保真体验打造的 **Modern Soft UI（现代柔和微质感 / Soft Depth & Tactility / Calm Tech）** 原生跨平台音乐播放系统。
 
-[![Flutter Tests](https://img.shields.io/badge/Flutter%20Tests-165%2F165%20Passed%20(100%25)-emerald?style=flat-square&logo=flutter)](app/test)
+[![Flutter Tests](https://img.shields.io/badge/Flutter%20Tests-172%2F172%20Passed%20(100%25)-emerald?style=flat-square&logo=flutter)](app/test)
 [![UI Style](https://img.shields.io/badge/Design%20System-Modern%20Soft%20UI-pink?style=flat-square)](app/lib/theme/tokens.dart)
 [![Audio Engine](https://img.shields.io/badge/Audio-Audioplayers%206.8.1%20Physical-blue?style=flat-square)](#-物理音频生态引擎)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Android%20%7C%20iOS%20%7C%20Web-purple?style=flat-square)](#-运行与体验指南)
@@ -137,7 +137,7 @@ Prototype meets the full Deliverable Production Standard (交付标准).
 # 进入 Flutter 应用程序根目录
 cd app
 
-# 运行全量自动化测试套件 (146 项测试 100% 通过)
+# 运行全量自动化测试套件 (172 项测试 100% 通过)
 flutter test
 
 # 启动 Windows 桌面客户端调试
@@ -182,10 +182,10 @@ npm start
   - Phase 1: 物理音频底座驱动与本地持久化无损重启 (100% 完成)
   - Phase 2: 业务视图全面真实化与全场景无死区交互 (100% 完成)
   - 专项 1: 局域网 P2P 近场即时传输交互真实化与交互打通 (100% 完成)
-  - 专项 2: LX-Music 外部自定义音源脚本沙箱导入与音质降级调度 (100% 完成)
+  - 专项 2: LX 音源脚本元数据导入与平台直连音质降级调度 (部分完成：不执行导入脚本的 JS)
   - 专项 3: 桌面独立置顶透明穿透歌词窗口系统级贯通 (100% 完成)
   - 专项 4: 移动端 (Android / iOS) 真实打包发布流水线与平台适配 (100% 完成)
-  - 专项 5: 全仓文档口径诚实化对齐与 146 项质量门禁 (100% 完成)
+  - 专项 5: 全仓文档口径诚实化对齐与 172 项质量门禁 (100% 完成)
 
 ---
 

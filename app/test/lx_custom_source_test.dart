@@ -273,18 +273,20 @@ proc.exec('calc.exe');
       await tester.pumpAndSettle();
 
       // 验证标题与组件渲染
-      expect(find.text('音源引擎与外部脚本沙箱'), findsOneWidget);
+      expect(find.text('音源引擎与外部脚本管理'), findsOneWidget);
       expect(find.text('全局首选音质偏好'), findsOneWidget);
-      expect(find.text('沙箱防御机制运行中'), findsOneWidget);
+      expect(find.text('脚本静态安全校验已启用'), findsOneWidget);
       expect(find.text('导入自定义脚本'), findsOneWidget);
 
       // 验证官方六维音源卡片与方案 A 默认落雪聚合音源卡片渲染
-      expect(find.textContaining('官方预设与六维音源'), findsOneWidget);
+      expect(find.textContaining('官方预设与多平台音源'), findsOneWidget);
       expect(find.text('润音官方高保真源'), findsOneWidget);
       expect(find.text('酷我音乐'), findsOneWidget);
       expect(find.text('QQ音乐'), findsOneWidget);
       expect(find.text('网易云音乐'), findsOneWidget);
       expect(find.text('默认落雪聚合音源'), findsNWidgets(2)); // 当前主音源指示器与扩展音源卡片
+      // 诚实化标注：脚本仅解析元数据，不执行 JS
+      expect(find.text('仅解析注释头元数据 · 不执行 JS 代码'), findsOneWidget);
 
       // 点击切换全局音质偏好至 320K
       final chip320 = find.text('320K · 高品质');

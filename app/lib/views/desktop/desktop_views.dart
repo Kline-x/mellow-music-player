@@ -3317,7 +3317,7 @@ class DesktopSourceManagerView extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '音源引擎与外部脚本沙箱',
+                        '音源引擎与外部脚本管理',
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -3326,7 +3326,7 @@ class DesktopSourceManagerView extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '基于开放音源规范，实现六维平台音源解析、外部脚本安全沙箱隔离挂载与无损阶梯降级',
+                        '平台直连音源解析与音质阶梯降级；外部脚本仅解析注释头元数据，脚本代码不会被执行',
                         style: TextStyle(fontSize: 13, color: theme.textMuted),
                       ),
                     ],
@@ -3431,7 +3431,7 @@ class DesktopSourceManagerView extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 24),
-                      // 右侧：沙箱安全与状态统计
+                      // 右侧：脚本安全与状态统计
                       Expanded(
                         flex: 4,
                         child: RecessedWell(
@@ -3452,7 +3452,7 @@ class DesktopSourceManagerView extends StatelessWidget {
                                   ),
                                   const SizedBox(width: 8),
                                   const Text(
-                                    '沙箱防御机制运行中',
+                                    '脚本静态安全校验已启用',
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
@@ -3463,7 +3463,7 @@ class DesktopSourceManagerView extends StatelessWidget {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                '阻断原生文件写权限，限定网络接口访问，沙箱内独立执行外部音源解析逻辑。',
+                                '导入脚本仅做危险模式正则扫描与注释头解析，脚本代码不会被加载或执行。',
                                 style: TextStyle(fontSize: 11.5, color: theme.textMuted),
                               ),
                               const Divider(height: 18),
@@ -3517,7 +3517,7 @@ class DesktopSourceManagerView extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  '支持符合 LX-Music 开放标准的 JS 脚本',
+                  '仅解析注释头元数据 · 不执行 JS 代码',
                   style: TextStyle(fontSize: 12, color: theme.textMuted),
                 ),
               ],
@@ -3544,7 +3544,7 @@ class DesktopSourceManagerView extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        '点击右上角「导入自定义脚本」可通过订阅 URL 或直接粘贴 JavaScript 代码加载音源',
+                        '点击右上角「导入自定义脚本」可订阅 URL 或粘贴脚本：仅登记注释头元数据，脚本代码不会被执行',
                         style: TextStyle(fontSize: 12.5, color: theme.textMuted),
                       ),
                       const SizedBox(height: 16),
@@ -3568,13 +3568,13 @@ class DesktopSourceManagerView extends StatelessWidget {
 
             const SizedBox(height: 32),
 
-            // --- 分区 2：官方预设六维音源 ---
+            // --- 分区 2：官方预设多平台音源 ---
             Row(
               children: [
                 Icon(Icons.dashboard_customize_rounded, size: 18, color: theme.accentColor),
                 const SizedBox(width: 8),
                 Text(
-                  '官方预设与六维音源 (${builtinSources.length})',
+                  '官方预设与多平台音源 (${builtinSources.length})',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -3692,7 +3692,7 @@ class DesktopSourceManagerView extends StatelessWidget {
                             borderRadius: MellowRadii.borderPill,
                           ),
                           child: const Text(
-                            '沙箱挂载',
+                            '元数据挂载',
                             style: TextStyle(fontSize: 10.5, color: Colors.green, fontWeight: FontWeight.bold),
                           ),
                         ),

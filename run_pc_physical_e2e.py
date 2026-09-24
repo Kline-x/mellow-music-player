@@ -86,23 +86,76 @@ class BITMAPINFOHEADER(ctypes.Structure):
         ('biClrImportant', wintypes.DWORD)
     ]
 
+# PrintWindow flag: PW_RENDERFULLCONTENT (0x00000002).
+# Flutter on Windows renders through ANGLE/D3D into a DWM-composited surface, so a
+# plain desktop-DC BitBlt returns a BLANK (white) client area. PrintWindow with
+# PW_RENDERFULLCONTENT asks the window's own compositor to redraw its content and
+# is the supported way to capture such windows.
+PW_RENDERFULLCONTENT = 0x00000002
+
+# Captures that came back blank; a non-empty list fails the run (no false "PASSED").
+BLANK_CAPTURES = []
+
+# Bind correct pointer-width signatures. Without argtypes/restype ctypes truncates
+# HWND/HDC/HBITMAP handles to 32-bit C ints, which silently corrupts the capture.
+user32.GetWindowDC.argtypes = [wintypes.HWND]
+user32.GetWindowDC.restype = wintypes.HDC
+user32.GetDC.argtypes = [wintypes.HWND]
+user32.GetDC.restype = wintypes.HDC
+user32.ReleaseDC.argtypes = [wintypes.HWND, wintypes.HDC]
+user32.PrintWindow.argtypes = [wintypes.HWND, wintypes.HDC, wintypes.UINT]
+user32.PrintWindow.restype = wintypes.BOOL
+gdi32.CreateCompatibleDC.argtypes = [wintypes.HDC]
+gdi32.CreateCompatibleDC.restype = wintypes.HDC
+gdi32.CreateCompatibleBitmap.argtypes = [wintypes.HDC, ctypes.c_int, ctypes.c_int]
+gdi32.CreateCompatibleBitmap.restype = wintypes.HBITMAP
+gdi32.SelectObject.argtypes = [wintypes.HDC, wintypes.HGDIOBJ]
+gdi32.SelectObject.restype = wintypes.HGDIOBJ
+gdi32.BitBlt.argtypes = [wintypes.HDC, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, wintypes.HDC, ctypes.c_int, ctypes.c_int, wintypes.DWORD]
+gdi32.BitBlt.restype = wintypes.BOOL
+gdi32.DeleteObject.argtypes = [wintypes.HGDIOBJ]
+gdi32.DeleteDC.argtypes = [wintypes.HDC]
+
+
+def frame_is_blank(img, tolerance=6):
+    """Return True when the captured frame is a single uniform colour.
+
+    A blank frame means the capture path failed (or the app truly rendered
+    nothing). Callers must treat this as an evidence failure, never as a pass.
+    """
+    small = img.convert('RGB').resize((32, 32))
+    pixels = list(small.getdata())
+    first = pixels[0]
+    for px in pixels[1:]:
+        if (abs(px[0] - first[0]) > tolerance or
+                abs(px[1] - first[1]) > tolerance or
+                abs(px[2] - first[2]) > tolerance):
+            return False
+    return True
+
+
 def capture_window(hwnd, out_path):
     bring_to_front(hwnd)
     time.sleep(0.5)
     l, t, r, b = rect_of(hwnd)
     w = max(1, r - l)
     h = max(1, b - t)
-    
-    # Use desktop DC BitBlt which captures real GPU/DWM composited pixels on screen
-    deskDC = user32.GetDC(0)
-    memDC = gdi32.CreateCompatibleDC(deskDC)
-    hbmp = gdi32.CreateCompatibleBitmap(deskDC, w, h)
+
+    hwndDC = user32.GetWindowDC(hwnd)
+    memDC = gdi32.CreateCompatibleDC(hwndDC)
+    hbmp = gdi32.CreateCompatibleBitmap(hwndDC, w, h)
     gdi32.SelectObject(memDC, hbmp)
-    
-    # SRCCOPY = 0x00CC0020, CAPTUREBLT = 0x40000000 -> 0x40CC0020 captures layered/DWM transparent windows too
-    gdi32.BitBlt(memDC, 0, 0, w, h, deskDC, l, t, 0x40CC0020)
-    user32.ReleaseDC(0, deskDC)
-    
+
+    # 1) Primary path: the window's own compositor (works for Flutter/ANGLE windows).
+    captured = bool(user32.PrintWindow(hwnd, memDC, PW_RENDERFULLCONTENT))
+
+    # 2) Fallback path: desktop-DC BitBlt (SRCCOPY|CAPTUREBLT). Kept only as a
+    #    last resort; it yields a blank frame for hardware-composited windows.
+    if not captured:
+        deskDC = user32.GetDC(0)
+        gdi32.BitBlt(memDC, 0, 0, w, h, deskDC, l, t, 0x40CC0020)
+        user32.ReleaseDC(0, deskDC)
+
     bmi = BITMAPINFOHEADER()
     bmi.biSize = ctypes.sizeof(BITMAPINFOHEADER)
     bmi.biWidth = w
@@ -110,17 +163,23 @@ def capture_window(hwnd, out_path):
     bmi.biPlanes = 1
     bmi.biBitCount = 32
     bmi.biCompression = 0
-    
+
     buf = (ctypes.c_char * (w * h * 4))()
     gdi32.GetDIBits(memDC, hbmp, 0, h, buf, ctypes.byref(bmi), 0)
-    
+
     gdi32.DeleteObject(hbmp)
     gdi32.DeleteDC(memDC)
-    
+    user32.ReleaseDC(hwnd, hwndDC)
+
     from PIL import Image
     img = Image.frombuffer('RGBA', (w, h), buf, 'raw', 'BGRA', 0, 1)
     rgb = img.convert('RGB')
     rgb.save(out_path)
+
+    if frame_is_blank(rgb):
+        BLANK_CAPTURES.append(out_path)
+        print("  [WARN] Blank/uniform frame captured (capture path failed, do NOT treat as evidence): %s" % out_path)
+        return (0, 0)
     return (w, h)
 
 def click_client(hwnd, x, y):
@@ -230,6 +289,13 @@ def main():
         print("  [Step 5] Shortcuts captured: %s" % snap5)
         
         print("\n" + "=" * 60)
+        if BLANK_CAPTURES:
+            print("FAILURE: %d blank screenshot(s) captured - evidence is invalid." % len(BLANK_CAPTURES))
+            for p in BLANK_CAPTURES:
+                print("  - %s" % p)
+            print("Fix the capture path (see capture_window) and re-run. Nothing was verified.")
+            print("=" * 60)
+            sys.exit(1)
         print("SUCCESS: Physical PC GUI E2E Automated Verification PASSED!")
         print("Saved 5 evidence screenshots in: %s" % EVIDENCE_DIR)
         print("=" * 60)
