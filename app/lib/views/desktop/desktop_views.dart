@@ -219,7 +219,7 @@ class DesktopDiscoverView extends StatelessWidget {
               a.name,
               a.role.split('/')[0].trim(),
               a.avatarUrl,
-              () => onNavigate('artist_detail', a.name),
+              () => onNavigate('artist_detail', '${a.id}:::${a.name}:::${a.avatarUrl}'),
             );
           }).toList(),
         ),
@@ -1016,7 +1016,10 @@ class _DesktopArtistsViewState extends State<DesktopArtistsView> {
       final list = rawList.map((item) {
         final id = item['id']?.toString() ?? '';
         final name = item['name']?.toString() ?? '';
-        final picUrl = item['picUrl']?.toString() ?? item['img1v1Url']?.toString() ?? '';
+        var picUrl = item['img1v1Url']?.toString() ?? item['picUrl']?.toString() ?? '';
+        if (picUrl.isNotEmpty && !picUrl.contains('?param=')) {
+          picUrl = '$picUrl?param=300y300';
+        }
         final musicSize = (item['musicSize'] as num?)?.toInt() ?? 0;
         final albumSize = (item['albumSize'] as num?)?.toInt() ?? 0;
         return ArtistProfile(
@@ -1162,7 +1165,15 @@ class DesktopArtistDetailView extends StatefulWidget {
 class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
   bool _isFollowing = true;
   bool _isLoadingTracks = false;
-  List<Track> _artistTracks = [];
+  int _selectedTab = 0; // 0: 热门代表作 (Top 50), 1: 全部作品 (全量曲库)
+  List<Track> _topTracks = [];
+  List<Track> _allTracks = [];
+  int _totalSongCount = 0;
+  int _albumCount = 0;
+  bool _isLoadingMore = false;
+  bool _hasMoreAllSongs = true;
+  int _allSongsOffset = 0;
+  String _artistBio = '';
   String _artistId = '';
   String _artistName = '';
   String _artistAvatar = '';
@@ -1201,40 +1212,131 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
     }
 
     final profile = getArtistProfileByName(_artistName);
+    _artistBio = profile.bio;
+    _totalSongCount = profile.musicSize;
+    _albumCount = profile.albumSize;
     if (profile.tracks.isNotEmpty) {
-      _artistTracks = List.from(profile.tracks);
+      _topTracks = List.from(profile.tracks);
     } else {
-      _artistTracks = [];
+      _topTracks = [];
     }
-    _isLoadingTracks = _artistTracks.isEmpty;
+    _allTracks = [];
+    _allSongsOffset = 0;
+    _hasMoreAllSongs = true;
+    _selectedTab = 0;
+    _isLoadingTracks = _topTracks.isEmpty;
 
     _loadSongs();
   }
 
   void _loadSongs() async {
     final profile = getArtistProfileByName(_artistName);
+
+    // 1. 尝试从 NetEase 官方接口拉取完整艺人资料（最新高清头像、总作品数、专辑数、官方传记）
+    OnlineMusicService.fetchArtistDetail(_artistId, artistName: _artistName).then((detail) {
+      if (detail != null && mounted) {
+        setState(() {
+          if (detail['avatarUrl'] != null && (detail['avatarUrl'] as String).isNotEmpty) {
+            _artistAvatar = detail['avatarUrl'] as String;
+          }
+          final mSize = (detail['musicSize'] as num?)?.toInt() ?? 0;
+          if (mSize > 0) _totalSongCount = mSize;
+          final aSize = (detail['albumSize'] as num?)?.toInt() ?? 0;
+          if (aSize > 0) _albumCount = aSize;
+          final bio = detail['briefDesc']?.toString() ?? '';
+          if (bio.isNotEmpty) _artistBio = bio;
+        });
+      }
+    });
+
+    // 2. 加载热门代表作 (Top 50)
     try {
       final songs = await OnlineMusicService.fetchArtistTopSongs(_artistId, artistName: _artistName);
       if (mounted) {
         setState(() {
           if (songs.isNotEmpty) {
-            _artistTracks = songs;
-          } else if (_artistTracks.isEmpty) {
-            _artistTracks = profile.tracks;
+            _topTracks = songs;
+          } else if (_topTracks.isEmpty) {
+            _topTracks = profile.tracks;
           }
+          if (_totalSongCount == 0) _totalSongCount = _topTracks.length;
           _isLoadingTracks = false;
         });
       }
     } catch (_) {
       if (mounted) {
         setState(() {
-          if (_artistTracks.isEmpty) {
-            _artistTracks = profile.tracks;
+          if (_topTracks.isEmpty) {
+            _topTracks = profile.tracks;
           }
           _isLoadingTracks = false;
         });
       }
     }
+  }
+
+  void _loadMoreAllSongs() async {
+    if (_isLoadingMore || !_hasMoreAllSongs) return;
+    setState(() => _isLoadingMore = true);
+
+    try {
+      final res = await OnlineMusicService.fetchArtistAllSongs(
+        _artistId,
+        offset: _allSongsOffset,
+        limit: 50,
+      );
+      if (mounted) {
+        final newTracks = res['tracks'] as List<Track>? ?? [];
+        final total = (res['total'] as num?)?.toInt() ?? 0;
+        final more = res['more'] == true;
+        setState(() {
+          _allTracks.addAll(newTracks);
+          if (total > 0) _totalSongCount = total;
+          _hasMoreAllSongs = more && newTracks.isNotEmpty;
+          _allSongsOffset = _allTracks.length;
+          _isLoadingMore = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingMore = false);
+    }
+  }
+
+  void _switchTab(int index) {
+    if (_selectedTab == index) return;
+    setState(() => _selectedTab = index);
+    if (index == 1 && _allTracks.isEmpty) {
+      _loadMoreAllSongs();
+    }
+  }
+
+  Widget _buildTabButton({
+    required String title,
+    required bool isActive,
+    required VoidCallback onTap,
+    required ThemeProvider theme,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive ? theme.accentColor : theme.surfaceColor,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: isActive ? [BoxShadow(color: theme.accentColor.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 2))] : null,
+        ),
+        child: Text(
+          title,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+            color: isActive ? Colors.white : theme.textSecondary,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -1243,6 +1345,7 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
     final player = context.watch<AudioPlayerService>();
     final artistProfile = getArtistProfileByName(_artistName);
     final avatarToUse = _artistAvatar.isNotEmpty ? _artistAvatar : artistProfile.avatarUrl;
+    final currentTracks = _selectedTab == 0 ? _topTracks : _allTracks;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
@@ -1289,10 +1392,56 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      artistProfile.bio,
+                      _artistBio.isNotEmpty ? _artistBio : artistProfile.bio,
                       style: TextStyle(color: theme.textSecondary, fontSize: 13),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
+                    // 真实作品规模元数据徽章
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
+                          decoration: BoxDecoration(
+                            color: theme.accentColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '热门代表作 ${_topTracks.isNotEmpty ? _topTracks.length : 50} 首',
+                            style: TextStyle(fontSize: 11.5, color: theme.accentColor, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
+                          decoration: BoxDecoration(
+                            color: theme.surfaceColor,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: theme.textMuted.withValues(alpha: 0.2)),
+                          ),
+                          child: Text(
+                            '全量收录 ${_totalSongCount > 0 ? _totalSongCount : "1000+"} 首',
+                            style: TextStyle(fontSize: 11.5, color: theme.textSecondary),
+                          ),
+                        ),
+                        if (_albumCount > 0 || artistProfile.albumSize > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
+                            decoration: BoxDecoration(
+                              color: theme.surfaceColor,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: theme.textMuted.withValues(alpha: 0.2)),
+                            ),
+                            child: Text(
+                              '官方专辑 ${_albumCount > 0 ? _albumCount : artistProfile.albumSize} 张',
+                              style: TextStyle(fontSize: 11.5, color: theme.textSecondary),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
                     Row(
                       children: [
                         SoftButton(
@@ -1308,8 +1457,10 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
                           isPill: true,
                           isActive: true,
                           onTap: () {
-                            if (_artistTracks.isNotEmpty) {
-                              player.playPlaylist(_artistTracks, startIndex: 0);
+                            if (currentTracks.isNotEmpty) {
+                              player.playPlaylist(currentTracks, startIndex: 0);
+                            } else if (_topTracks.isNotEmpty) {
+                              player.playPlaylist(_topTracks, startIndex: 0);
                             }
                           },
                         ),
@@ -1322,36 +1473,61 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
           ),
         ),
         const SizedBox(height: 24),
+        // Tab 栏：热门代表作 (Top 50) 与 全量作品 (突破 50 首限制)
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('热门代表作列表', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+            Row(
+              children: [
+                _buildTabButton(
+                  title: '热门代表作 (${_topTracks.isNotEmpty ? _topTracks.length : 50})',
+                  isActive: _selectedTab == 0,
+                  onTap: () => _switchTab(0),
+                  theme: theme,
+                ),
+                const SizedBox(width: 12),
+                _buildTabButton(
+                  title: '全部作品 (${_totalSongCount > 0 ? _totalSongCount : "全量"})',
+                  isActive: _selectedTab == 1,
+                  onTap: () => _switchTab(1),
+                  theme: theme,
+                ),
+              ],
+            ),
             if (!_isLoadingTracks)
-              Text('共 ${_artistTracks.length} 首高保真音频', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+              Text(
+                _selectedTab == 0
+                    ? '网易云官方热度 Top 50 精选'
+                    : '已加载 ${_allTracks.length} / 共 ${_totalSongCount > 0 ? _totalSongCount : _allTracks.length} 首',
+                style: TextStyle(fontSize: 12, color: theme.textMuted),
+              ),
           ],
         ),
         const SizedBox(height: 12),
-        if (_isLoadingTracks && _artistTracks.isEmpty)
+        if (_isLoadingTracks && currentTracks.isEmpty)
           const Center(
             child: Padding(
               padding: EdgeInsets.all(40),
               child: CircularProgressIndicator(),
             ),
           )
-        else if (_artistTracks.isEmpty)
+        else if (currentTracks.isEmpty)
           Center(
             child: Padding(
               padding: const EdgeInsets.all(40),
-              child: Text('暂未加载到该歌手热门曲目', style: TextStyle(color: theme.textMuted)),
+              child: Text(
+                _selectedTab == 0 ? '暂未加载到该歌手热门代表作' : '正在抓取全量曲库...',
+                style: TextStyle(color: theme.textMuted),
+              ),
             ),
           )
         else
-          ...List.generate(_artistTracks.length, (idx) {
-            final t = _artistTracks[idx];
+          ...List.generate(currentTracks.length, (idx) {
+            final t = currentTracks[idx];
             return SoftCard(
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              onTap: () => player.playPlaylist(_artistTracks, startIndex: idx),
+              onTap: () => player.playPlaylist(currentTracks, startIndex: idx),
               child: Row(
                 children: [
                   SizedBox(
@@ -1401,6 +1577,42 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
               ),
             );
           }),
+
+        // 底部引导或分页按钮
+        if (_selectedTab == 0 && _totalSongCount > _topTracks.length)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Center(
+              child: SoftButton(
+                label: '查看该歌手全部 $_totalSongCount 首作品 >',
+                icon: Icons.library_music_rounded,
+                isPill: true,
+                onTap: () => _switchTab(1),
+              ),
+            ),
+          ),
+        if (_selectedTab == 1 && _hasMoreAllSongs)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Center(
+              child: SoftButton(
+                label: _isLoadingMore ? '正在加载更多曲目...' : '加载更多作品 (已载入 ${_allTracks.length} / 共 $_totalSongCount 首)',
+                icon: _isLoadingMore ? null : Icons.arrow_downward_rounded,
+                isPill: true,
+                onTap: _loadMoreAllSongs,
+              ),
+            ),
+          )
+        else if (_selectedTab == 1 && _allTracks.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Center(
+              child: Text(
+                '已全部加载完毕 · 共收录 ${_allTracks.length} 首真音源',
+                style: TextStyle(fontSize: 12, color: theme.textMuted),
+              ),
+            ),
+          ),
       ],
     );
   }

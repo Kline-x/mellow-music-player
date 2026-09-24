@@ -607,4 +607,118 @@ class NeteaseMusicService {
       return const [];
     }
   }
+
+  /// 7. 抓取歌手完整资料（包含最新官方真实头像、总作品数、专辑数、传记等）
+  Future<Map<String, dynamic>?> fetchArtistDetail(String artistId, {String? artistName}) async {
+    var pureId = pureSongId(artistId) ?? artistId.trim();
+    if (pureId.isEmpty && artistName != null && artistName.isNotEmpty) {
+      try {
+        final query = Uri.encodeComponent(artistName.trim());
+        final searchUri = Uri.parse('$_origin/api/search/get/web?s=$query&type=100&limit=1');
+        final sResp = await _client.get(searchUri, headers: _headers).timeout(_timeout);
+        if (sResp.statusCode == 200) {
+          final sDec = jsonDecode(utf8.decode(sResp.bodyBytes));
+          final artists = sDec is Map ? (sDec['result']?['artists'] as List?) : null;
+          if (artists != null && artists.isNotEmpty && artists[0] is Map) {
+            pureId = artists[0]['id']?.toString() ?? '';
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (pureId.isEmpty) return null;
+
+    try {
+      final uri = Uri.parse('$_origin/api/artist/$pureId');
+      final resp = await _client.get(uri, headers: _headers).timeout(_timeout);
+      if (resp.statusCode != 200) return null;
+
+      final decoded = jsonDecode(utf8.decode(resp.bodyBytes));
+      if (decoded is! Map) return null;
+      final artist = decoded['artist'] as Map?;
+      if (artist == null) return null;
+
+      final id = artist['id']?.toString() ?? pureId;
+      final name = artist['name']?.toString() ?? '';
+      var avatar = artist['img1v1Url']?.toString() ?? artist['picUrl']?.toString() ?? '';
+      if (avatar.isNotEmpty && !avatar.contains('?param=')) {
+        avatar = '$avatar?param=300y300';
+      }
+      final musicSize = (artist['musicSize'] as num?)?.toInt() ?? 0;
+      final albumSize = (artist['albumSize'] as num?)?.toInt() ?? 0;
+      final briefDesc = artist['briefDesc']?.toString() ?? '';
+
+      return {
+        'id': id,
+        'name': name,
+        'avatarUrl': avatar,
+        'musicSize': musicSize,
+        'albumSize': albumSize,
+        'briefDesc': briefDesc,
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// 8. 抓取歌手全部歌曲（支持分页加载全量曲目，突破 50 首代表作限制）
+  Future<Map<String, dynamic>> fetchArtistAllSongs(
+    String artistId, {
+    int offset = 0,
+    int limit = 50,
+  }) async {
+    final pureId = pureSongId(artistId) ?? artistId.trim();
+    if (pureId.isEmpty) return {'tracks': <Track>[], 'total': 0, 'more': false};
+
+    try {
+      final uri = Uri.parse('$_origin/api/v1/artist/songs?id=$pureId&offset=$offset&limit=$limit');
+      final resp = await _client.get(uri, headers: _headers).timeout(_timeout);
+      if (resp.statusCode != 200) return {'tracks': <Track>[], 'total': 0, 'more': false};
+
+      final decoded = jsonDecode(utf8.decode(resp.bodyBytes));
+      if (decoded is! Map) return {'tracks': <Track>[], 'total': 0, 'more': false};
+
+      final rawSongs = decoded['songs'] as List?;
+      final total = (decoded['total'] as num?)?.toInt() ?? 0;
+      final more = decoded['more'] == true;
+      if (rawSongs == null || rawSongs.isEmpty) {
+        return {'tracks': <Track>[], 'total': total, 'more': more};
+      }
+
+      final tracks = <Track>[];
+      for (final raw in rawSongs) {
+        if (raw is! Map) continue;
+        final id = raw['id']?.toString() ?? '';
+        if (id.isEmpty) continue;
+
+        final trackTitle = raw['name']?.toString() ?? '未知曲目';
+        final artists = (raw['ar'] as List? ?? raw['artists'] as List?)
+                ?.map((a) => a is Map ? (a['name']?.toString() ?? '') : '')
+                .where((name) => name.isNotEmpty)
+                .join(' / ') ??
+            '';
+        final album = raw['al'] ?? raw['album'];
+        var picUrl = album is Map ? (album['picUrl']?.toString() ?? '') : '';
+        if (picUrl.isNotEmpty && !picUrl.contains('?param=')) {
+          picUrl = '$picUrl?param=300y300';
+        }
+        final cover = picUrl.isNotEmpty ? picUrl : fallbackCoverFor(trackTitle, artists);
+
+        tracks.add(Track(
+          id: 'netease_$id',
+          title: trackTitle,
+          artist: artists.isEmpty ? '未知歌手' : artists,
+          album: album is Map ? (album['name']?.toString() ?? '') : '',
+          coverUrl: cover,
+          duration: Duration(milliseconds: (raw['dt'] as num? ?? raw['duration'] as num?)?.toInt() ?? 0),
+          source: 'netease-online',
+          audioUrl: null,
+          lyrics: const [],
+        ));
+      }
+      return {'tracks': tracks, 'total': total, 'more': more};
+    } catch (_) {
+      return {'tracks': <Track>[], 'total': 0, 'more': false};
+    }
+  }
 }

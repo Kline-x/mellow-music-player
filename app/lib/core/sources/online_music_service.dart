@@ -661,4 +661,18 @@ class OnlineMusicService {
     }
     return const [];
   }
+
+  /// 8. 抓取歌手完整资料（官方真实头像、作品总数、专辑数、传记等）
+  static Future<Map<String, dynamic>?> fetchArtistDetail(String artistId, {String? artistName}) async {
+    return neteaseService.fetchArtistDetail(artistId, artistName: artistName);
+  }
+
+  /// 9. 抓取歌手全部歌曲（支持分页突破 50 首代表作限制）
+  static Future<Map<String, dynamic>> fetchArtistAllSongs(
+    String artistId, {
+    int offset = 0,
+    int limit = 50,
+  }) async {
+    return neteaseService.fetchArtistAllSongs(artistId, offset: offset, limit: limit);
+  }
 }
