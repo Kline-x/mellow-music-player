@@ -152,8 +152,33 @@ class DesktopDiscoverView extends StatelessWidget {
         // 推荐歌单网格 (自适应多分辨率列数，宽屏优雅延展)
         LayoutBuilder(
           builder: (context, constraints) {
-            final crossAxisCount = (constraints.maxWidth / 220).floor().clamp(2, 6);
-            final displayPlaylists = mockSquarePlaylists.take(crossAxisCount).toList();
+            final crossAxisCount = (constraints.maxWidth / 220).floor().clamp(2, 4);
+            final curatedPlaylists = [
+              {
+                'title': '东方禅境 · 幽篁古筝琴韵精选',
+                'sub': '48.6万播放 · 巫娜 / 常静',
+                'cover': 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80',
+                'tracks': mockWuNaTracks,
+              },
+              {
+                'title': '夜幕降临时的华语流行浪漫',
+                'sub': '129.4万播放 · 周杰伦 / 伯远',
+                'cover': 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
+                'tracks': mockJayChouTracks,
+              },
+              {
+                'title': '岁月如歌 · 粤语传世经典不朽巡礼',
+                'sub': '98.2万播放 · Beyond / 传奇殿堂',
+                'cover': 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80',
+                'tracks': mockBeyondTracks,
+              },
+              {
+                'title': '原创独立先锋 · 诗意民谣声线',
+                'sub': '45.1万播放 · 独立音乐人代表作',
+                'cover': 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=500&q=80',
+                'tracks': toplistOriginTracks,
+              },
+            ];
             return GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -163,15 +188,15 @@ class DesktopDiscoverView extends StatelessWidget {
                 mainAxisSpacing: 16,
                 childAspectRatio: 0.82,
               ),
-              itemCount: displayPlaylists.length,
+              itemCount: curatedPlaylists.length,
               itemBuilder: (context, idx) {
-                final pl = displayPlaylists[idx];
+                final pl = curatedPlaylists[idx];
                 return _buildPlaylistCard(
                   context,
-                  pl.title,
-                  '${pl.desc} · 共${pl.tracks.length}首',
-                  pl.coverUrl,
-                  () => player.playPlaylist(pl.tracks, startIndex: 0),
+                  pl['title'] as String,
+                  pl['sub'] as String,
+                  pl['cover'] as String,
+                  () => player.playPlaylist(pl['tracks'] as List<Track>, startIndex: 0),
                 );
               },
             );
