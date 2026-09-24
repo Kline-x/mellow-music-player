@@ -3102,22 +3102,23 @@ class _SourceSwitcherModalState extends State<SourceSwitcherModal> {
                     onTap: (_isSwitching || isCurrent)
                         ? null
                         : () async {
+                            final navigator = Navigator.of(context);
+                            final messenger = ScaffoldMessenger.of(context);
                             setState(() {
                               _isSwitching = true;
                               _switchingTarget = id;
                             });
                             final ok = await player.switchSource(widget.track, id);
-                            if (mounted) {
-                              Navigator.of(context).pop();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(ok
-                                      ? '已成功切换至【${AudioPlayerService.formatSourceDisplayName(id)}】'
-                                      : '切换失败，该源未匹配到「${widget.track.title}」有效音频'),
-                                  duration: const Duration(seconds: 2),
-                                ),
-                              );
-                            }
+                            if (!mounted) return;
+                            navigator.pop();
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text(ok
+                                    ? '已成功切换至【${AudioPlayerService.formatSourceDisplayName(id)}】'
+                                    : '切换失败，该源未匹配到「${widget.track.title}」有效音频'),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
                           },
                     child: Row(
                       children: [

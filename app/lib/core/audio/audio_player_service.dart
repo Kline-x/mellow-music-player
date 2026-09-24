@@ -581,7 +581,7 @@ class AudioPlayerService extends ChangeNotifier {
           if (currentPos > Duration.zero) {
             await _backend.seek(currentPos);
           }
-          await _backend.play();
+          await _backend.resume();
           _isPlaying = true;
         }
         _playbackNotice = '已成功切换至【${formatSourceDisplayName(newSource)}】音源播放';

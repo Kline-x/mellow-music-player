@@ -975,18 +975,18 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
                 padding: const EdgeInsets.all(12),
                 borderRadius: MellowRadii.borderR16,
                 onTap: () async {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  final messenger = ScaffoldMessenger.of(context);
+                  messenger.showSnackBar(
                     SnackBar(content: Text('正在解析导入歌单「${pl.title}」...'), duration: const Duration(seconds: 1)),
                   );
                   final imported = await OnlineMusicService.importNeteasePlaylist(pl.id.replaceAll('netease_', ''));
+                  if (!mounted) return;
                   if (imported != null && imported.tracks.isNotEmpty) {
                     player.addImportedPlaylist(imported);
                     player.playPlaylist(imported.tracks, startIndex: 0);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('已导入并开始播放歌单「${pl.title}」（共 ${imported.tracks.length} 首）')),
-                      );
-                    }
+                    messenger.showSnackBar(
+                      SnackBar(content: Text('已导入并开始播放歌单「${pl.title}」（共 ${imported.tracks.length} 首）')),
+                    );
                   }
                 },
                 child: Column(

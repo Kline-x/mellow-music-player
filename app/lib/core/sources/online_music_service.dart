@@ -294,14 +294,17 @@ class OnlineMusicService {
               final sName = _normalizeForMatch(item['SONGNAME']?.toString() ?? '');
               final sArtist = _normalizeForMatch(item['ARTIST']?.toString() ?? '');
               if (sName == targetTitleNorm && (sArtist.contains(targetArtistNorm) || targetArtistNorm.contains(sArtist))) {
-                bestSong = (item as Map).cast<String, dynamic>();
+                bestSong = item.cast<String, dynamic>();
                 break;
               }
               if (sName.contains(targetTitleNorm) && (sArtist.contains(targetArtistNorm) || targetArtistNorm.contains(sArtist))) {
-                bestSong ??= (item as Map).cast<String, dynamic>();
+                bestSong ??= item.cast<String, dynamic>();
               }
             }
-            bestSong ??= (songs.first as Map).cast<String, dynamic>();
+            final firstSong = songs.first;
+            if (bestSong == null && firstSong is Map) {
+              bestSong = firstSong.cast<String, dynamic>();
+            }
 
             final rawMid = (bestSong['DC_TARGETID'] ?? bestSong['MUSICRID'] ?? '').toString();
             final mid = rawMid.replaceAll('MUSIC_', '');
