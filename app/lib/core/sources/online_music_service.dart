@@ -188,6 +188,7 @@ class OnlineMusicService {
   static Future<String?> resolvePlayableAudioUrl(
     String title,
     String artist, {
+    String? trackId,
     String? defaultUrl,
     bool forceRefresh = false,
   }) async {
@@ -200,56 +201,89 @@ class OnlineMusicService {
       if (cached.isNotEmpty) return cached;
     }
 
-    // 若原有链接为有效外部独立链接且不是已知 404 的网易云 outer 或 soundhelix
+    // 若原有链接为有效外部独立链接且不是已知 404/302 的网易云 outer 或 soundhelix 或 nxinxz
     if (!forceRefresh &&
         defaultUrl != null &&
         defaultUrl.isNotEmpty &&
         !defaultUrl.contains('soundhelix.com') &&
+        !defaultUrl.contains('nxinxz.com') &&
         !defaultUrl.contains('music.163.com/song/media/outer/url')) {
-      return defaultUrl;
+      final unwrapped = await unwrapRedirects(defaultUrl);
+      return unwrapped;
     }
 
-    // 1. 跨音源智能解析：通过歌名+歌手在 Kuwo 高保真音轨库中匹配真实音频
-    try {
-      final searchKw = '$cleanTitle $cleanArtist'.trim();
-      final uri = Uri.parse(
-        'http://search.kuwo.cn/r.s?client=kt&all=${Uri.encodeComponent(searchKw)}&pn=0&rn=5&vipver=1&ft=music&encoding=utf8&rformat=json&mobi=1',
-      );
-      final resp = await http.get(uri, headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      }).timeout(_timeout);
-
-      if (resp.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(resp.bodyBytes));
-        final songs = data['abslist'] as List?;
-        if (songs != null && songs.isNotEmpty) {
-          final top = songs.first;
-          final rawMid = (top['DC_TARGETID'] ?? top['MUSICRID'] ?? '').toString();
-          final mid = rawMid.replaceAll('MUSIC_', '');
-          if (mid.isNotEmpty) {
-            final streamUrl = 'http://music.nxinxz.com/kw.php?id=$mid&level=standard&type=mp3';
-            _urlCache[cacheKey] = streamUrl;
-            return streamUrl;
-          }
-        }
-      }
-    } catch (_) {}
-
-    // 2. 网易云真实流兜底
-    final neId = NeteaseMusicService.pureSongId(defaultUrl ?? '');
+    // 0. 若为网易云真实曲目 ID，优先尝试网易云原生高品质增强流
+    final neId = NeteaseMusicService.pureSongId(trackId ?? defaultUrl ?? '');
     if (neId != null) {
       try {
         final res = await neteaseService.resolveStreamUrl(neId);
-        if (res.isPlayable) {
-          _urlCache[cacheKey] = res.url!;
-          return res.url;
+        if (res.isPlayable && res.url != null && res.url!.isNotEmpty) {
+          final directUrl = await unwrapRedirects(res.url!);
+          _urlCache[cacheKey] = directUrl;
+          return directUrl;
         }
       } catch (_) {}
     }
 
-    // 3. iTunes 官方高可用试听流兜底（确保列表必定有声）
+    // 1. 跨音源智能解析：通过多层精准词条在 Kuwo 高保真音轨库中匹配真实音频
+    final firstArtist = cleanArtist.split(RegExp(r'[/,&、·]')).first.trim();
+    final strippedTitle = cleanTitle.replaceAll(RegExp(r'\(.*?\)|\[.*?\]|（.*?）'), '').trim();
+    final candidateQueries = <String>{
+      '$cleanTitle $firstArtist'.trim(),
+      if (strippedTitle.isNotEmpty && strippedTitle != cleanTitle) '$strippedTitle $firstArtist'.trim(),
+      cleanTitle,
+      if (strippedTitle.isNotEmpty && strippedTitle != cleanTitle) strippedTitle,
+    };
+
+    for (final q in candidateQueries) {
+      if (q.isEmpty) continue;
+      try {
+        final uri = Uri.parse(
+          'http://search.kuwo.cn/r.s?client=kt&all=${Uri.encodeComponent(q)}&pn=0&rn=3&vipver=1&ft=music&encoding=utf8&rformat=json&mobi=1',
+        );
+        final resp = await http.get(uri, headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        }).timeout(_timeout);
+
+        if (resp.statusCode == 200) {
+          final data = jsonDecode(utf8.decode(resp.bodyBytes));
+          final songs = data['abslist'] as List?;
+          if (songs != null && songs.isNotEmpty) {
+            final top = songs.first;
+            final rawMid = (top['DC_TARGETID'] ?? top['MUSICRID'] ?? '').toString();
+            final mid = rawMid.replaceAll('MUSIC_', '');
+            if (mid.isNotEmpty) {
+              // 1.1 优先使用 Kuwo 官方 direct convert_url 直链生成器 (直接返回可播 mp3，无重定向)
+              try {
+                final antiUri = Uri.parse(
+                  'http://antiserver.kuwo.cn/anti.s?type=convert_url&rid=$mid&format=mp3&response=url',
+                );
+                final antiResp = await http.get(antiUri, headers: {
+                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                }).timeout(const Duration(seconds: 4));
+                if (antiResp.statusCode == 200) {
+                  final antiUrl = antiResp.body.trim();
+                  if (antiUrl.startsWith('http://') || antiUrl.startsWith('https://')) {
+                    _urlCache[cacheKey] = antiUrl;
+                    return antiUrl;
+                  }
+                }
+              } catch (_) {}
+
+              // 1.2 降级使用 nxinxz 并跟进 302 重定向
+              final streamUrl = 'http://music.nxinxz.com/kw.php?id=$mid&level=standard&type=mp3';
+              final unwrapped = await unwrapRedirects(streamUrl);
+              _urlCache[cacheKey] = unwrapped;
+              return unwrapped;
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 2. iTunes 官方高可用试听流兜底（确保列表必定有声）
     try {
-      final itunesList = await itunesService.search('$cleanTitle $cleanArtist', limit: 2);
+      final itunesList = await itunesService.search('$cleanTitle $firstArtist', limit: 2);
       if (itunesList.isNotEmpty && itunesList.first.audioUrl != null) {
         final iUrl = itunesList.first.audioUrl!;
         _urlCache[cacheKey] = iUrl;
@@ -257,8 +291,27 @@ class OnlineMusicService {
       }
     } catch (_) {}
 
-    // 如果无法解析，回退默认
+    // 如果无法解析，回退默认并展开重定向
+    if (defaultUrl != null && defaultUrl.isNotEmpty) {
+      return await unwrapRedirects(defaultUrl);
+    }
     return defaultUrl;
+  }
+
+  /// 展开任意 HTTP 301/302 重定向，获取最终物理直接可播放地址
+  static Future<String> unwrapRedirects(String url) async {
+    if (!url.startsWith('http://') && !url.startsWith('https://')) return url;
+    try {
+      final client = http.Client();
+      final req = http.Request('GET', Uri.parse(url))..followRedirects = false;
+      req.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+      final response = await client.send(req).timeout(const Duration(seconds: 4));
+      if (response.isRedirect && response.headers.containsKey('location')) {
+        final loc = response.headers['location']!;
+        if (loc.startsWith('http')) return loc;
+      }
+    } catch (_) {}
+    return url;
   }
 
   /// 2. 网易云/公开歌单解析与一键导入
@@ -406,15 +459,27 @@ class OnlineMusicService {
     return [];
   }
 
-  /// 4. 实时抓取官方巅峰榜单真实曲库
-  static Future<List<Track>> fetchToplistTracks(String chartTitle, {int limit = 20}) async {
+  /// 4. 实时抓取官方巅峰榜单真实曲库（支持名称与真实歌单 ID）
+  static Future<List<Track>> fetchToplistTracks(String chartTitleOrId, {int limit = 50}) async {
     const chartMap = {
       '飙升榜': '19723756',
       '热歌榜': '3778678',
       '新歌榜': '3779629',
       '原创榜': '2884035',
+      '黑胶VIP榜': '71384707',
+      '黑胶VIP爱听榜': '71384707',
+      '电音榜': '1978921795',
+      '华语金曲榜': '4395559',
+      'ACG动漫榜': '71385702',
+      '欧美热歌榜': '28095138',
+      '日本热歌榜': '28095777',
+      '韩国热歌榜': '28095139',
+      '英国UK榜': '180106',
+      'Billboard榜': '60198',
+      '达人榜': '991319590',
+      '实时榜': '18176153161',
     };
-    final pid = chartMap[chartTitle];
+    final pid = chartMap[chartTitleOrId] ?? (RegExp(r'^\d+$').hasMatch(chartTitleOrId) ? chartTitleOrId : null);
     if (pid == null) return [];
 
     final playlist = await importNeteasePlaylist(pid);
@@ -422,5 +487,29 @@ class OnlineMusicService {
       return playlist.tracks.take(limit).toList();
     }
     return [];
+  }
+
+  /// 5. 抓取所有 60+ 官方真实排行榜单元数据
+  static Future<List<Map<String, dynamic>>> fetchAllToplists() async {
+    return neteaseService.fetchAllToplists();
+  }
+
+  /// 6. 抓取真实热门歌手分类列表
+  static Future<List<Map<String, dynamic>>> fetchArtistList({
+    int area = -1,
+    int type = -1,
+    int limit = 50,
+  }) async {
+    return neteaseService.fetchArtistList(area: area, type: type, limit: limit);
+  }
+
+  /// 7. 抓取歌手真实热门 50 首单曲
+  static Future<List<Track>> fetchArtistTopSongs(String artistId, {String? artistName}) async {
+    final songs = await neteaseService.fetchArtistTopSongs(artistId);
+    if (songs.isNotEmpty) return songs;
+    if (artistName != null && artistName.isNotEmpty) {
+      return searchOnlineTracks(artistName, limit: 50);
+    }
+    return const [];
   }
 }

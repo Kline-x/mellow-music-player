@@ -484,10 +484,12 @@ class AudioPlayerService extends ChangeNotifier {
         if (playUrl == null ||
             playUrl.isEmpty ||
             playUrl.contains('soundhelix.com') ||
+            playUrl.contains('nxinxz.com') ||
             playUrl.contains('music.163.com/song/media/outer/url')) {
           final resolved = await OnlineMusicService.resolvePlayableAudioUrl(
             track.title,
             track.artist,
+            trackId: track.id,
             defaultUrl: playUrl,
           );
           if (resolved != null && resolved.isNotEmpty) {
@@ -520,6 +522,7 @@ class AudioPlayerService extends ChangeNotifier {
         final fallbackUrl = await OnlineMusicService.resolvePlayableAudioUrl(
           track.title,
           track.artist,
+          trackId: track.id,
           forceRefresh: true,
         );
         if (fallbackUrl != null && fallbackUrl.isNotEmpty) {

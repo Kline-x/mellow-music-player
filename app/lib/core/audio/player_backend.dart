@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:audioplayers/audioplayers.dart';
+import '../sources/online_music_service.dart';
 
 /// 播放器底层驱动抽象接口
 abstract class AudioPlayerBackend {
@@ -37,10 +38,11 @@ class RealAudioPlayerBackend implements AudioPlayerBackend {
 
   @override
   Future<void> play(String uri) async {
-    if (uri.startsWith('http://') || uri.startsWith('https://')) {
-      await _player.play(UrlSource(uri));
+    final direct = await OnlineMusicService.unwrapRedirects(uri);
+    if (direct.startsWith('http://') || direct.startsWith('https://')) {
+      await _player.play(UrlSource(direct));
     } else {
-      await _player.play(DeviceFileSource(uri));
+      await _player.play(DeviceFileSource(direct));
     }
   }
 

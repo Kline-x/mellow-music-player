@@ -503,6 +503,25 @@ class MobileArtistDetailPage extends StatefulWidget {
 
 class _MobileArtistDetailPageState extends State<MobileArtistDetailPage> {
   bool _isFollowing = true;
+  List<Track> _tracks = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTracks();
+  }
+
+  void _loadTracks() async {
+    final artist = getArtistProfileByName(widget.artistName);
+    final songs = await OnlineMusicService.fetchArtistTopSongs(artist.id, artistName: artist.name);
+    if (mounted) {
+      setState(() {
+        _tracks = songs.isNotEmpty ? songs : artist.tracks;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -538,9 +557,18 @@ class _MobileArtistDetailPageState extends State<MobileArtistDetailPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(artist.name, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                      Row(
+                        children: [
+                          Text(artist.name, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                          const SizedBox(width: 4),
+                          Icon(Icons.verified_rounded, size: 14, color: theme.accentColor),
+                        ],
+                      ),
                       const SizedBox(height: 4),
-                      Text(artist.bio, style: TextStyle(fontSize: 11.5, color: theme.textMuted)),
+                      Text(
+                        _tracks.isNotEmpty ? '热门代表作 ${_tracks.length} 首 · 官方实时榜' : artist.bio,
+                        style: TextStyle(fontSize: 11.5, color: theme.textMuted),
+                      ),
                       const SizedBox(height: 10),
                       Row(
                         children: [
@@ -556,10 +584,11 @@ class _MobileArtistDetailPageState extends State<MobileArtistDetailPage> {
                             label: '播放热门',
                             icon: Icons.play_arrow_rounded,
                             isPill: true,
+                            isActive: true,
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                             onTap: () {
-                              if (artist.tracks.isNotEmpty) {
-                                player.playPlaylist(artist.tracks, startIndex: 0);
+                              if (_tracks.isNotEmpty) {
+                                player.playPlaylist(_tracks, startIndex: 0);
                               }
                             },
                           ),
@@ -572,35 +601,61 @@ class _MobileArtistDetailPageState extends State<MobileArtistDetailPage> {
             ),
           ),
           const SizedBox(height: 16),
-          Text('代表作清单', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('代表作清单', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+              if (!_isLoading)
+                Text('共 ${_tracks.length} 首', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+            ],
+          ),
           const SizedBox(height: 10),
-          ...List.generate(artist.tracks.length, (idx) {
-            final t = artist.tracks[idx];
-            return SoftCard(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              onTap: () => player.playPlaylist(artist.tracks, startIndex: idx),
-              child: Row(
-                children: [
-                  MellowImage(url: t.coverUrl, width: 40, height: 40, borderRadius: MellowRadii.borderR8),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: theme.textPrimary)),
-                        Text('${t.artist} · ${t.album}', style: TextStyle(fontSize: 11, color: theme.textMuted)),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(player.isFavorite(t.id) ? Icons.favorite_rounded : Icons.favorite_border_rounded, color: Colors.pink, size: 20),
-                    onPressed: () => player.toggleFavorite(t.id),
-                  ),
-                ],
+          if (_isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: CircularProgressIndicator(),
               ),
-            );
-          }),
+            )
+          else
+            ...List.generate(_tracks.length, (idx) {
+              final t = _tracks[idx];
+              return SoftCard(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                onTap: () => player.playPlaylist(_tracks, startIndex: idx),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 24,
+                      child: Text(
+                        '${idx + 1}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: idx < 3 ? FontWeight.bold : FontWeight.normal,
+                          color: idx < 3 ? theme.accentColor : theme.textMuted,
+                        ),
+                      ),
+                    ),
+                    MellowImage(url: t.coverUrl, width: 40, height: 40, borderRadius: MellowRadii.borderR8),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: theme.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text('${t.artist} · ${t.album}', style: TextStyle(fontSize: 11, color: theme.textMuted), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(player.isFavorite(t.id) ? Icons.favorite_rounded : Icons.favorite_border_rounded, color: Colors.pink, size: 20),
+                      onPressed: () => player.toggleFavorite(t.id),
+                    ),
+                  ],
+                ),
+              );
+            }),
         ],
       ),
     );

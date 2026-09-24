@@ -439,4 +439,89 @@ class NeteaseMusicService {
     }
     return '该曲目当前无版权/不可播放';
   }
+
+  /// 4. 抓取所有 60+ 官方真实巅峰排行榜
+  Future<List<Map<String, dynamic>>> fetchAllToplists() async {
+    try {
+      final uri = Uri.parse('$_origin/api/toplist');
+      final resp = await _client.get(uri, headers: _headers).timeout(_timeout);
+      if (resp.statusCode != 200) return const [];
+      final decoded = jsonDecode(utf8.decode(resp.bodyBytes));
+      final list = decoded is Map ? decoded['list'] : null;
+      if (list is List) {
+        return list.whereType<Map>().map((m) => m.cast<String, dynamic>()).toList();
+      }
+    } catch (_) {}
+    return const [];
+  }
+
+  /// 5. 抓取真实热门歌手分类列表（华语流行、欧美、日韩、组合等）
+  Future<List<Map<String, dynamic>>> fetchArtistList({
+    int area = -1,
+    int type = -1,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    try {
+      final uri = Uri.parse(
+        '$_origin/api/v1/artist/list?area=$area&type=$type&initial=-1&offset=$offset&limit=$limit',
+      );
+      final resp = await _client.get(uri, headers: _headers).timeout(_timeout);
+      if (resp.statusCode != 200) return const [];
+      final decoded = jsonDecode(utf8.decode(resp.bodyBytes));
+      final list = decoded is Map ? decoded['artists'] : null;
+      if (list is List) {
+        return list.whereType<Map>().map((m) => m.cast<String, dynamic>()).toList();
+      }
+    } catch (_) {}
+    return const [];
+  }
+
+  /// 6. 抓取歌手热门 50 首真实歌曲
+  Future<List<Track>> fetchArtistTopSongs(String artistId) async {
+    final pureId = pureSongId(artistId) ?? artistId.trim();
+    if (pureId.isEmpty) return const [];
+
+    try {
+      final uri = Uri.parse('$_origin/api/artist/$pureId');
+      final resp = await _client.get(uri, headers: _headers).timeout(_timeout);
+      if (resp.statusCode != 200) return const [];
+
+      final decoded = jsonDecode(utf8.decode(resp.bodyBytes));
+      final hotSongs = decoded is Map ? (decoded['hotSongs'] as List?) : null;
+      if (hotSongs == null || hotSongs.isEmpty) return const [];
+
+      final tracks = <Track>[];
+      for (final raw in hotSongs) {
+        if (raw is! Map) continue;
+        final id = raw['id']?.toString() ?? '';
+        if (id.isEmpty) continue;
+
+        final trackTitle = raw['name']?.toString() ?? '未知曲目';
+        final artists = (raw['ar'] as List? ?? raw['artists'] as List?)
+                ?.map((a) => a is Map ? (a['name']?.toString() ?? '') : '')
+                .where((name) => name.isNotEmpty)
+                .join(' / ') ??
+            '';
+        final album = raw['al'] ?? raw['album'];
+        final picUrl = album is Map ? (album['picUrl']?.toString() ?? '') : '';
+        final cover = picUrl.isNotEmpty ? picUrl : fallbackCoverFor(trackTitle, artists);
+
+        tracks.add(Track(
+          id: 'netease_$id',
+          title: trackTitle,
+          artist: artists.isEmpty ? '未知歌手' : artists,
+          album: album is Map ? (album['name']?.toString() ?? '') : '',
+          coverUrl: cover,
+          duration: Duration(milliseconds: (raw['dt'] as num? ?? raw['duration'] as num?)?.toInt() ?? 0),
+          source: 'netease-online',
+          audioUrl: null,
+          lyrics: const [],
+        ));
+      }
+      return tracks;
+    } catch (_) {
+      return const [];
+    }
+  }
 }

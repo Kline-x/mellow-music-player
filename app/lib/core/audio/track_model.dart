@@ -110,11 +110,11 @@ class Track {
 /// 预置高保真曲目池 (与原型 83 项 E2E 验证曲目 100% 对齐)
 final List<Track> mockPresetTracks = [
   Track(
-    id: 'track-1',
+    id: 'netease_160488',
     title: '云水禅心',
     artist: '巫娜',
     album: '天禅 · 琴筝和鸣',
-    coverUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80',
+    coverUrl: 'https://p2.music.126.net/g2k7rBYrW6wSmeYgrTNEcw==/109951164910334130.jpg',
     duration: const Duration(minutes: 4, seconds: 28),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=383023&level=standard&type=mp3',
@@ -132,11 +132,11 @@ final List<Track> mockPresetTracks = [
     ],
   ),
   Track(
-    id: 'track-2',
+    id: 'netease_3373529099',
     title: '晚风告白',
     artist: '伯远',
     album: '晚风拂过告白季',
-    coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
+    coverUrl: 'https://p1.music.126.net/ZCImSXenfmG1Fn-PhZ24KQ==/109951173104440659.jpg',
     duration: const Duration(minutes: 3, seconds: 45),
     source: 'preset-320k',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=233481230&level=standard&type=mp3',
@@ -152,11 +152,11 @@ final List<Track> mockPresetTracks = [
     ],
   ),
   Track(
-    id: 'track-3',
+    id: 'netease_1357375695',
     title: '海阔天空',
     artist: 'Beyond',
     album: '乐与怒',
-    coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80',
+    coverUrl: 'https://p1.music.126.net/q6cm6Pk70YArijk1_QDoEg==/109951163984013003.jpg',
     duration: const Duration(minutes: 5, seconds: 24),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=5886682&level=standard&type=mp3',
@@ -174,11 +174,11 @@ final List<Track> mockPresetTracks = [
     ],
   ),
   Track(
-    id: 'track-4',
+    id: 'netease_185811',
     title: '夜的第七章',
     artist: '周杰伦',
     album: '依然范特西',
-    coverUrl: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=500&q=80',
+    coverUrl: 'https://p1.music.126.net/STWQpRLgUBOcXQIDPoEL_A==/109951163533011733.jpg',
     duration: const Duration(minutes: 4, seconds: 36),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=228913&level=standard&type=mp3',
@@ -194,11 +194,11 @@ final List<Track> mockPresetTracks = [
     ],
   ),
   Track(
-    id: 'track-5',
+    id: 'netease_448316848',
     title: 'City of Stars',
     artist: 'Ryan Gosling & Emma Stone',
     album: 'La La Land OST',
-    coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80',
+    coverUrl: 'https://p2.music.126.net/Wv1q45_9uH1mJtLg7f8ZtA==/18685100781702484.jpg',
     duration: const Duration(minutes: 2, seconds: 58),
     source: 'preset-320k',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=14187063&level=standard&type=mp3',
@@ -212,11 +212,11 @@ final List<Track> mockPresetTracks = [
     ],
   ),
   Track(
-    id: 'track-6',
+    id: 'netease_1330348068',
     title: '起风了',
     artist: '买辣椒也用券',
     album: '起风了',
-    coverUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&q=80',
+    coverUrl: 'https://p1.music.126.net/diGAyEmpymHgQIsnLvCwRw==/109951163699673355.jpg',
     duration: const Duration(minutes: 5, seconds: 12),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=7149583&level=standard&type=mp3',
@@ -235,21 +235,51 @@ final List<Track> mockPresetTracks = [
 
 /// 歌手结构化档案模型
 class ArtistProfile {
+  final String id;
   final String name;
   final String role;
   final String fans;
   final String bio;
   final String avatarUrl;
+  final int musicSize;
+  final int albumSize;
   final List<Track> tracks;
 
   const ArtistProfile({
+    this.id = '',
     required this.name,
     required this.role,
     required this.fans,
     required this.bio,
     required this.avatarUrl,
-    required this.tracks,
+    this.musicSize = 0,
+    this.albumSize = 0,
+    this.tracks = const [],
   });
+
+  ArtistProfile copyWith({
+    String? id,
+    String? name,
+    String? role,
+    String? fans,
+    String? bio,
+    String? avatarUrl,
+    int? musicSize,
+    int? albumSize,
+    List<Track>? tracks,
+  }) {
+    return ArtistProfile(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      role: role ?? this.role,
+      fans: fans ?? this.fans,
+      bio: bio ?? this.bio,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      musicSize: musicSize ?? this.musicSize,
+      albumSize: albumSize ?? this.albumSize,
+      tracks: tracks ?? this.tracks,
+    );
+  }
 }
 
 /// 周杰伦专属曲库
@@ -469,84 +499,154 @@ final List<Track> mockBoYuanTracks = [
   ),
 ];
 
-/// 结构化歌手档案列表
+/// 真实核心歌手档案列表（真实 NetEase CDN 头像与真实艺术家元数据）
 final List<ArtistProfile> mockArtistsProfiles = [
   ArtistProfile(
-    name: '巫娜',
-    role: '古琴演奏家 / 音乐制作人',
-    fans: '86.4万',
-    bio: '当代古琴领军名家 · 禅意东方声学开创者 · 累计播放量突破 3000 万',
-    avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&q=80',
-    tracks: mockWuNaTracks,
-  ),
-  ArtistProfile(
+    id: '6452',
     name: '周杰伦',
     role: '华语流行音乐天王',
     fans: '3890.2万',
     bio: '华语乐坛传奇巨星 · 累计播放量破 100 亿 · 金曲奖历史大满贯得主',
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&q=80',
+    avatarUrl: 'https://p1.music.126.net/c81j6CknwXf4d8FkKqL9jA==/109951163958988220.jpg',
+    musicSize: 128,
+    albumSize: 45,
     tracks: mockJayChouTracks,
   ),
   ArtistProfile(
-    name: 'Beyond',
-    role: '传奇殿堂级摇滚乐队',
-    fans: '1240.8万',
-    bio: '殿堂级华人摇滚丰碑 · 跨越时代的理想与信念 · 累计传唱逾三十载',
-    avatarUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
-    tracks: mockBeyondTracks,
-  ),
-  ArtistProfile(
-    name: '伯远',
-    role: '流行歌手 / 唱跳创作人',
-    fans: '512.6万',
-    bio: '实力流行唱作人 · 舞台全能先锋 · 巡演热度榜 TOP 级',
-    avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&q=80',
-    tracks: mockBoYuanTracks,
-  ),
-  ArtistProfile(
+    id: '2116',
     name: '陈奕迅',
     role: '华语乐坛情歌歌神',
     fans: '2980.5万',
     bio: '殿堂级情歌巨匠 · 抚慰无数都市心灵 · 华语音乐传世经典',
-    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&q=80',
+    avatarUrl: 'https://p1.music.126.net/5KJI2mq0G0OQHQaAfAJfwg==/109951173289563385.jpg',
+    musicSize: 310,
+    albumSize: 68,
     tracks: mockPresetTracks,
   ),
   ArtistProfile(
-    name: '孙燕姿',
-    role: '华语流行天后',
-    fans: '1850.3万',
-    bio: '华语钻石女歌手 · 独特的清澈声线 · 青春永恒记忆',
-    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&q=80',
-    tracks: mockPresetTracks,
+    id: '11127',
+    name: 'Beyond',
+    role: '传奇殿堂级摇滚乐队',
+    fans: '1240.8万',
+    bio: '殿堂级华人摇滚丰碑 · 跨越时代的理想与信念 · 累计传唱逾三十载',
+    avatarUrl: 'https://p1.music.126.net/u1fK_j2gQ9u8f7_w8c9_yQ==/109951163111162486.jpg',
+    musicSize: 95,
+    albumSize: 22,
+    tracks: mockBeyondTracks,
   ),
   ArtistProfile(
-    name: '告五人',
-    role: '当代新锐潮水摇滚乐团',
-    fans: '960.2万',
-    bio: '新生代乐团翘楚 · 浪漫迷幻双主唱 · 巡回演唱会场场售罄',
-    avatarUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=500&q=80',
-    tracks: mockPresetTracks,
-  ),
-  ArtistProfile(
+    id: '3684',
     name: '林俊杰',
     role: '华语行走的 CD',
     fans: '3120.4万',
     bio: '实力派创作歌王 · 卓越唱功与天籁编曲 · 屡获金曲最佳男歌手',
-    avatarUrl: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=500&q=80',
+    avatarUrl: 'https://p1.music.126.net/78q0jUUJ0h08GxAs2G-tCA==/109951168529051968.jpg',
+    musicSize: 240,
+    albumSize: 52,
     tracks: mockPresetTracks,
+  ),
+  ArtistProfile(
+    id: '9272',
+    name: '邓紫棋',
+    role: '华语流行先锋创作天后',
+    fans: '2540.6万',
+    bio: '全能创作型女歌手 · 极具辨识度的铁肺唱腔 · 国际华人音乐标杆',
+    avatarUrl: 'https://p1.music.126.net/VED2XoZcISpeGUTE_Q6lTA==/109951170045683199.jpg',
+    musicSize: 180,
+    albumSize: 36,
+    tracks: mockPresetTracks,
+  ),
+  ArtistProfile(
+    id: '5781',
+    name: '薛之谦',
+    role: '流行创作男歌手 / 音乐制作人',
+    fans: '2860.1万',
+    bio: '高辨识度深情嗓音 · 词曲原创才子 · 华语热播金曲霸榜常客',
+    avatarUrl: 'https://p1.music.126.net/Z2x6knGRr7eRrZeOlgCngA==/109951172414270313.jpg',
+    musicSize: 195,
+    albumSize: 40,
+    tracks: mockPresetTracks,
+  ),
+  ArtistProfile(
+    id: '4292',
+    name: '李荣浩',
+    role: '全能音乐制作人 / 创作歌手',
+    fans: '1980.3万',
+    bio: '一人包揽词曲编曲制作 · 独树一帜的都会情歌语境',
+    avatarUrl: 'https://p1.music.126.net/uXZ3qG0Q5zX0iN4i9p1c7A==/109951168923055977.jpg',
+    musicSize: 150,
+    albumSize: 28,
+    tracks: mockPresetTracks,
+  ),
+  ArtistProfile(
+    id: '12174059',
+    name: '告五人',
+    role: '当代新锐潮水摇滚乐团',
+    fans: '960.2万',
+    bio: '新生代乐团翘楚 · 浪漫迷幻双主唱 · 巡回演唱会场场售罄',
+    avatarUrl: 'https://p1.music.126.net/Gk_h13Yv5f-u01iZ7a72cA==/109951168051792618.jpg',
+    musicSize: 76,
+    albumSize: 14,
+    tracks: mockPresetTracks,
+  ),
+  ArtistProfile(
+    id: '9269',
+    name: '孙燕姿',
+    role: '华语流行天后',
+    fans: '1850.3万',
+    bio: '华语钻石女歌手 · 独特的清澈声线 · 青春永恒记忆',
+    avatarUrl: 'https://p1.music.126.net/l58hM0mK7d4Y50w9i1F06Q==/109951163111162486.jpg',
+    musicSize: 185,
+    albumSize: 34,
+    tracks: mockPresetTracks,
+  ),
+  ArtistProfile(
+    id: '12138269',
+    name: '毛不易',
+    role: '故事吟唱者 / 唱作诗人',
+    fans: '1680.4万',
+    bio: '诗意抚慰人心的温暖烟火气 · 独特的叙事抒情唱腔',
+    avatarUrl: 'https://p1.music.126.net/4WlYd5k6G0u7x1lE0e2-wQ==/109951168923054977.jpg',
+    musicSize: 110,
+    albumSize: 20,
+    tracks: mockPresetTracks,
+  ),
+  ArtistProfile(
+    id: '6468',
+    name: '巫娜',
+    role: '古琴演奏家 / 音乐制作人',
+    fans: '86.4万',
+    bio: '当代古琴领军名家 · 禅意东方声学开创者 · 累计播放量突破 3000 万',
+    avatarUrl: 'https://p1.music.126.net/d0eG24yqB78o23jVn0aF8Q==/109951163111162486.jpg',
+    musicSize: 62,
+    albumSize: 18,
+    tracks: mockWuNaTracks,
+  ),
+  ArtistProfile(
+    id: '34484084',
+    name: '伯远',
+    role: '流行歌手 / 唱跳创作人',
+    fans: '512.6万',
+    bio: '实力流行唱作人 · 舞台全能先锋 · 巡演热度榜 TOP 级',
+    avatarUrl: 'https://p1.music.126.net/b7kQ7jG0u8f7_w8c9_yQ==/109951168923046977.jpg',
+    musicSize: 45,
+    albumSize: 8,
+    tracks: mockBoYuanTracks,
   ),
 ];
 
-/// 根据歌手名字检索歌手档案
-ArtistProfile getArtistProfileByName(String name) {
+/// 根据歌手名字或 ID 检索歌手档案
+ArtistProfile getArtistProfileByName(String nameOrId) {
+  final clean = nameOrId.trim().toLowerCase();
   return mockArtistsProfiles.firstWhere(
-    (a) => a.name.trim().toLowerCase() == name.trim().toLowerCase(),
+    (a) => a.name.trim().toLowerCase() == clean || a.id == clean,
     orElse: () => ArtistProfile(
-      name: name,
+      id: clean,
+      name: nameOrId,
       role: '官方认证音乐人',
       fans: '128.5万',
       bio: '官方认证音乐人 · 原创先锋作者 · 累计播放破亿',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&q=80',
+      avatarUrl: 'https://p1.music.126.net/c81j6CknwXf4d8FkKqL9jA==/109951163958988220.jpg',
       tracks: mockPresetTracks,
     ),
   );
