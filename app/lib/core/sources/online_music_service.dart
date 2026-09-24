@@ -505,10 +505,16 @@ class OnlineMusicService {
 
   /// 7. 抓取歌手真实热门 50 首单曲
   static Future<List<Track>> fetchArtistTopSongs(String artistId, {String? artistName}) async {
-    final songs = await neteaseService.fetchArtistTopSongs(artistId);
-    if (songs.isNotEmpty) return songs;
+    try {
+      final songs = await neteaseService.fetchArtistTopSongs(artistId);
+      if (songs.isNotEmpty) return songs;
+    } catch (_) {}
+
     if (artistName != null && artistName.isNotEmpty) {
-      return searchOnlineTracks(artistName, limit: 50);
+      try {
+        final searched = await searchOnlineTracks(artistName, limit: 50);
+        if (searched.isNotEmpty) return searched;
+      } catch (_) {}
     }
     return const [];
   }

@@ -1188,16 +1188,27 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
 
   void _loadSongs() async {
     final profile = getArtistProfileByName(_artistName);
-    final songs = await OnlineMusicService.fetchArtistTopSongs(_artistId, artistName: _artistName);
-    if (mounted) {
-      setState(() {
-        if (songs.isNotEmpty) {
-          _artistTracks = songs;
-        } else if (_artistTracks.isEmpty) {
-          _artistTracks = profile.tracks;
-        }
-        _isLoadingTracks = false;
-      });
+    try {
+      final songs = await OnlineMusicService.fetchArtistTopSongs(_artistId, artistName: _artistName);
+      if (mounted) {
+        setState(() {
+          if (songs.isNotEmpty) {
+            _artistTracks = songs;
+          } else if (_artistTracks.isEmpty) {
+            _artistTracks = profile.tracks;
+          }
+          _isLoadingTracks = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          if (_artistTracks.isEmpty) {
+            _artistTracks = profile.tracks;
+          }
+          _isLoadingTracks = false;
+        });
+      }
     }
   }
 
