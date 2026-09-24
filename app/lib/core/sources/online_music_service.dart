@@ -447,8 +447,8 @@ class OnlineMusicService {
           sourceId: LxPlatformId.tx,
           enableSourceFallback: false,
         );
-        if (res.url != null && res.url!.isNotEmpty) {
-          return await unwrapRedirects(res.url!);
+        if (res.url.isNotEmpty) {
+          return await unwrapRedirects(res.url);
         }
       } catch (_) {}
     } else if (targetSource.contains('kugou') || targetSource == 'kg') {
@@ -493,8 +493,8 @@ class OnlineMusicService {
           sourceId: LxPlatformId.kg,
           enableSourceFallback: false,
         );
-        if (res.url != null && res.url!.isNotEmpty) {
-          return await unwrapRedirects(res.url!);
+        if (res.url.isNotEmpty) {
+          return await unwrapRedirects(res.url);
         }
       } catch (_) {}
     } else if (targetSource.contains('migu') || targetSource == 'mg') {
@@ -513,8 +513,8 @@ class OnlineMusicService {
           sourceId: LxPlatformId.mg,
           enableSourceFallback: false,
         );
-        if (res.url != null && res.url!.isNotEmpty) {
-          return await unwrapRedirects(res.url!);
+        if (res.url.isNotEmpty) {
+          return await unwrapRedirects(res.url);
         }
       } catch (_) {}
     } else if (targetSource.contains('mellow') || targetSource.contains('preset')) {
@@ -533,8 +533,8 @@ class OnlineMusicService {
           sourceId: LxPlatformId.mellow,
           enableSourceFallback: false,
         );
-        if (res.url != null && res.url!.isNotEmpty) {
-          return await unwrapRedirects(res.url!);
+        if (res.url.isNotEmpty) {
+          return await unwrapRedirects(res.url);
         }
       } catch (_) {}
     } else if (targetSource.contains('itunes')) {
@@ -561,8 +561,8 @@ class OnlineMusicService {
           sourceId: scriptId,
           enableSourceFallback: false,
         );
-        if (res.url != null && res.url!.isNotEmpty) {
-          return await unwrapRedirects(res.url!);
+        if (res.url.isNotEmpty) {
+          return await unwrapRedirects(res.url);
         }
       } catch (_) {}
     }
