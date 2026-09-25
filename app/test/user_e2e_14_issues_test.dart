@@ -255,19 +255,17 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
       expect(player.isPlaying, isTrue);
 
-      // 2. 模拟用户点击左侧导航栏的「全网搜索」进入搜索页
+      // 2. 模拟用户点击左侧导航栏的「全网搜索」进入搜索页 (硬断言存在，防静默空转)
       final searchNav = find.text('全网搜索');
-      if (searchNav.evaluate().isNotEmpty) {
-        await tester.tap(searchNav);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      expect(searchNav, findsOneWidget);
+      await tester.tap(searchNav);
+      await tester.pump(const Duration(milliseconds: 100));
 
-      // 3. 点击回「发现音乐」或点击空白处
+      // 3. 点击回「发现音乐」或点击空白处 (硬断言存在，防静默空转)
       final discoverNav = find.text('发现音乐');
-      if (discoverNav.evaluate().isNotEmpty) {
-        await tester.tap(discoverNav);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      expect(discoverNav, findsOneWidget);
+      await tester.tap(discoverNav);
+      await tester.pump(const Duration(milliseconds: 100));
 
       // 4. 再次按空格键 -> 依然成功切换播放状态，杜绝焦点丢失！
       await tester.sendKeyEvent(LogicalKeyboardKey.space);

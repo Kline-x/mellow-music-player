@@ -1665,7 +1665,7 @@ class DesktopPodcastView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
-    final radios = mockRadioStations;
+    final radios = presetRadioStations;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(32, 24, 32, 120),

@@ -140,8 +140,12 @@ class MellowPresetSourceDriver implements LxSourceDriver {
     ),
   ];
 
-  MellowPresetSourceDriver({LxSourceMetadata? customMetadata})
-      : metadata = customMetadata ??
+  final bool allowTestingUrls;
+
+  MellowPresetSourceDriver({
+    LxSourceMetadata? customMetadata,
+    this.allowTestingUrls = false,
+  }) : metadata = customMetadata ??
             const LxSourceMetadata(
               id: LxPlatformId.mellow,
               name: '润音内置基准源',
@@ -206,9 +210,12 @@ class MellowPresetSourceDriver implements LxSourceDriver {
       return null; // 不支持该音质，交给降级引擎处理
     }
 
-    // 格式化输出标准化高保真直链
+    if (!allowTestingUrls) {
+      // 生产环境预设基准驱动坚决不编造假直链，返回 null 触发真实网络驱动解析
+      return null;
+    }
     final qTag = quality.value;
-    return 'https://stream.mellowmusic.io/${song.source}/${song.songMid}/audio_$qTag.flac';
+    return 'https://stream.internal.testing/${song.source}/${song.songMid}/audio_$qTag.flac';
   }
 
   @override
@@ -360,6 +367,7 @@ class PlatformPresetSourceDriver implements LxSourceDriver {
   final List<LxSongInfo> _mockDatabase;
   final bool simulateFailure; // 是否刻意模拟网络故障用于测试容错
   final Duration latency; // 模拟网络延迟
+  final bool allowTestingUrls;
 
   PlatformPresetSourceDriver({
     required this.platformId,
@@ -372,6 +380,7 @@ class PlatformPresetSourceDriver implements LxSourceDriver {
     LxSourceMetadata? customMetadata,
     String? author,
     String? version,
+    this.allowTestingUrls = false,
   })  : _mockDatabase = mockSongs,
         metadata = customMetadata ??
             LxSourceMetadata(
@@ -455,7 +464,10 @@ class PlatformPresetSourceDriver implements LxSourceDriver {
       return null; // 该歌曲无此音质
     }
 
-    // 平台预设驱动仅在单元与降级测试中返回内部测试直链，生产网络由落雪标杆源驱动
+    if (!allowTestingUrls) {
+      // 生产环境平台预设驱动坚决不编造假直链，返回 null 由真实落雪源 (六音/Huibq/ikun) 解析
+      return null;
+    }
     return 'https://stream.internal.testing/$platformId/${targetSong.songMid}_${quality.value}.mp3';
   }
 
@@ -791,8 +803,8 @@ class LxCustomScriptDriver implements LxSourceDriver {
       if (url != null && url.isNotEmpty) return url;
     }
 
-    // 3. 当未配置外部端点或纯沙箱元数据脚本时，按规范模拟返回合规直链
-    return 'https://custom-cdn.${metadata.id}.com/stream/${song.songMid}/${quality.value}.mp3';
+    // 3. 若未配置外部端点或脚本未解析出直链，坚决不编造假直链，返回 null 触发平滑降级
+    return null;
   }
 
   @override
@@ -941,8 +953,9 @@ class LxSourceEngine extends ChangeNotifier {
   Duration timeoutDuration = const Duration(seconds: 5);
 
   final StreamController<String> _eventController = StreamController<String>.broadcast();
+  final bool enableTestingUrls;
 
-  LxSourceEngine() {
+  LxSourceEngine({this.enableTestingUrls = false}) {
     _initializeDefaultDrivers();
   }
 
@@ -1133,7 +1146,10 @@ class LxSourceEngine extends ChangeNotifier {
 
     final updatedMeta = driver.metadata.copyWith(isEnabled: isEnabled);
     if (driver is MellowPresetSourceDriver) {
-      _drivers[sourceId] = MellowPresetSourceDriver(customMetadata: updatedMeta);
+      _drivers[sourceId] = MellowPresetSourceDriver(
+        customMetadata: updatedMeta,
+        allowTestingUrls: driver.allowTestingUrls,
+      );
     } else if (driver is PlatformPresetSourceDriver) {
       _drivers[sourceId] = PlatformPresetSourceDriver(
         platformId: driver.platformId,
@@ -1146,6 +1162,7 @@ class LxSourceEngine extends ChangeNotifier {
         customMetadata: updatedMeta,
         author: updatedMeta.author,
         version: updatedMeta.version,
+        allowTestingUrls: driver.allowTestingUrls,
       );
     } else if (driver is LxCustomScriptDriver) {
       _drivers[sourceId] = LxCustomScriptDriver(metadata: updatedMeta);
@@ -1206,7 +1223,7 @@ class LxSourceEngine extends ChangeNotifier {
   /// 初始化基础基准音源 (mellow, kw, kg, tx, wy, mg)
   void _initializeDefaultDrivers() {
     // 1. 内部基准驱动 (仅供单测环境，UI 过滤不展示)
-    registerDriver(MellowPresetSourceDriver());
+    registerDriver(MellowPresetSourceDriver(allowTestingUrls: enableTestingUrls));
 
     // 基础歌曲样本池
     final sampleSongs = [
@@ -1278,6 +1295,7 @@ class LxSourceEngine extends ChangeNotifier {
       platformName: '酷我音乐',
       qualities: [AudioQuality.k128k, AudioQuality.k320k, AudioQuality.flac],
       mockSongs: sampleSongs.map((s) => s.copyWith(source: LxPlatformId.kw)).toList(),
+      allowTestingUrls: enableTestingUrls,
     ));
 
     // 3. 酷狗 (kg)
@@ -1286,6 +1304,7 @@ class LxSourceEngine extends ChangeNotifier {
       platformName: '酷狗音乐',
       qualities: [AudioQuality.k128k, AudioQuality.k320k, AudioQuality.flac],
       mockSongs: sampleSongs.map((s) => s.copyWith(source: LxPlatformId.kg)).toList(),
+      allowTestingUrls: enableTestingUrls,
     ));
 
     // 4. QQ 音乐 (tx)
@@ -1299,6 +1318,7 @@ class LxSourceEngine extends ChangeNotifier {
         AudioQuality.flac24bit,
       ],
       mockSongs: sampleSongs.map((s) => s.copyWith(source: LxPlatformId.tx)).toList(),
+      allowTestingUrls: enableTestingUrls,
     ));
 
     // 5. 网易云 (wy)
@@ -1307,6 +1327,7 @@ class LxSourceEngine extends ChangeNotifier {
       platformName: '网易云音乐',
       qualities: [AudioQuality.k128k, AudioQuality.k320k, AudioQuality.flac],
       mockSongs: sampleSongs.map((s) => s.copyWith(source: LxPlatformId.wy)).toList(),
+      allowTestingUrls: enableTestingUrls,
     ));
 
     // 6. 咪咕 (mg)
@@ -1320,6 +1341,7 @@ class LxSourceEngine extends ChangeNotifier {
         AudioQuality.flac24bit,
       ],
       mockSongs: sampleSongs.map((s) => s.copyWith(source: LxPlatformId.mg)).toList(),
+      allowTestingUrls: enableTestingUrls,
     ));
   }
 

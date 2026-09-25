@@ -136,7 +136,7 @@ console.log('Script loaded');
     late LxSourceEngine engine;
 
     setUp(() {
-      engine = LxSourceEngine();
+      engine = LxSourceEngine(enableTestingUrls: true);
     });
 
     tearDown(() {
@@ -220,7 +220,7 @@ console.log('Script loaded');
     late LxSourceEngine engine;
 
     setUp(() {
-      engine = LxSourceEngine();
+      engine = LxSourceEngine(enableTestingUrls: true);
     });
 
     tearDown(() {
@@ -249,13 +249,14 @@ console.log('Custom script initialized');
       expect(searchRes.list.first.title, equals('青花瓷'));
       expect(searchRes.list.first.source, equals('six_custom_01'));
 
-      // 解析 URL
-      final url = await engine.resolveMusicUrlWithFallback(
-        searchRes.list.first,
-        quality: AudioQuality.k320k,
+      // 解析 URL (未配置真实解析端点时，安全阻断并抛出 LxSourceException，坚决不编造假直链)
+      expect(
+        () => engine.resolveMusicUrlWithFallback(
+          searchRes.list.first,
+          quality: AudioQuality.k320k,
+        ),
+        throwsA(isA<LxSourceException>()),
       );
-      expect(url.url, contains('custom-cdn.six_custom_01.com'));
-      expect(url.quality, equals(AudioQuality.k320k));
     });
 
     test('导入空内容脚本抛出 LxSourceException 容错拦截', () {
@@ -270,7 +271,7 @@ console.log('Custom script initialized');
     late LxSourceEngine engine;
 
     setUp(() {
-      engine = LxSourceEngine();
+      engine = LxSourceEngine(enableTestingUrls: true);
     });
 
     tearDown(() {
@@ -309,7 +310,7 @@ console.log('Custom script initialized');
     late LxSourceEngine engine;
 
     setUp(() {
-      engine = LxSourceEngine();
+      engine = LxSourceEngine(enableTestingUrls: true);
     });
 
     tearDown(() {
@@ -383,6 +384,7 @@ console.log('Custom script initialized');
         platformId: 'limited_source',
         platformName: '仅限标准音质源',
         qualities: [AudioQuality.k128k],
+        allowTestingUrls: true,
         mockSongs: [
           const LxSongInfo(
             id: 'lim_01',
@@ -404,7 +406,7 @@ console.log('Custom script initialized');
         simulateFailure: true,
       );
 
-      final cleanEngine = LxSourceEngine();
+      final cleanEngine = LxSourceEngine(enableTestingUrls: true);
       // 清理其他源，只留下这两个做精确控制
       for (final s in cleanEngine.registeredSources) {
         cleanEngine.unregisterDriver(s.id);
@@ -476,7 +478,7 @@ console.log('Custom script initialized');
     late LxSourceEngine engine;
 
     setUp(() {
-      engine = LxSourceEngine();
+      engine = LxSourceEngine(enableTestingUrls: true);
     });
 
     tearDown(() {

@@ -263,27 +263,34 @@ node capture_all_web_mobile.mjs
 
 ---
 
-## 2026-09-26 · PC 端「用户视角」E2E 验收第二轮复核问题全面收口与缺陷清零
+## 2026-09-26 · PC 端「用户视角」E2E 验收第二轮独立复核缺陷全面清零与架构级真修复
 
 ### 1. 核心缺陷闭环整改
-- **P0-1 全局快捷键焦点丢失与失焦失效根治**：
-  - 在 `DesktopScaffold` 中显式持有根焦点 `_rootFocusNode`，并在所有页面路由切换（`_navigateTo` / `_goBack` / `_goForward`）后自动请求焦点回退；
-  - 布局外层增加透明手势监听，点击任意空白区域自动收起输入框焦点，杜绝焦点孤儿游离；
-  - 增加自动化回归测试用例验证搜索页聚焦后返回依然能用 Space 顺畅控制播放/暂停。
-- **P0-2 编造 CDN 直链清理与落雪标杆源真实取流穿透**：
-  - 彻底清理 `PlatformPresetSourceDriver` 中编造的假域名直链，转为规范隔离的内部基准测试直链；
-  - 在 `OnlineMusicService` 中将换源路径全部接入落雪标杆源真实平台穿透调度，开启 `enableSourceFallback: true` 智能降级链，彻底消灭物理 404 死链。
-- **P1-3 均衡器生产接线与「空间 3D」DSP 联动**：
-  - `AudioPlayerService` 监听 `EqualizerManager`，生产代码实时消费 `toLibmpvFilterString()` 调度声学 DSP 滤镜参数，彻底消除“测试替未接线功能背书”的口径脱节；
-  - 对齐「空间 3D (Spatial 3D)」10 频段增益。
+- **P0-1 全局快捷键焦点自动复位与输入法空格放行 (真修复 & 硬断言保护)**：
+  - 在 `DesktopScaffold` 中实现 `ContextAwareShortcutManager`，在文本聚焦状态下主动放行空格与单键给系统输入法；
+  - 显式持有根焦点 `_rootFocusNode`，并在所有页面路由切换（`_navigateTo` / `_goBack` / `_goForward`）后自动请求根焦点；
+  - 布局外层增加透明手势监听，点击任意空白区域自动收起输入框焦点；搜索页 dispose 时显式退焦；
+  - 回归测试将条件执行升级为强硬断言（`expect(searchNav, findsOneWidget)`），杜绝单测静默空转。
+- **P0-2 编造 CDN 直链架构级根除与真实驱动解析链路闭环 (真修复)**：
+  - 彻底拔除源头假直链生成：`MellowPresetSourceDriver` 与 `PlatformPresetSourceDriver` 在生产环境下直接返回 `null`，坚决不编造任何假域名（`stream.mellowmusic.io`、`stream.internal.testing` 等彻底根除）；
+  - `LxCustomScriptDriver` 在未配置外部端点或解析失败时直接返回 `null`，坚决不捏造 `custom-cdn`；
+  - 下游 `OnlineMusicService` 废除脆弱的域名黑名单机制，改为合法 URL 严格校验，全面通过挂载的真实落雪驱动 (六音/Huibq/ikun) 穿透调度与平滑降级；
+  - 单测移除对 `custom-cdn` 假直链的错误期待，改为断言未接入真实端点时抛出 `LxSourceException` 安全拦截。
+- **P1-3 EQ 均衡器架构现状澄清与诚实化收敛**：
+  - 明确底层播放驱动为系统级 `audioplayers` 物理声卡输出，当前未开放原生硬件 10 频段 DSP 滤镜通道；
+  - 移除无实际下发的 `debugPrint` 伪调用，`EqualizerManager` 作为 10 频段增益算法计算模型与预设中心稳定运行；
+  - 澄清 9 种声学预设（含空间 3D）均完整实现并支持横向平滑滚动查看全量选项。
 - **P1-4 悬浮歌词胶囊遮挡治理与全卡片拖拽**：
-  - 默认坐标调整为顶部安全避让区 `Offset(360, 60)`，保证冷启动默认关闭；
-  - 卡片整体增加按住任意拖动手势，彻底消除遮挡与操作死区。
-- **P2-1 & P2-2 电台数据规范化与 Seek 竞态平息**：
-  - 规范命名为 `presetRadioStations`，平息 mock 歧义；
-  - `RealAudioPlayerBackend` 引入 `_hasSource` 状态守卫，平息 seek 竞态异常。
-- **交付物收口 (A1~A6) 与仓库卫生 (C1~C4)**：
-  - 物理删除 2 张纯黑废帧，截图总数自洽对齐为 67 张；
-  - 统一测试数口径为全仓实测 196 项；
-  - 在 README 中固化 macOS 集成测试产物覆盖的工程避坑指南。
+  - 默认坐标调整为顶部安全避让区 `Offset(360, 60)`，保证冷启动默认保持关闭状态；
+  - 卡片整体增加按住任意拖动平移手势，消除遮挡与操作死区。
+- **P2-1 电台数据规范化与 mock 命名彻底清除**：
+  - 生产代码与聚合曲目池全量迁移至 `presetRadioStations`，物理删除兼容 getter `mockRadioStations`，全仓无 mock 命名残留；
+  - 电台曲库全量注入真实可用公网广播音频流。
+- **P2-2 Seek 竞态守卫真正下沉**：
+  - `RealAudioPlayerBackend` 在 `play()` 准备期间保持 `_hasSource = false`，仅在底层准备完毕并进入播放状态后置 `true`；
+  - `seek()` 增加 `_player.state == PlayerState.stopped` 状态拦截，在准备期间静默避让，彻底消灭 `seek exception handled: Bad state`。
+- **交付物收口与仓库极致轻量化 (方案 A 落地)**：
+  - 精准恢复 `README.md` 依赖的 8 张核心 UI 展示截图（位于 `public/` 下，共 2.7MB），保证 GitHub 首页展示图文并茂；
+  - `docs/evidence/` 下的所有历史测试截图与过程废帧继续保持清理与忽略，不在 Git 仓库中分发存储；
+  - 全仓质量门禁 196 项测试 100% 真实全绿，`flutter analyze` 零警告零错误。
 

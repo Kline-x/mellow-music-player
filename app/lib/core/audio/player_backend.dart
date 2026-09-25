@@ -40,12 +40,18 @@ class RealAudioPlayerBackend implements AudioPlayerBackend {
 
   @override
   Future<void> play(String uri) async {
+    _hasSource = false; // 切歌与准备期间置为false，静默避让seek竞态
     final direct = await OnlineMusicService.unwrapRedirects(uri);
-    _hasSource = true;
-    if (direct.startsWith('http://') || direct.startsWith('https://')) {
-      await _player.play(UrlSource(direct));
-    } else {
-      await _player.play(DeviceFileSource(direct));
+    try {
+      if (direct.startsWith('http://') || direct.startsWith('https://')) {
+        await _player.play(UrlSource(direct));
+      } else {
+        await _player.play(DeviceFileSource(direct));
+      }
+      _hasSource = true; // 真正准备完毕并进入播放状态后才允许seek
+    } catch (e) {
+      _hasSource = false;
+      rethrow;
     }
   }
 
@@ -62,6 +68,7 @@ class RealAudioPlayerBackend implements AudioPlayerBackend {
   @override
   Future<void> seek(Duration position) async {
     if (!_hasSource) return;
+    if (_player.state == PlayerState.stopped) return;
     try {
       await _player.seek(position);
     } catch (e) {

@@ -994,9 +994,6 @@ final List<RadioStation> presetRadioStations = [
   ),
 ];
 
-/// 别名兼容：确保旧有单测与调用平稳过渡
-List<RadioStation> get mockRadioStations => presetRadioStations;
-
 /// 歌单广场结构化歌单模型
 class SquarePlaylist {
   final String id;
@@ -1118,7 +1115,7 @@ List<Track> getAllKnownTracks() {
       map[t.id] = t;
     }
   }
-  for (final r in mockRadioStations) {
+  for (final r in presetRadioStations) {
     map[r.track.id] = r.track;
   }
   for (final pl in mockSquarePlaylists) {

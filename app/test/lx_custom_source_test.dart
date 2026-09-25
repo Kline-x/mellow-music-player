@@ -162,7 +162,7 @@ proc.exec('calc.exe');
     });
 
     test('智能音质阶梯降级链解析 resolveMusicUrlWithFallback', () async {
-      final engine = LxSourceEngine.instance;
+      final engine = LxSourceEngine(enableTestingUrls: true);
 
       // 寻找官方曲目
       final searchResult = await engine.searchAggregated('云水禅心');
@@ -194,6 +194,7 @@ proc.exec('calc.exe');
         platformName: '低音质测试源',
         qualities: [AudioQuality.k128k],
         mockSongs: [lowSong],
+        allowTestingUrls: true,
       );
       engine.registerDriver(lowQualityDriver);
       engine.setActiveSource('low_q_source');
@@ -207,8 +208,7 @@ proc.exec('calc.exe');
       expect(degradedRes.url, isNotEmpty);
 
       // 清理
-      engine.setActiveSource('mellow');
-      engine.unregisterDriver('low_q_source');
+      engine.dispose();
     });
   });
 

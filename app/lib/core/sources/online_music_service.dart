@@ -463,7 +463,7 @@ class OnlineMusicService {
           sourceId: targetDriverId,
           enableSourceFallback: true,
         );
-        if (res.url.isNotEmpty && !res.url.contains('music.net') && !res.url.contains('custom-cdn')) {
+        if (res.url.isNotEmpty && (res.url.startsWith('http://') || res.url.startsWith('https://'))) {
           return await unwrapRedirects(res.url);
         }
       } catch (_) {}
@@ -511,7 +511,7 @@ class OnlineMusicService {
           sourceId: targetDriverId,
           enableSourceFallback: true,
         );
-        if (res.url.isNotEmpty && !res.url.contains('music.net') && !res.url.contains('custom-cdn')) {
+        if (res.url.isNotEmpty && (res.url.startsWith('http://') || res.url.startsWith('https://'))) {
           return await unwrapRedirects(res.url);
         }
       } catch (_) {}
@@ -533,7 +533,7 @@ class OnlineMusicService {
           sourceId: targetDriverId,
           enableSourceFallback: true,
         );
-        if (res.url.isNotEmpty && !res.url.contains('music.net') && !res.url.contains('custom-cdn')) {
+        if (res.url.isNotEmpty && (res.url.startsWith('http://') || res.url.startsWith('https://'))) {
           return await unwrapRedirects(res.url);
         }
       } catch (_) {}
@@ -553,7 +553,7 @@ class OnlineMusicService {
           sourceId: LxPlatformId.mellow,
           enableSourceFallback: true,
         );
-        if (res.url.isNotEmpty && !res.url.contains('music.net') && !res.url.contains('custom-cdn')) {
+        if (res.url.isNotEmpty && (res.url.startsWith('http://') || res.url.startsWith('https://'))) {
           return await unwrapRedirects(res.url);
         }
       } catch (_) {}
@@ -585,7 +585,7 @@ class OnlineMusicService {
           sourceId: scriptId,
           enableSourceFallback: true,
         );
-        if (res.url.isNotEmpty && !res.url.contains('music.net') && !res.url.contains('custom-cdn')) {
+        if (res.url.isNotEmpty && (res.url.startsWith('http://') || res.url.startsWith('https://'))) {
           return await unwrapRedirects(res.url);
         }
       } catch (_) {}

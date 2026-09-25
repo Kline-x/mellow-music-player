@@ -31,7 +31,7 @@ void main() {
       themeProvider = ThemeProvider();
       audioService = AudioPlayerService();
       equalizerManager = EqualizerManager();
-      sourceEngine = LxSourceEngine();
+      sourceEngine = LxSourceEngine(enableTestingUrls: true);
       lanSyncService = LanSyncService();
     });
 

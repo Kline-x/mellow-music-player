@@ -16,6 +16,7 @@ Thumbs.db
 scratch/
 test_*.png
 *.png
+!public/*.png
 docs/evidence/
 evidence/
 .system_generated/

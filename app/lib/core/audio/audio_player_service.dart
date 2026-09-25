@@ -169,11 +169,8 @@ class AudioPlayerService extends ChangeNotifier {
   }
 
   void _onEqualizerChanged() {
-    final eq = EqualizerManager.instance;
-    final filterStr = eq.toLibmpvFilterString();
-    if (kDebugMode && filterStr.isNotEmpty) {
-      debugPrint('[AudioPlayerService] 声学 DSP 10 频段 EQ 滤镜参数更新: $filterStr');
-    }
+    // 监听声学均衡器配置变更，联动通知状态刷新
+    notifyListeners();
   }
 
   void _initSmtc() {
