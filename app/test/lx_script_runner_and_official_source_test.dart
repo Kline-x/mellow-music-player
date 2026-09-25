@@ -305,19 +305,34 @@ void main() {
       expect(engine.activeSourceId, equals(LxPlatformId.mellow));
     });
 
-    test('预装六音高保真无损解析源 (kSixYinAggregateScript)', () {
+    test('预装六音、Huibq 与 ikun 社区标杆高保真无损解析源', () {
       final engine = LxSourceEngine.instance;
       final sixyin = LxCustomScriptDriver.fromScript(kSixYinAggregateScript, customId: 'lx_sixyin');
+      final huibq = LxCustomScriptDriver.fromScript(kHuibqAggregateScript, customId: 'lx_huibq');
+      final ikun = LxCustomScriptDriver.fromScript(kIkunAggregateScript, customId: 'lx_ikun');
       engine.registerDriver(sixyin);
+      engine.registerDriver(huibq);
+      engine.registerDriver(ikun);
+
       expect(engine.drivers.containsKey('lx_sixyin'), isTrue);
       expect(engine.drivers['lx_sixyin']!.metadata.name, equals('六音无损聚合源'));
       expect(engine.drivers['lx_sixyin']!.metadata.author, contains('六音'));
+
+      expect(engine.drivers.containsKey('lx_huibq'), isTrue);
+      expect(engine.drivers['lx_huibq']!.metadata.name, equals('Huibq 全能无损源'));
+      expect(engine.drivers['lx_huibq']!.metadata.author, contains('Huibq'));
+
+      expect(engine.drivers.containsKey('lx_ikun'), isTrue);
+      expect(engine.drivers['lx_ikun']!.metadata.name, equals('ikun 高并发加速源'));
+      expect(engine.drivers['lx_ikun']!.metadata.author, contains('ikun'));
     });
   });
 
   group('4. AudioPlayerService 音源名称格式化测试', () {
-    test('formatSourceDisplayName 准确映射落雪官方源、六音无损源与 Alger 官方源', () {
+    test('formatSourceDisplayName 准确映射六音、Huibq、ikun、落雪官方源与 Alger 官方源', () {
       expect(AudioPlayerService.formatSourceDisplayName('lx_sixyin'), equals('六音无损源'));
+      expect(AudioPlayerService.formatSourceDisplayName('lx_huibq'), equals('Huibq无损源'));
+      expect(AudioPlayerService.formatSourceDisplayName('lx_ikun'), equals('ikun加速源'));
       expect(AudioPlayerService.formatSourceDisplayName('lx_official_builtin'), equals('落雪官方源'));
       expect(AudioPlayerService.formatSourceDisplayName('lx_official'), equals('落雪官方源'));
       expect(AudioPlayerService.formatSourceDisplayName('alger_custom'), equals('Alger官方源'));

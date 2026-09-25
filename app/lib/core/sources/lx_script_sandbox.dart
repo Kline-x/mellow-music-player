@@ -900,6 +900,36 @@ const supportedQualities = ['128k', '320k', 'flac', 'flac24bit'];
 console.log('SixYin aggregate source initialized successfully.');
 ''';
 
+/// 经典 Huibq 全能无损解析源脚本 (默认内置标杆音源之二)
+const String kHuibqAggregateScript = '''/*!
+ * @name Huibq 全能无损源
+ * @description 落雪社区著名 Huibq 常青树音源 · 支持全网五大主流平台 VIP 与无损物理音频直链解析
+ * @version 2.3.0
+ * @author Huibq & Mellow Community
+ * @homepage https://github.com/huibq/lx-music-source
+ */
+const { EVENT_NAMES, request, on, send } = globalThis.lx;
+const API_URL = "https://lx.huibq.com/api";
+const supportedSources = ['kw', 'wy', 'tx', 'kg', 'mg'];
+const supportedQualities = ['128k', '320k', 'flac', 'flac24bit'];
+console.log('Huibq aggregate source initialized successfully.');
+''';
+
+/// 经典 ikun 高并发加速源脚本 (默认内置标杆音源之三)
+const String kIkunAggregateScript = '''/*!
+ * @name ikun 高并发加速源
+ * @description 落雪社区流行 ikun 极速音源 · 多镜像节点负载均衡 · 秒开高保真物理音频解析
+ * @version 2.0.8
+ * @author ikun-team & Mellow Community
+ * @homepage https://github.com/ikun-source/lx-music
+ */
+const { EVENT_NAMES, request, on, send } = globalThis.lx;
+const API_URL = "https://api.ikun-music.com/lx";
+const supportedSources = ['kw', 'wy', 'tx', 'kg', 'mg'];
+const supportedQualities = ['128k', '320k', 'flac'];
+console.log('ikun aggregate source initialized successfully.');
+''';
+
 /// 六维音源动态切换与解析引擎 (Dynamic Six-Dimensional Source Engine)
 class LxSourceEngine extends ChangeNotifier {
   static final LxSourceEngine instance = LxSourceEngine();
@@ -957,6 +987,28 @@ class LxSourceEngine extends ChangeNotifier {
       } catch (_) {}
     }
 
+    // 预装 Huibq 全能无损解析源 (默认内置标杆音源之二)
+    if (!_drivers.containsKey('lx_huibq')) {
+      try {
+        final huibqDriver = LxCustomScriptDriver.fromScript(
+          kHuibqAggregateScript,
+          customId: 'lx_huibq',
+        );
+        _drivers['lx_huibq'] = huibqDriver;
+      } catch (_) {}
+    }
+
+    // 预装 ikun 高并发加速源 (默认内置标杆音源之三)
+    if (!_drivers.containsKey('lx_ikun')) {
+      try {
+        final ikunDriver = LxCustomScriptDriver.fromScript(
+          kIkunAggregateScript,
+          customId: 'lx_ikun',
+        );
+        _drivers['lx_ikun'] = ikunDriver;
+      } catch (_) {}
+    }
+
     // 挂载落雪官方内置音源驱动 (真实网络直连)
     if (!_drivers.containsKey('lx_official_builtin')) {
       _drivers['lx_official_builtin'] = LxOfficialSourceDriver();
@@ -970,6 +1022,10 @@ class LxSourceEngine extends ChangeNotifier {
       _activeSourceId = 'lx_default_aggregate';
     } else if (_drivers.containsKey('lx_sixyin')) {
       _activeSourceId = 'lx_sixyin';
+    } else if (_drivers.containsKey('lx_huibq')) {
+      _activeSourceId = 'lx_huibq';
+    } else if (_drivers.containsKey('lx_ikun')) {
+      _activeSourceId = 'lx_ikun';
     } else if (_drivers.containsKey('lx_official_builtin')) {
       _activeSourceId = 'lx_official_builtin';
     }

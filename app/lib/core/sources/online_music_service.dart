@@ -366,27 +366,29 @@ class OnlineMusicService {
       }
     } catch (_) {}
 
-    // 3. 六音无损源 / 落雪聚合驱动真实取流兜底 (替代原 30 秒截断试听)
-    try {
-      final lxDriver = LxSourceEngine.instance.getDriver('lx_sixyin') ??
-          LxSourceEngine.instance.getDriver('lx_official_builtin') ??
-          LxSourceEngine.instance.activeDriver;
-      final lxSong = LxSongInfo(
-        id: trackId ?? 'fallback_${cleanTitle.hashCode}',
-        songMid: trackId?.replaceAll('netease_', '').replaceAll('kuwo_', '') ?? '${cleanTitle.hashCode}',
-        title: cleanTitle,
-        artist: cleanArtist,
-        album: '',
-        source: lxDriver.metadata.id,
-        duration: Duration.zero,
-      );
-      final lxUrl = await lxDriver.getMusicUrl(lxSong, LxSourceEngine.instance.preferredQuality);
-      if (lxUrl != null && lxUrl.isNotEmpty && lxUrl.startsWith('http')) {
-        final directUrl = await unwrapRedirects(lxUrl);
-        _urlCache[cacheKey] = directUrl;
-        return directUrl;
-      }
-    } catch (_) {}
+    // 3. 落雪社区优质源 (六音 / Huibq / ikun / 官方直连) 驱动真实取流兜底 (替代原 30 秒截断试听)
+    final fallbackDriverIds = ['lx_sixyin', 'lx_huibq', 'lx_ikun', 'lx_official_builtin'];
+    for (final driverId in fallbackDriverIds) {
+      try {
+        final lxDriver = LxSourceEngine.instance.getDriver(driverId);
+        if (lxDriver == null) continue;
+        final lxSong = LxSongInfo(
+          id: trackId ?? 'fallback_${cleanTitle.hashCode}',
+          songMid: trackId?.replaceAll('netease_', '').replaceAll('kuwo_', '') ?? '${cleanTitle.hashCode}',
+          title: cleanTitle,
+          artist: cleanArtist,
+          album: '',
+          source: lxDriver.metadata.id,
+          duration: Duration.zero,
+        );
+        final lxUrl = await lxDriver.getMusicUrl(lxSong, LxSourceEngine.instance.preferredQuality);
+        if (lxUrl != null && lxUrl.isNotEmpty && lxUrl.startsWith('http')) {
+          final directUrl = await unwrapRedirects(lxUrl);
+          _urlCache[cacheKey] = directUrl;
+          return directUrl;
+        }
+      } catch (_) {}
+    }
 
     // 如果无法解析，回退默认并展开重定向
     if (defaultUrl != null && defaultUrl.isNotEmpty) {

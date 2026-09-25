@@ -2730,7 +2730,11 @@ class _SourceSwitcherModalState extends State<SourceSwitcherModal> {
     final currentSource = widget.track.source;
 
     final customScripts = LxSourceEngine.instance.sources
-        .where((s) => !s.isBuiltIn && s.id != 'lx_sixyin' && s.id != 'lx_default_aggregate')
+        .where((s) => !s.isBuiltIn &&
+            s.id != 'lx_sixyin' &&
+            s.id != 'lx_huibq' &&
+            s.id != 'lx_ikun' &&
+            s.id != 'lx_default_aggregate')
         .toList();
 
     final sources = [
@@ -2741,6 +2745,22 @@ class _SourceSwitcherModalState extends State<SourceSwitcherModal> {
         'desc': '落雪社区经典六音高保真解析源，支持全网五大主流平台 VIP 与无损物理音频直链解析',
         'icon': Icons.bolt_rounded,
         'color': const Color(0xFFEC4899),
+      },
+      {
+        'id': 'lx_huibq',
+        'name': 'Huibq · 全能无损源',
+        'badge': '落雪常青树 · 极品无损',
+        'desc': '落雪社区著名 Huibq 经典多源聚合，全平台无损 FLAC 与高码率深度直连',
+        'icon': Icons.diamond_rounded,
+        'color': const Color(0xFFF59E0B),
+      },
+      {
+        'id': 'lx_ikun',
+        'name': 'ikun · 高并发加速源',
+        'badge': '多镜像秒开 · 极速流畅',
+        'desc': '社区维护活跃的极速多镜像节点加速源，支持高并发负载均衡与秒开解析',
+        'icon': Icons.flash_on_rounded,
+        'color': const Color(0xFF06B6D4),
       },
       {
         'id': 'lx_official_builtin',
