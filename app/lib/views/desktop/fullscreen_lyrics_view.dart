@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../design_system/tokens.dart';
 import '../../design_system/theme_provider.dart';
@@ -84,37 +85,67 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
       _scrollToActiveLine(activeLineIndex);
     });
 
-    return Scaffold(
-      backgroundColor: MellowColors.canvas(isDark),
-      body: Stack(
-        children: [
-          // 1. 全屏流体动态弥散光晕背景
-          const Positioned.fill(
-            child: AcousticMeshGlow(),
-          ),
+    final lyricShortcuts = <ShortcutActivator, VoidCallback>{
+      const SingleActivator(LogicalKeyboardKey.escape): widget.onClose,
+      const SingleActivator(LogicalKeyboardKey.keyL): widget.onClose,
+      const SingleActivator(LogicalKeyboardKey.space): () => player.togglePlay(),
+      const SingleActivator(LogicalKeyboardKey.arrowLeft): () {
+        player.seek(player.currentPosition - const Duration(seconds: 5));
+      },
+      const SingleActivator(LogicalKeyboardKey.arrowRight): () {
+        player.seek(player.currentPosition + const Duration(seconds: 5));
+      },
+      const SingleActivator(LogicalKeyboardKey.keyM): () => player.toggleMute(),
+    };
 
-          // 2. 右上角浮动关闭与控制条
-          Positioned(
-            top: 24,
-            right: 28,
-            child: Row(
-              children: [
-                SoftButton(
-                  icon: player.isFavorite(track.id) ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                  iconSize: 20,
-                  isCircle: true,
-                  onTap: () => player.toggleFavorite(track.id),
-                ),
-                const SizedBox(width: 12),
-                SoftButton(
-                  icon: Icons.fullscreen_exit_rounded,
-                  isCircle: true,
-                  tooltip: '退出全屏 (ESC)',
+    return CallbackShortcuts(
+      bindings: lyricShortcuts,
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
+          backgroundColor: MellowColors.canvas(isDark),
+          body: Stack(
+            children: [
+              // 1. 全屏流体动态弥散光晕背景
+              const Positioned.fill(
+                child: AcousticMeshGlow(),
+              ),
+
+              // 左上角显式返回胶囊按钮 (ESC)
+              Positioned(
+                top: 24,
+                left: 28,
+                child: SoftButton(
+                  icon: Icons.arrow_back_ios_new_rounded,
+                  iconSize: 13,
+                  label: '返回主界面 (ESC)',
+                  isPill: true,
                   onTap: widget.onClose,
                 ),
-              ],
-            ),
-          ),
+              ),
+
+              // 2. 右上角浮动关闭与控制条
+              Positioned(
+                top: 24,
+                right: 28,
+                child: Row(
+                  children: [
+                    SoftButton(
+                      icon: player.isFavorite(track.id) ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                      iconSize: 20,
+                      isCircle: true,
+                      onTap: () => player.toggleFavorite(track.id, track),
+                    ),
+                    const SizedBox(width: 12),
+                    SoftButton(
+                      icon: Icons.fullscreen_exit_rounded,
+                      isCircle: true,
+                      tooltip: '退出全屏 (ESC)',
+                      onTap: widget.onClose,
+                    ),
+                  ],
+                ),
+              ),
 
           // 3. 双栏巨幕内容区
           Positioned.fill(
@@ -340,11 +371,15 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
                             ),
                             const SizedBox(width: 16),
                             SoftButton(
-                              icon: Icons.lyrics_outlined,
+                              icon: player.playbackMode == PlaybackMode.singleLoop
+                                  ? Icons.repeat_one_rounded
+                                  : (player.playbackMode == PlaybackMode.shuffle
+                                      ? Icons.shuffle_rounded
+                                      : Icons.repeat_rounded),
                               iconSize: 18,
                               isCircle: true,
-                              tooltip: '歌词全屏',
-                              onTap: () {},
+                              tooltip: '播放模式: ${player.playbackMode.label}',
+                              onTap: () => player.cyclePlaybackMode(),
                             ),
                           ],
                         ),
@@ -401,6 +436,8 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
           ),
         ],
       ),
+    ),
+    ),
     );
   }
 

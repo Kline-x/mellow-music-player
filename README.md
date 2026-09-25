@@ -1,13 +1,12 @@
-> # 🚀 全平台核心能力闭环与五大进阶工程专项全面交付（2026-09-23）
+> # 🚀 全平台核心能力闭环与三批次缺陷全面清零交付（2026-09-25）
 >
-> **本仓库已完成 44 项用户视角 E2E 缺陷清零与五大进阶工程专项闭环交付，所有虚假实现已全部清理并实现真实物理驱动：**
-> - **① 真实物理音频驱动**：彻底清除 50ms 定时器伪造逻辑，采用 `audioplayers: ^6.8.1` 物理引擎驱动，内置 33 首完整立体声音频全量物理发声；
-> - **② 全面本地持久化**：采用 `StorageService`，冷重启 100% 无损恢复深浅主题、5 大强调色、音量、播放队列、收藏曲目、自定义音源脚本、桌面歌词坐标与置顶状态；
-> - **③ 局域网 P2P 近场即时传输**：基于原生 `dart:io` UDP 组播发现与 HTTP P2P 传输，彻底根除虚假备份弹窗与假在线设备；
-> - **④ LX 音源元数据解析与平台直连降级调度**：内置静态正则防注入校验；**外部 LX-Music 脚本仅解析注释头元数据，脚本代码不会被执行**（仓库无 QuickJS/flutter_js 运行时）；128k/320k/flac/flac24bit 音质阶梯降级由平台直连音源提供；
-> - **⑤ 桌面独立置顶穿透歌词**：Windows C++ 原生 Win32 API（`SetWindowPos` HWND_TOPMOST、`WS_EX_TRANSPARENT | WS_EX_LAYERED`）系统级贯通；
-> - **⑥ 跨平台真机 E2E 与多源高可用**：macOS 沙箱出站网络权限与 Android 安全通信配置，酷我 + 网易云 + iTunes 三源并发聚合去重；
-> - **质量门禁**：全仓 **172 项** Flutter 自动化测试 100% 全部通过，macOS 真实物理进程集成测试 8/8 全绿。当前版本 **v1.8.0**。
+> **本仓库已全面完成 PC 端用户视角 E2E 验收与独立复核发现的全部三批次（P0/P1/P2 共 13 项）缺陷彻底修复与真机闭环验证：**
+> - **① 真实物理音频驱动与 Seek 稳态保护**：采用 `audioplayers: ^6.8.1` 物理引擎驱动，补齐音频 seek 与状态机防竞态异常熔断保护，杜绝任何未就绪状态下的 `StateError`；
+> - **② 快捷键与巨幕歌词退出链路彻底打通**：全局重构 Scaffold 顶层覆盖层，ESC 键及左上角返回按钮始终 100% 顺畅退出全屏歌词与模态弹窗；
+> - **③ 消除编造数据与虚假文案**：下线公式编造的歌手粉丝数，修正内置基准源与技术能力声明，明确标注高级 DSP 音频滤镜扩展中；
+> - **④ 视口自适应与交互无死区**：治理 13 个主视图底部 128px 安全间距彻底杜绝底栏遮挡，修复搜索长列表滚动受阻并支持触底加载更多，跨视图红心收藏即时双向同步；
+> - **⑤ macOS 跨平台纯化**：本地扫描默认适配 `~/Music`，消除 Windows 专有路径提示，设置中心视窗属性自适应平台展示；
+> - **质量门禁**：全仓 **178 项** Flutter 自动化单测与组件测试 100% 通过（`flutter test` 实测 178/178），macOS 原生真机集成测试 **9/9 100% 全绿**，`flutter analyze` 0 issue。当前版本 **v1.9.0**。
 >
 > ---
 
@@ -15,7 +14,8 @@
 
 > 专为全平台高保真体验打造的 **Modern Soft UI（现代柔和微质感 / Soft Depth & Tactility / Calm Tech）** 原生跨平台音乐播放系统。
 
-[![Flutter Tests](https://img.shields.io/badge/Flutter%20Tests-172%2F172%20Passed%20(100%25)-emerald?style=flat-square&logo=flutter)](app/test)
+[![Flutter Tests](https://img.shields.io/badge/Flutter%20Tests-178%2F178%20Passed%20(100%25)-emerald?style=flat-square&logo=flutter)](app/test)
+[![macOS E2E](https://img.shields.io/badge/macOS%20E2E-9%2F9%20Passed%20(100%25)-emerald?style=flat-square&logo=apple)](app/integration_test)
 [![UI Style](https://img.shields.io/badge/Design%20System-Modern%20Soft%20UI-pink?style=flat-square)](app/lib/theme/tokens.dart)
 [![Audio Engine](https://img.shields.io/badge/Audio-Audioplayers%206.8.1%20Physical-blue?style=flat-square)](#-物理音频生态引擎)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Android%20%7C%20iOS%20%7C%20Web-purple?style=flat-square)](#-运行与体验指南)
@@ -109,8 +109,13 @@ Modern Soft UI（现代柔和微质感）结合了 Calm Tech、新拟态（Neumo
 
 项目内嵌完整的 Puppeteer 端到端测试套件，全面覆盖桌面端与移动端核心用户路径：
 
+> ⚠️ **前置条件**：`package.json` 里的 `test:e2e` 只是 `node e2e_test.js`，脚本自身不会拉起静态服务；直接执行会以 `net::ERR_CONNECTION_REFUSED at http://localhost:8088/` 失败（实测 `Total Scenarios Tested: 1 / Passed 0`）。必须先启动仓库自带服务，83/83 才会复现：
+
 ```bash
-# 执行自动化 E2E 交互审计
+# 1) 先起静态服务（npm start，监听 8088）
+node server.cjs &
+
+# 2) 再执行自动化 E2E 交互审计（实测 83/83 通过）
 npm run test:e2e
 ```
 

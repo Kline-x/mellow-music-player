@@ -139,6 +139,9 @@ void main() {
       // 5. 用户调节音量
       audioService.setVolume(0.9);
       expect(audioService.volume, equals(0.9));
+
+      audioService.pause();
+      await tester.pump(const Duration(milliseconds: 100));
     });
 
     testWidgets('E2E-04: 声学 10 频段 EQ 均衡器实时调节与 DSP 参数注入', (tester) async {
@@ -174,6 +177,7 @@ void main() {
       expect(audioService.currentPosition.inSeconds, equals(14));
       expect(audioService.isPlaying, isTrue);
       audioService.pause();
+      await tester.pump(const Duration(milliseconds: 100));
     });
 
     testWidgets('E2E-06: 歌单心标收藏与响应式数据联动', (tester) async {

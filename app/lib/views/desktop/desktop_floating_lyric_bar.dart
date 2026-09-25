@@ -36,7 +36,7 @@ class _DesktopFloatingLyricBarState extends State<DesktopFloatingLyricBar> {
     super.initState();
     _isLocked = _lyricService.isLocked || (StorageService.instance.getFloatingLyricLocked() ?? false);
     _isLargeFont = _lyricService.fontSizeLevel != 'normal';
-    _position = widget.initialPosition ?? _lyricService.position ?? const Offset(200, 100);
+    _position = widget.initialPosition ?? _lyricService.position ?? const Offset(280, 520);
   }
 
   void _toggleLock() {

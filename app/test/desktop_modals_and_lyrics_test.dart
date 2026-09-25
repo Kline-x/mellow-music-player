@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:mellow_music/design_system/theme_provider.dart';
@@ -114,16 +115,26 @@ void main() {
       await tester.tap(lyricsBtn);
       await tester.pump(const Duration(milliseconds: 400));
 
-      // 验证全屏歌词挂载
+      // 验证全屏歌词挂载与显式返回按钮
       expect(find.byType(DesktopFullscreenLyricsView), findsOneWidget);
+      expect(find.text('返回主界面 (ESC)'), findsOneWidget);
 
-      // 点击右上角退出全屏按钮
-      final closeLyricsBtn = find.byIcon(Icons.fullscreen_exit_rounded);
-      expect(closeLyricsBtn, findsOneWidget);
-      await tester.tap(closeLyricsBtn);
+      // 点击显式返回按钮退出
+      final backLyricsBtn = find.text('返回主界面 (ESC)');
+      expect(backLyricsBtn, findsOneWidget);
+      await tester.tap(backLyricsBtn);
       await tester.pump(const Duration(milliseconds: 400));
 
       // 验证已回到主桌面视图
+      expect(find.byType(DesktopFullscreenLyricsView), findsNothing);
+
+      // 再次点击展开全屏歌词，并通过 ESC 快捷键退出
+      await tester.tap(lyricsBtn);
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byType(DesktopFullscreenLyricsView), findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump(const Duration(milliseconds: 400));
       expect(find.byType(DesktopFullscreenLyricsView), findsNothing);
 
       audioPlayerService.pause();

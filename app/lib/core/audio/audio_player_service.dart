@@ -691,7 +691,11 @@ class AudioPlayerService extends ChangeNotifier {
     } else {
       _position = target;
     }
-    _backend.seek(_position);
+    try {
+      _backend.seek(_position);
+    } catch (e) {
+      debugPrint('[AudioPlayerService] seek exception caught: $e');
+    }
     WindowsSmtcService.instance.updateTimeline(_position, curDuration);
     notifyListeners();
   }

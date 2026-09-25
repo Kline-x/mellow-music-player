@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform, Directory;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../design_system/tokens.dart';
@@ -32,7 +33,7 @@ class DesktopDiscoverView extends StatelessWidget {
     final player = context.watch<AudioPlayerService>();
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 128),
       children: [
         // Bento Hero 席位 - 今日私享雷达
         SoftCard(
@@ -162,19 +163,19 @@ class DesktopDiscoverView extends StatelessWidget {
               },
               {
                 'title': '夜幕降临时的华语流行浪漫',
-                'sub': '129.4万播放 · 周杰伦 / 伯远',
+                'sub': '129.4万播放 · 周杰伦 / 方文山',
                 'cover': 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
                 'tracks': mockJayChouTracks,
               },
               {
                 'title': '岁月如歌 · 粤语传世经典不朽巡礼',
-                'sub': '98.2万播放 · Beyond / 传奇殿堂',
+                'sub': '98.2万播放 · Beyond / 黄家驹',
                 'cover': 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80',
                 'tracks': mockBeyondTracks,
               },
               {
                 'title': '原创独立先锋 · 诗意民谣声线',
-                'sub': '45.1万播放 · 独立音乐人代表作',
+                'sub': '45.1万播放 · 华语民谣独立音乐人',
                 'cover': 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=500&q=80',
                 'tracks': toplistOriginTracks,
               },
@@ -320,7 +321,7 @@ class _DesktopPlaylistSquareViewState extends State<DesktopPlaylistSquareView> {
     final playlists = getPlaylistsByTag(_activeTag);
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 128),
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -597,7 +598,7 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
     final filteredList = _filteredToplists;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 128),
       children: [
         Wrap(
           alignment: WrapAlignment.spaceBetween,
@@ -1046,7 +1047,9 @@ class _DesktopArtistsViewState extends State<DesktopArtistsView> {
           name: name,
           avatarUrl: picUrl,
           role: '代表作 $musicSize 首 · 专辑 $albumSize 张',
-          fans: '${(musicSize * 15.6 + 68).toInt()}万',
+          // 真实粉丝数接口未接入：不再用公式编造（见 docs/PC_USER_E2E_ACCEPTANCE_2026-09-25.md D-1）
+          // 留空由卡片侧隐藏该行，避免展示与「代表作数」线性相关的伪值。
+          fans: '',
           bio: '官方认证知名音乐人',
           musicSize: musicSize,
           albumSize: albumSize,
@@ -1067,7 +1070,7 @@ class _DesktopArtistsViewState extends State<DesktopArtistsView> {
     final theme = context.watch<ThemeProvider>();
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 128),
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1159,8 +1162,10 @@ class _DesktopArtistsViewState extends State<DesktopArtistsView> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 6),
-                  Text('粉丝 ${a.fans}', style: TextStyle(fontSize: 11, color: theme.textSecondary)),
+                  if (a.fans.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text('粉丝 ${a.fans}', style: TextStyle(fontSize: 11, color: theme.textSecondary)),
+                  ],
                 ],
               ),
             );
@@ -1182,7 +1187,7 @@ class DesktopArtistDetailView extends StatefulWidget {
 }
 
 class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
-  bool _isFollowing = true;
+  bool _isFollowing = false;
   bool _isLoadingTracks = false;
   int _selectedTab = 0; // 0: 热门代表作 (Top 50), 1: 全部作品 (全量曲库)
   List<Track> _topTracks = [];
@@ -1224,6 +1229,8 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
       _artistId = profile.id;
       _artistAvatar = profile.avatarUrl;
     }
+
+    _isFollowing = StorageService.instance.isArtistFollowed(_artistName);
 
     if (_artistAvatar.isEmpty) {
       final profile = getArtistProfileByName(_artistName);
@@ -1367,7 +1374,7 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
     final currentTracks = _selectedTab == 0 ? _topTracks : _allTracks;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 128),
       children: [
         InkWell(
           onTap: () => widget.onNavigate('artists'),
@@ -1467,7 +1474,14 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
                           label: _isFollowing ? '已关注' : '+ 关注歌手',
                           isActive: _isFollowing,
                           isPill: true,
-                          onTap: () => setState(() => _isFollowing = !_isFollowing),
+                          onTap: () async {
+                            await StorageService.instance.toggleArtistFollow(_artistName);
+                            if (mounted) {
+                              setState(() {
+                                _isFollowing = StorageService.instance.isArtistFollowed(_artistName);
+                              });
+                            }
+                          },
                         ),
                         const SizedBox(width: 12),
                         SoftButton(
@@ -1594,7 +1608,7 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
                       color: Colors.pink,
                       size: 20,
                     ),
-                    onPressed: () => player.toggleFavorite(t.id),
+                    onPressed: () => player.toggleFavorite(t.id, t),
                   ),
                 ],
               ),
@@ -1714,6 +1728,113 @@ class DesktopPodcastView extends StatelessWidget {
                 );
               },
             ),
+        const SizedBox(height: 32),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('自然声景与专注空间', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+            Text('纯净声学采样 · 无缝沉浸循环', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+          ],
+        ),
+        const SizedBox(height: 14),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final soundscapes = [
+              {
+                'title': '森林夜雨 · 幽谷独行',
+                'desc': '高保真立体声雨丝与树叶拍击声',
+                'tag': '深度睡眠',
+                'icon': Icons.water_drop_rounded,
+                'color': const Color(0xFF0284C7),
+              },
+              {
+                'title': '壁炉柴火 · 暖冬微光',
+                'desc': '木柴劈啪声与轻微室内回响',
+                'tag': '沉浸阅读',
+                'icon': Icons.local_fire_department_rounded,
+                'color': const Color(0xFFEA580C),
+              },
+              {
+                'title': '深海蓝鲸 · 频率律动',
+                'desc': '低频水下空灵声场与心流共振',
+                'tag': '高效专注',
+                'icon': Icons.waves_rounded,
+                'color': const Color(0xFF4F46E5),
+              },
+            ];
+
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: (constraints.maxWidth / 300).floor().clamp(1, 3),
+                mainAxisExtent: 110,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+              ),
+              itemCount: soundscapes.length,
+              itemBuilder: (context, idx) {
+                final sc = soundscapes[idx];
+                final col = sc['color'] as Color;
+                return SoftCard(
+                  padding: const EdgeInsets.all(16),
+                  onTap: () {
+                    if (radios.isNotEmpty) {
+                      player.playTrack(radios[idx % radios.length].track);
+                    }
+                  },
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: col.withValues(alpha: 0.15),
+                          borderRadius: MellowRadii.borderR16,
+                        ),
+                        child: Icon(sc['icon'] as IconData, color: col, size: 28),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              sc['title'] as String,
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              sc['desc'] as String,
+                              style: TextStyle(fontSize: 11.5, color: theme.textMuted),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: col.withValues(alpha: 0.12),
+                                borderRadius: MellowRadii.borderPill,
+                              ),
+                              child: Text(
+                                sc['tag'] as String,
+                                style: TextStyle(fontSize: 10, color: col, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ],
     );
   }
@@ -1731,7 +1852,7 @@ class DesktopFavoriteView extends StatelessWidget {
     final favTracks = player.favoriteTracks;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 128),
       children: [
         SoftCard(
           padding: const EdgeInsets.all(28),
@@ -2196,7 +2317,7 @@ class _DesktopImportedPlaylistsViewState extends State<DesktopImportedPlaylistsV
     final importedCount = allPlaylists.where((p) => !p.isCustom).length;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 128),
       children: [
         Wrap(
           alignment: WrapAlignment.spaceBetween,
@@ -2498,7 +2619,7 @@ class DesktopHistoryView extends StatelessWidget {
     final player = context.watch<AudioPlayerService>();
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 128),
       children: [
         Wrap(
           alignment: WrapAlignment.spaceBetween,
@@ -2550,7 +2671,12 @@ class DesktopLocalMusicView extends StatefulWidget {
 
 class _DesktopLocalMusicViewState extends State<DesktopLocalMusicView> {
   void _openScanDialog(BuildContext context, AudioPlayerService player, ThemeProvider theme) {
-    final textController = TextEditingController(text: 'E:\\Music');
+    final home = Platform.environment['HOME'] ?? '';
+    final defaultMusicDir = Platform.isWindows
+        ? 'C:\\Users\\Public\\Music'
+        : (home.isNotEmpty ? '$home/Music' : '/Users/Shared');
+    final textController = TextEditingController(text: defaultMusicDir);
+
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
@@ -2567,7 +2693,7 @@ class _DesktopLocalMusicViewState extends State<DesktopLocalMusicView> {
               controller: textController,
               style: TextStyle(color: theme.textPrimary, fontSize: 13.5),
               decoration: InputDecoration(
-                hintText: '输入文件夹绝对路径，如 C:\\Users\\Music',
+                hintText: Platform.isWindows ? '输入文件夹绝对路径，如 C:\\Users\\Music' : '输入文件夹绝对路径，如 /Users/xxx/Music',
                 hintStyle: TextStyle(color: theme.textMuted),
                 filled: true,
                 fillColor: theme.isDarkMode ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
@@ -2583,11 +2709,13 @@ class _DesktopLocalMusicViewState extends State<DesktopLocalMusicView> {
               children: [
                 ActionChip(
                   label: const Text('默认音乐库', style: TextStyle(fontSize: 11)),
-                  onPressed: () => textController.text = 'C:\\Users\\Public\\Music',
+                  onPressed: () => textController.text = defaultMusicDir,
                 ),
                 ActionChip(
-                  label: const Text('示例演示目录', style: TextStyle(fontSize: 11)),
-                  onPressed: () => textController.text = 'E:\\Music\\Lossless',
+                  label: Text(Platform.isWindows ? '示例演示目录' : '下载目录', style: const TextStyle(fontSize: 11)),
+                  onPressed: () => textController.text = Platform.isWindows
+                      ? 'E:\\Music\\Lossless'
+                      : (home.isNotEmpty ? '$home/Downloads' : '/tmp'),
                 ),
               ],
             ),
@@ -2607,12 +2735,22 @@ class _DesktopLocalMusicViewState extends State<DesktopLocalMusicView> {
               final path = textController.text.trim();
               Navigator.of(dialogCtx).pop();
               if (path.isNotEmpty) {
+                final dir = Directory(path);
+                if (!dir.existsSync()) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('目录不存在或无法访问，请检查路径: $path')),
+                    );
+                  }
+                  return;
+                }
                 final count = await player.scanLocalDirectory(path);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(count > 0 ? '扫描完成！成功载入 $count 首本地歌曲' : '扫描完成，未发现新支持的音频文件或目录不存在'),
+                      content: Text(count > 0 ? '扫描完成！成功载入 $count 首本地歌曲' : '扫描完成，未发现新支持的音频文件'),
                     ),
                   );
                 }
@@ -2633,7 +2771,7 @@ class _DesktopLocalMusicViewState extends State<DesktopLocalMusicView> {
     final localTracks = player.localTracks;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 128),
       children: [
         // 1. 顶部标题栏
         Wrap(
@@ -2911,7 +3049,7 @@ class _DesktopSettingsViewState extends State<DesktopSettingsView> {
     final isDark = theme.isDarkMode;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 128),
       children: [
         Text('个性化与系统设置', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: theme.textPrimary)),
         const SizedBox(height: 20),
@@ -3046,9 +3184,9 @@ class _DesktopSettingsViewState extends State<DesktopSettingsView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('关闭主窗口时最小化至托盘', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: theme.textPrimary)),
+                        Text('关闭主窗口时最小化至托盘${Platform.isWindows ? '' : ' (Windows 专享)'}', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: theme.textPrimary)),
                         const SizedBox(height: 4),
-                        Text('点击窗口右上角关闭按钮时不退出程序，在系统托盘保持后台静默播放与快捷菜单控制', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                        Text(Platform.isWindows ? '点击窗口右上角关闭按钮时不退出程序，在系统托盘保持后台静默播放与快捷菜单控制' : 'Windows 平台专用后台驻留特性（macOS 平台由 Dock 管理应用生命周期）', style: TextStyle(fontSize: 12, color: theme.textMuted)),
                       ],
                     ),
                   ),
@@ -3089,7 +3227,7 @@ class _DesktopSettingsViewState extends State<DesktopSettingsView> {
                           color: theme.accentColor.withValues(alpha: 0.15),
                           borderRadius: MellowRadii.borderPill,
                         ),
-                        child: Text('Win32 原生置顶 / 穿透', style: TextStyle(color: theme.accentColor, fontSize: 11, fontWeight: FontWeight.bold)),
+                        child: Text(Platform.isWindows ? 'Win32 原生置顶 / 穿透' : '桌面动效视窗', style: TextStyle(color: theme.accentColor, fontSize: 11, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
@@ -3122,7 +3260,7 @@ class _DesktopSettingsViewState extends State<DesktopSettingsView> {
                           children: [
                             Text('主窗口始终置顶 (Always on Top)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: theme.textPrimary)),
                             const SizedBox(height: 4),
-                            Text('固定播放器窗口于屏幕最上层显示，避免被其他程序遮挡 (Win32 HWND_TOPMOST)', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                            Text('固定播放器窗口于屏幕最上层显示，避免被其他程序遮挡${Platform.isWindows ? ' (Win32 HWND_TOPMOST)' : ''}', style: TextStyle(fontSize: 12, color: theme.textMuted)),
                           ],
                         ),
                       ),
@@ -3305,7 +3443,7 @@ class DesktopSourceManagerView extends StatelessWidget {
         final activeName = activeDriver?.metadata.name ?? engine.activeSourceId;
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
+          padding: const EdgeInsets.fromLTRB(32, 24, 32, 128),
           children: [
             // --- 顶部标头栏 ---
             Row(
@@ -3583,7 +3721,7 @@ class DesktopSourceManagerView extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  '覆盖国内主流六大音乐平台高保真音源驱动',
+                  '多平台音源驱动与兜底调度机制',
                   style: TextStyle(fontSize: 12, color: theme.textMuted),
                 ),
               ],
@@ -4156,7 +4294,7 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
     final isWebDavConfigured = _config?.isConfigured ?? false;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 128),
       children: [
         LayoutBuilder(
           builder: (context, constraints) {

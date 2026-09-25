@@ -27,12 +27,14 @@ void main() {
   final sessionArtifactsDir = envArtifacts != null && envArtifacts.isNotEmpty
       ? Directory(envArtifacts)
       : Directory('${Directory.systemTemp.path}/mellow_session_artifacts');
-  final evidenceDir = Directory('docs/evidence/acceptance-20260924');
+
+  final exportToRepo = Platform.environment['EXPORT_EVIDENCE_TO_REPO'] == 'true';
+  final evidenceDir = exportToRepo ? Directory('docs/evidence/acceptance-20260924') : null;
 
   if (!sessionArtifactsDir.existsSync()) {
     sessionArtifactsDir.createSync(recursive: true);
   }
-  if (!evidenceDir.existsSync()) {
+  if (evidenceDir != null && !evidenceDir.existsSync()) {
     evidenceDir.createSync(recursive: true);
   }
 
@@ -85,7 +87,9 @@ void main() {
         final bytes = byteData!.buffer.asUint8List();
 
         File('${sessionArtifactsDir.path}/$filename').writeAsBytesSync(bytes);
-        File('${evidenceDir.path}/$filename').writeAsBytesSync(bytes);
+        if (evidenceDir != null) {
+          File('${evidenceDir.path}/$filename').writeAsBytesSync(bytes);
+        }
         debugPrint('📸 Captured: $filename (${image.width}x${image.height})');
       });
     }

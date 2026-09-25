@@ -58,7 +58,11 @@ class RealAudioPlayerBackend implements AudioPlayerBackend {
 
   @override
   Future<void> seek(Duration position) async {
-    await _player.seek(position);
+    try {
+      await _player.seek(position);
+    } catch (e) {
+      debugPrint('[RealAudioPlayerBackend] seek exception handled: $e');
+    }
   }
 
   @override

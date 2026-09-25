@@ -141,8 +141,8 @@ class MellowPresetSourceDriver implements LxSourceDriver {
       : metadata = customMetadata ??
             const LxSourceMetadata(
               id: LxPlatformId.mellow,
-              name: '润音官方高保真源',
-              description: 'Mellow Music 官方标杆无损音源，支持全频段 Hi-Res 24bit 母带音质',
+              name: '润音内置基准源',
+              description: 'Mellow Music 内置高保真试音与基础兜底音源驱动',
               version: '2.0.0',
               author: 'Mellow Music Team',
               isBuiltIn: true,

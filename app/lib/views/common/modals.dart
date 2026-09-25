@@ -179,7 +179,7 @@ class EqualizerModal extends StatelessWidget {
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 640),
+        constraints: const BoxConstraints(maxWidth: 720),
         child: SoftCard(
           padding: const EdgeInsets.all(22),
           borderRadius: MellowRadii.borderR24,
@@ -217,7 +217,7 @@ class EqualizerModal extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 Text(
-                                  '多频段声音动态补偿与声学校准',
+                                  '多频段声音动态补偿与偏好调节 · 高级 DSP 音频滤镜扩展中',
                                   style: TextStyle(fontSize: 12, color: theme.textMuted),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -237,9 +237,10 @@ class EqualizerModal extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
 
-                // 预设选择胶囊
+                // 预设选择胶囊 (在宽屏下完整平铺展开，窄屏下支持平滑水平滚动)
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
                   child: Row(
                     children: EqualizerPreset.values.map((preset) {
                       final isSelected = eq.currentPreset == preset;
@@ -497,273 +498,13 @@ class SleepTimerModal extends StatelessWidget {
   }
 }
 
-/// 4. 全局快捷联想搜索浮层 (Quick Search Modal - Ctrl+K)
-class QuickSearchOverlay extends StatefulWidget {
+/// 4. 快捷搜索浮层 (已由整页搜索 DesktopSearchView 统一承载)
+@Deprecated('Use DesktopSearchView instead')
+class QuickSearchOverlay extends StatelessWidget {
   const QuickSearchOverlay({super.key});
 
   @override
-  State<QuickSearchOverlay> createState() => _QuickSearchOverlayState();
-}
-
-class _QuickSearchOverlayState extends State<QuickSearchOverlay> {
-  final TextEditingController _controller = TextEditingController();
-  List<Track> _results = [];
-  bool _isLoading = false;
-  Timer? _debounce;
-
-  final List<String> _hotTags = ['周杰伦', '告五人', '落日飞车', '陈奕迅', '轻音乐', '粤语经典'];
-
-  @override
-  void initState() {
-    super.initState();
-    _results = mockPresetTracks;
-  }
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _onSearch(String query) {
-    _debounce?.cancel();
-    final clean = query.trim();
-
-    // 先执行本地即时匹配
-    if (clean.isEmpty) {
-      setState(() {
-        _results = mockPresetTracks;
-        _isLoading = false;
-      });
-      return;
-    }
-
-    final localMatches = mockPresetTracks
-        .where((t) =>
-            t.title.toLowerCase().contains(clean.toLowerCase()) ||
-            t.artist.toLowerCase().contains(clean.toLowerCase()) ||
-            t.album.toLowerCase().contains(clean.toLowerCase()))
-        .toList();
-
-    setState(() {
-      _results = localMatches;
-      _isLoading = true;
-    });
-
-    // 防抖 350ms 发起全网在线歌曲实时搜索
-    _debounce = Timer(const Duration(milliseconds: 350), () async {
-      final onlineSongs = await OnlineMusicService.searchOnlineTracks(clean);
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        if (onlineSongs.isNotEmpty) {
-          // 合并结果，排重
-          final combined = List<Track>.from(localMatches);
-          final existingIds = combined.map((e) => e.id).toSet();
-          for (final song in onlineSongs) {
-            if (!existingIds.contains(song.id)) {
-              combined.add(song);
-            }
-          }
-          _results = combined;
-        }
-      });
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = context.watch<ThemeProvider>();
-    final player = context.watch<AudioPlayerService>();
-
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      alignment: Alignment.topCenter,
-      insetPadding: const EdgeInsets.only(top: 80, left: 20, right: 20),
-      child: SoftCard(
-        width: 620,
-        padding: const EdgeInsets.all(22),
-        borderRadius: MellowRadii.borderR24,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            RecessedWell(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              borderRadius: MellowRadii.borderR20,
-              child: Row(
-                children: [
-                  Icon(Icons.search_rounded, color: theme.accentColor, size: 22),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      autofocus: true,
-                      onChanged: _onSearch,
-                      style: TextStyle(color: theme.textPrimary, fontSize: 15),
-                      decoration: InputDecoration(
-                        hintText: '搜索全网歌曲、歌手、专辑 (按 ESC 退出)...',
-                        hintStyle: TextStyle(color: theme.textMuted, fontSize: 14),
-                        border: InputBorder.none,
-                      ),
-                    ),
-                  ),
-                  if (_isLoading)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: theme.accentColor,
-                        ),
-                      ),
-                    ),
-                  if (_controller.text.isNotEmpty)
-                    IconButton(
-                      icon: const Icon(Icons.clear_rounded, size: 18),
-                      color: theme.textMuted,
-                      onPressed: () {
-                        _controller.clear();
-                        _onSearch('');
-                      },
-                    ),
-                  IconButton(
-                    key: const Key('quick_search_close_button'),
-                    icon: const Icon(Icons.close_rounded, size: 20),
-                    color: theme.textMuted,
-                    tooltip: '关闭',
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // 热搜标签
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: _hotTags.map((tag) {
-                return GestureDetector(
-                  onTap: () {
-                    _controller.text = tag;
-                    _onSearch(tag);
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: theme.accentColor.withValues(alpha: 0.1),
-                      borderRadius: MellowRadii.borderPill,
-                    ),
-                    child: Text(
-                      tag,
-                      style: TextStyle(fontSize: 12, color: theme.accentColor, fontWeight: FontWeight.w500),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 14),
-
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 380),
-              child: _results.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Center(
-                        child: Text(
-                          _isLoading ? '正在全网检索高品质音源...' : '无匹配结果，支持任意关键词搜索全网',
-                          style: TextStyle(color: theme.textMuted),
-                        ),
-                      ),
-                    )
-                  : ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: _results.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 6),
-                      itemBuilder: (context, index) {
-                        final track = _results[index];
-                        final isOnline = track.source.startsWith('netease');
-
-                        return SoftCard(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          borderRadius: MellowRadii.borderR16,
-                          onTap: () {
-                            player.playTrack(track);
-                            Navigator.of(context).pop();
-                          },
-                          child: Row(
-                            children: [
-                              MellowImage(
-                                url: track.coverUrl,
-                                width: 42,
-                                height: 42,
-                                borderRadius: MellowRadii.borderR8,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Flexible(
-                                          child: Text(
-                                            track.title,
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                              color: theme.textPrimary,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        if (isOnline) ...[
-                                          const SizedBox(width: 6),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                            decoration: BoxDecoration(
-                                              color: theme.accentColor.withValues(alpha: 0.15),
-                                              borderRadius: BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              '在线音源',
-                                              style: TextStyle(
-                                                fontSize: 9.5,
-                                                color: theme.accentColor,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '${track.artist} · ${track.album}',
-                                      style: TextStyle(fontSize: 12, color: theme.textSecondary),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Icon(Icons.play_circle_fill_rounded, size: 28, color: theme.accentColor),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
 /// 5. 导入外部歌单弹窗 (Import Playlist Modal - AlgerMusicPlayer 杀手级能力)

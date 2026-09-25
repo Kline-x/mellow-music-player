@@ -48,6 +48,7 @@ class StorageService {
   static const _keyLocalTracks = 'mellow_audio_local_tracks';
   static const _keyLocalDirectories = 'mellow_audio_local_directories';
   static const _keyMinimizeToTray = 'mellow_minimize_to_tray';
+  static const _keyFollowedArtists = 'mellow_followed_artists';
   static const _keyEqualizerGains = 'mellow_equalizer_gains';
   static const _keyEqualizerPreset = 'mellow_equalizer_preset';
   static const _keyEqualizerEnabled = 'mellow_equalizer_enabled';
@@ -319,6 +320,30 @@ class StorageService {
       localPath: map['localPath'] as String?,
       lyrics: lyricsList,
     );
+  }
+
+  // --- 关注歌手持久化 ---
+
+  Set<String> getFollowedArtists() {
+    final list = _prefs?.getStringList(_keyFollowedArtists);
+    return list != null ? Set<String>.from(list) : <String>{};
+  }
+
+  Future<bool> saveFollowedArtists(Set<String> artists) async {
+    return (await _prefs?.setStringList(_keyFollowedArtists, artists.toList())) ?? false;
+  }
+
+  bool isArtistFollowed(String name) => getFollowedArtists().contains(name.trim());
+
+  Future<bool> toggleArtistFollow(String name) async {
+    final set = getFollowedArtists();
+    final trimmed = name.trim();
+    if (set.contains(trimmed)) {
+      set.remove(trimmed);
+    } else {
+      set.add(trimmed);
+    }
+    return await saveFollowedArtists(set);
   }
 }
 

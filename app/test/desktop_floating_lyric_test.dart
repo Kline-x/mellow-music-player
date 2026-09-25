@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -267,7 +268,7 @@ void main() {
 
       // 验证标题与徽章
       expect(find.text('桌面悬浮歌词与置顶穿透'), findsOneWidget);
-      expect(find.text('Win32 原生置顶 / 穿透'), findsOneWidget);
+      expect(find.text(Platform.isWindows ? 'Win32 原生置顶 / 穿透' : '桌面动效视窗'), findsOneWidget);
       expect(find.text('开启桌面悬浮动效歌词'), findsOneWidget);
       expect(find.text('主窗口始终置顶 (Always on Top)'), findsOneWidget);
       expect(find.text('锁定歌词与鼠标点击穿透 (Click-Through)'), findsOneWidget);

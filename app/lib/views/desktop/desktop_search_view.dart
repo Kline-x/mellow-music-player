@@ -30,6 +30,7 @@ class DesktopSearchView extends StatefulWidget {
 class _DesktopSearchViewState extends State<DesktopSearchView> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
 
   String _currentQuery = '';
   bool _isLoading = false;
@@ -61,6 +62,7 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
   void initState() {
     super.initState();
     _loadHistory();
+    _scrollController.addListener(_onScroll);
     if (widget.initialQuery != null && widget.initialQuery!.trim().isNotEmpty) {
       _searchController.text = widget.initialQuery!.trim();
       _executeSearch(widget.initialQuery!.trim());
@@ -72,8 +74,19 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
     });
   }
 
+  void _onScroll() {
+    if (_scrollController.hasClients &&
+        _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 280) {
+      if (!_isLoadingMoreSongs && _hasMoreSongs && _activeCategory == 'songs' && !_isLoading) {
+        _loadMoreSongs();
+      }
+    }
+  }
+
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _searchController.dispose();
     _focusNode.dispose();
     super.dispose();
@@ -188,8 +201,13 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
     final player = context.watch<AudioPlayerService>();
     final isDark = theme.isDarkMode;
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 100),
+    return Scrollbar(
+      controller: _scrollController,
+      thumbVisibility: false,
+      child: ListView(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(32, 24, 32, 128),
       children: [
         // 1. 顶部大标题与副标题
         Row(
@@ -297,6 +315,7 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
         else
           _buildPreSearchView(theme),
       ],
+      ),
     );
   }
 

@@ -137,12 +137,6 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
 
-    if (_isFullscreenLyrics) {
-      return DesktopFullscreenLyricsView(
-        onClose: () => setState(() => _isFullscreenLyrics = false),
-      );
-    }
-
     final shortcuts = <ShortcutActivator, VoidCallback>{
       // 1. 空格播放 / 暂停
       const SingleActivator(LogicalKeyboardKey.space): () => player.togglePlay(),
@@ -196,8 +190,6 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
       const SingleActivator(LogicalKeyboardKey.keyD, meta: true): _toggleFloatingLyric,
     };
 
-    // ignore: avoid_print
-    print('>>> [STEP 9] DesktopScaffold build executed, theme: isDark=${theme.isDarkMode}, canvasColor=${theme.canvasColor}');
     return CallbackShortcuts(
       bindings: shortcuts,
       child: Focus(
@@ -299,6 +291,14 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
               if (_isFloatingLyricEnabled)
                 DesktopFloatingLyricBar(
                   onClose: _toggleFloatingLyric,
+                ),
+
+              // 6. 巨幕沉浸动效大屏歌词覆盖层
+              if (_isFullscreenLyrics)
+                Positioned.fill(
+                  child: DesktopFullscreenLyricsView(
+                    onClose: () => setState(() => _isFullscreenLyrics = false),
+                  ),
                 ),
             ],
           ),
@@ -734,7 +734,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                                 ),
                                 const SizedBox(width: 4),
                                 GestureDetector(
-                                  onTap: () => player.toggleFavorite(track.id),
+                                  onTap: () => player.toggleFavorite(track.id, track),
                                   child: Icon(
                                     player.isFavorite(track.id)
                                         ? Icons.favorite_rounded
