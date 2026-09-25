@@ -366,13 +366,25 @@ class OnlineMusicService {
       }
     } catch (_) {}
 
-    // 3. iTunes 官方高可用试听流兜底（确保列表必定有声）
+    // 3. 六音无损源 / 落雪聚合驱动真实取流兜底 (替代原 30 秒截断试听)
     try {
-      final itunesList = await itunesService.search('$cleanTitle $firstArtist', limit: 2);
-      if (itunesList.isNotEmpty && itunesList.first.audioUrl != null) {
-        final iUrl = itunesList.first.audioUrl!;
-        _urlCache[cacheKey] = iUrl;
-        return iUrl;
+      final lxDriver = LxSourceEngine.instance.getDriver('lx_sixyin') ??
+          LxSourceEngine.instance.getDriver('lx_official_builtin') ??
+          LxSourceEngine.instance.activeDriver;
+      final lxSong = LxSongInfo(
+        id: trackId ?? 'fallback_${cleanTitle.hashCode}',
+        songMid: trackId?.replaceAll('netease_', '').replaceAll('kuwo_', '') ?? '${cleanTitle.hashCode}',
+        title: cleanTitle,
+        artist: cleanArtist,
+        album: '',
+        source: lxDriver.metadata.id,
+        duration: Duration.zero,
+      );
+      final lxUrl = await lxDriver.getMusicUrl(lxSong, LxSourceEngine.instance.preferredQuality);
+      if (lxUrl != null && lxUrl.isNotEmpty && lxUrl.startsWith('http')) {
+        final directUrl = await unwrapRedirects(lxUrl);
+        _urlCache[cacheKey] = directUrl;
+        return directUrl;
       }
     } catch (_) {}
 
@@ -544,7 +556,8 @@ class OnlineMusicService {
           return itunesList.first.audioUrl!;
         }
       } catch (_) {}
-    } else if (targetSource.contains('lx') ||
+    } else if (targetSource.contains('sixyin') ||
+        targetSource.contains('lx') ||
         targetSource.contains('custom') ||
         targetSource.contains('alger') ||
         targetSource.contains('official')) {

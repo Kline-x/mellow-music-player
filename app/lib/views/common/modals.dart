@@ -2729,9 +2729,19 @@ class _SourceSwitcherModalState extends State<SourceSwitcherModal> {
     final isDark = theme.isDarkMode;
     final currentSource = widget.track.source;
 
-    final customScripts = LxSourceEngine.instance.sources.where((s) => !s.isBuiltIn).toList();
+    final customScripts = LxSourceEngine.instance.sources
+        .where((s) => !s.isBuiltIn && s.id != 'lx_sixyin' && s.id != 'lx_default_aggregate')
+        .toList();
 
     final sources = [
+      {
+        'id': 'lx_sixyin',
+        'name': '六音无损 · 聚合解析源',
+        'badge': '落雪社区标杆 · VIP无损',
+        'desc': '落雪社区经典六音高保真解析源，支持全网五大主流平台 VIP 与无损物理音频直链解析',
+        'icon': Icons.bolt_rounded,
+        'color': const Color(0xFFEC4899),
+      },
       {
         'id': 'lx_official_builtin',
         'name': '落雪官方 · 多平台聚合直连源',
@@ -2787,14 +2797,6 @@ class _SourceSwitcherModalState extends State<SourceSwitcherModal> {
         'desc': '润音原生母带高保真音轨，零依赖永不失效，纯净声学享受',
         'icon': Icons.spa_rounded,
         'color': const Color(0xFF8B5CF6),
-      },
-      {
-        'id': 'itunes-preview',
-        'name': 'iTunes · 官方保底源',
-        'badge': '全球高可用',
-        'desc': '苹果官方 CDN 高可用试听流，网络受限时稳定兜底播放',
-        'icon': Icons.apple_rounded,
-        'color': const Color(0xFF6366F1),
       },
       ...customScripts.map((cs) => {
         'id': 'lx-${cs.id}',

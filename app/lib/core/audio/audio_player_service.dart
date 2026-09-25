@@ -658,6 +658,7 @@ class AudioPlayerService extends ChangeNotifier {
   }
 
   static String formatSourceDisplayName(String source) {
+    if (source.contains('sixyin')) return '六音无损源';
     if (source.contains('lx_official') || source == 'lx_official_builtin') return '落雪官方源';
     if (source.contains('alger')) return 'Alger官方源';
     if (source.contains('kuwo') || source == 'kw') return '酷我高保真';

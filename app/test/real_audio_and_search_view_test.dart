@@ -194,9 +194,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('主动切换播放音源'), findsOneWidget);
+      expect(find.text('六音无损 · 聚合解析源'), findsOneWidget);
+      expect(find.text('落雪官方 · 多平台聚合直连源'), findsOneWidget);
       expect(find.text('酷我音乐 · 高保真源'), findsOneWidget);
       expect(find.text('网易云音乐 · 在线源'), findsOneWidget);
-      expect(find.text('iTunes · 官方保底源'), findsOneWidget);
     });
 
     testWidgets('DesktopSearchView 分类 Tab 点击能够平滑切换当前选中态', (tester) async {

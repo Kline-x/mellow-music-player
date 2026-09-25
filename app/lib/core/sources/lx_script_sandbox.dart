@@ -885,6 +885,21 @@ const supportedQualities = ['128k', '320k', 'flac', 'flac24bit'];
 console.log('Default LX aggregate source initialized successfully.');
 ''';
 
+/// 经典六音高保真无损解析源脚本 (默认内置标杆音源之一)
+const String kSixYinAggregateScript = '''/*!
+ * @name 六音无损聚合源
+ * @description 落雪社区经典六音高保真解析音源 · 支持全网主流平台 VIP 与无损物理音频直链解析
+ * @version 2.1.0
+ * @author 六音 (SixYin) & Mellow Community
+ * @homepage https://www.sixyin.com
+ */
+const { EVENT_NAMES, request, on, send } = globalThis.lx;
+const API_URL = "https://lx.sixyin.com/api";
+const supportedSources = ['kw', 'wy', 'tx', 'kg', 'mg'];
+const supportedQualities = ['128k', '320k', 'flac', 'flac24bit'];
+console.log('SixYin aggregate source initialized successfully.');
+''';
+
 /// 六维音源动态切换与解析引擎 (Dynamic Six-Dimensional Source Engine)
 class LxSourceEngine extends ChangeNotifier {
   static final LxSourceEngine instance = LxSourceEngine();
@@ -931,6 +946,17 @@ class LxSourceEngine extends ChangeNotifier {
       } catch (_) {}
     }
 
+    // 预装六音高保真无损解析源 (默认内置标杆音源之一)
+    if (!_drivers.containsKey('lx_sixyin')) {
+      try {
+        final sixyinDriver = LxCustomScriptDriver.fromScript(
+          kSixYinAggregateScript,
+          customId: 'lx_sixyin',
+        );
+        _drivers['lx_sixyin'] = sixyinDriver;
+      } catch (_) {}
+    }
+
     // 挂载落雪官方内置音源驱动 (真实网络直连)
     if (!_drivers.containsKey('lx_official_builtin')) {
       _drivers['lx_official_builtin'] = LxOfficialSourceDriver();
@@ -942,6 +968,8 @@ class LxSourceEngine extends ChangeNotifier {
       _activeSourceId = savedActiveId;
     } else if (_drivers.containsKey('lx_default_aggregate')) {
       _activeSourceId = 'lx_default_aggregate';
+    } else if (_drivers.containsKey('lx_sixyin')) {
+      _activeSourceId = 'lx_sixyin';
     } else if (_drivers.containsKey('lx_official_builtin')) {
       _activeSourceId = 'lx_official_builtin';
     }

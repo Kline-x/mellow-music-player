@@ -304,10 +304,20 @@ void main() {
       engine.unregisterDriver(meta.id);
       expect(engine.activeSourceId, equals(LxPlatformId.mellow));
     });
+
+    test('预装六音高保真无损解析源 (kSixYinAggregateScript)', () {
+      final engine = LxSourceEngine.instance;
+      final sixyin = LxCustomScriptDriver.fromScript(kSixYinAggregateScript, customId: 'lx_sixyin');
+      engine.registerDriver(sixyin);
+      expect(engine.drivers.containsKey('lx_sixyin'), isTrue);
+      expect(engine.drivers['lx_sixyin']!.metadata.name, equals('六音无损聚合源'));
+      expect(engine.drivers['lx_sixyin']!.metadata.author, contains('六音'));
+    });
   });
 
   group('4. AudioPlayerService 音源名称格式化测试', () {
-    test('formatSourceDisplayName 准确映射落雪官方源与 Alger 官方源', () {
+    test('formatSourceDisplayName 准确映射落雪官方源、六音无损源与 Alger 官方源', () {
+      expect(AudioPlayerService.formatSourceDisplayName('lx_sixyin'), equals('六音无损源'));
       expect(AudioPlayerService.formatSourceDisplayName('lx_official_builtin'), equals('落雪官方源'));
       expect(AudioPlayerService.formatSourceDisplayName('lx_official'), equals('落雪官方源'));
       expect(AudioPlayerService.formatSourceDisplayName('alger_custom'), equals('Alger官方源'));
