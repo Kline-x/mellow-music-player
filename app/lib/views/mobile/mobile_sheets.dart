@@ -178,6 +178,39 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
                             Text(track.title, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: theme.textPrimary)),
                             const SizedBox(height: 4),
                             Text(track.artist, style: TextStyle(fontSize: 14, color: theme.textSecondary)),
+                            const SizedBox(height: 10),
+                            GestureDetector(
+                              onTap: () => showDialog(
+                                context: context,
+                                builder: (_) => SourceSwitcherModal(track: track),
+                              ),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
+                                decoration: BoxDecoration(
+                                  color: theme.accentColor.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: theme.accentColor.withValues(alpha: 0.3),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.swap_calls_rounded, size: 13, color: theme.accentColor),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${AudioPlayerService.formatSourceDisplayName(track.source)} · 点击换源',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: theme.accentColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
