@@ -88,6 +88,7 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _searchController.dispose();
+    _focusNode.unfocus();
     _focusNode.dispose();
     super.dispose();
   }

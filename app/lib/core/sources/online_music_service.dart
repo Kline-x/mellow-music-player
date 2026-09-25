@@ -366,8 +366,8 @@ class OnlineMusicService {
       }
     } catch (_) {}
 
-    // 3. 落雪社区优质源 (六音 / Huibq / ikun / 官方直连) 驱动真实取流兜底 (替代原 30 秒截断试听)
-    final fallbackDriverIds = ['lx_sixyin', 'lx_huibq', 'lx_ikun', 'lx_official_builtin'];
+    // 3. 落雪社区顶级源 (六音 / Huibq / ikun) 驱动真实物理取流兜底 (替代原 30 秒截断试听)
+    final fallbackDriverIds = ['lx_sixyin', 'lx_huibq', 'lx_ikun'];
     for (final driverId in fallbackDriverIds) {
       try {
         final lxDriver = LxSourceEngine.instance.getDriver(driverId);
@@ -456,12 +456,14 @@ class OnlineMusicService {
           source: LxPlatformId.tx,
           duration: Duration.zero,
         );
-        final res = await LxSourceEngine.instance.resolveMusicUrlWithFallback(
+        final engine = LxSourceEngine.instance;
+        final targetDriverId = engine.drivers.containsKey('lx_sixyin') ? 'lx_sixyin' : LxPlatformId.tx;
+        final res = await engine.resolveMusicUrlWithFallback(
           lxSong,
-          sourceId: LxPlatformId.tx,
-          enableSourceFallback: false,
+          sourceId: targetDriverId,
+          enableSourceFallback: true,
         );
-        if (res.url.isNotEmpty) {
+        if (res.url.isNotEmpty && !res.url.contains('music.net') && !res.url.contains('custom-cdn')) {
           return await unwrapRedirects(res.url);
         }
       } catch (_) {}
@@ -502,12 +504,14 @@ class OnlineMusicService {
           source: LxPlatformId.kg,
           duration: Duration.zero,
         );
-        final res = await LxSourceEngine.instance.resolveMusicUrlWithFallback(
+        final engine = LxSourceEngine.instance;
+        final targetDriverId = engine.drivers.containsKey('lx_sixyin') ? 'lx_sixyin' : LxPlatformId.kg;
+        final res = await engine.resolveMusicUrlWithFallback(
           lxSong,
-          sourceId: LxPlatformId.kg,
-          enableSourceFallback: false,
+          sourceId: targetDriverId,
+          enableSourceFallback: true,
         );
-        if (res.url.isNotEmpty) {
+        if (res.url.isNotEmpty && !res.url.contains('music.net') && !res.url.contains('custom-cdn')) {
           return await unwrapRedirects(res.url);
         }
       } catch (_) {}
@@ -522,12 +526,14 @@ class OnlineMusicService {
           source: LxPlatformId.mg,
           duration: Duration.zero,
         );
-        final res = await LxSourceEngine.instance.resolveMusicUrlWithFallback(
+        final engine = LxSourceEngine.instance;
+        final targetDriverId = engine.drivers.containsKey('lx_sixyin') ? 'lx_sixyin' : LxPlatformId.mg;
+        final res = await engine.resolveMusicUrlWithFallback(
           lxSong,
-          sourceId: LxPlatformId.mg,
-          enableSourceFallback: false,
+          sourceId: targetDriverId,
+          enableSourceFallback: true,
         );
-        if (res.url.isNotEmpty) {
+        if (res.url.isNotEmpty && !res.url.contains('music.net') && !res.url.contains('custom-cdn')) {
           return await unwrapRedirects(res.url);
         }
       } catch (_) {}
@@ -545,9 +551,9 @@ class OnlineMusicService {
         final res = await LxSourceEngine.instance.resolveMusicUrlWithFallback(
           lxSong,
           sourceId: LxPlatformId.mellow,
-          enableSourceFallback: false,
+          enableSourceFallback: true,
         );
-        if (res.url.isNotEmpty) {
+        if (res.url.isNotEmpty && !res.url.contains('music.net') && !res.url.contains('custom-cdn')) {
           return await unwrapRedirects(res.url);
         }
       } catch (_) {}
@@ -577,9 +583,9 @@ class OnlineMusicService {
         final res = await LxSourceEngine.instance.resolveMusicUrlWithFallback(
           lxSong,
           sourceId: scriptId,
-          enableSourceFallback: false,
+          enableSourceFallback: true,
         );
-        if (res.url.isNotEmpty) {
+        if (res.url.isNotEmpty && !res.url.contains('music.net') && !res.url.contains('custom-cdn')) {
           return await unwrapRedirects(res.url);
         }
       } catch (_) {}

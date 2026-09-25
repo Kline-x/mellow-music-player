@@ -6,6 +6,7 @@ import 'player_backend.dart';
 import 'windows_smtc_service.dart';
 import 'windows_tray_service.dart';
 import 'local_music_service.dart';
+import 'equalizer_manager.dart';
 import '../sources/online_music_service.dart';
 import '../sources/lx_script_sandbox.dart';
 import '../sources/lx_source_model.dart';
@@ -31,7 +32,7 @@ class AudioPlayerService extends ChangeNotifier {
 
   final List<Track> _playlist = List.from(mockPresetTracks);
   final List<Track> _playHistory = [];
-  final Set<String> _favoriteIds = {'track-1', 'track-3', 'track-5', 'track-6'};
+  final Set<String> _favoriteIds = {};
   final Map<String, Track> _cachedFavoriteTracks = {};
   final List<ImportedPlaylist> _importedPlaylists = [];
 
@@ -158,8 +159,21 @@ class AudioPlayerService extends ChangeNotifier {
       : _backend = backend ?? AudioPlayerBackendFactory.create() {
     _loadFromStorage();
     _initAudioListeners();
+    _initEqualizerListener();
     _initSmtc();
     WindowsTrayService.instance.init();
+  }
+
+  void _initEqualizerListener() {
+    EqualizerManager.instance.addListener(_onEqualizerChanged);
+  }
+
+  void _onEqualizerChanged() {
+    final eq = EqualizerManager.instance;
+    final filterStr = eq.toLibmpvFilterString();
+    if (kDebugMode && filterStr.isNotEmpty) {
+      debugPrint('[AudioPlayerService] 声学 DSP 10 频段 EQ 滤镜参数更新: $filterStr');
+    }
   }
 
   void _initSmtc() {
@@ -868,6 +882,7 @@ class AudioPlayerService extends ChangeNotifier {
     _sleepTimer?.cancel();
     _playbackNoticeTimer?.cancel();
     _autoSkipTimer?.cancel();
+    EqualizerManager.instance.removeListener(_onEqualizerChanged);
     _backend.dispose();
     WindowsSmtcService.instance.dispose();
     super.dispose();

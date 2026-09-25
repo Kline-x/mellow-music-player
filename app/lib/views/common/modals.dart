@@ -2763,14 +2763,6 @@ class _SourceSwitcherModalState extends State<SourceSwitcherModal> {
         'color': const Color(0xFF06B6D4),
       },
       {
-        'id': 'lx_official_builtin',
-        'name': '落雪官方 · 多平台聚合直连源',
-        'badge': '落雪官方直连',
-        'desc': '内置落雪标准网易云/酷我多平台真实物理音频引擎，支持多规格音质阶梯平滑降级',
-        'icon': Icons.auto_awesome_rounded,
-        'color': const Color(0xFF8B5CF6),
-      },
-      {
         'id': 'kuwo-sq',
         'name': '酷我音乐 · 高保真源',
         'badge': '推荐 · SQ无损',

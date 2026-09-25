@@ -197,7 +197,7 @@ void main() {
       expect(find.text('六音无损 · 聚合解析源'), findsOneWidget);
       expect(find.text('Huibq · 全能无损源'), findsOneWidget);
       expect(find.text('ikun · 高并发加速源'), findsOneWidget);
-      expect(find.text('落雪官方 · 多平台聚合直连源'), findsOneWidget);
+      expect(find.text('落雪官方 · 多平台聚合直连源'), findsNothing);
       expect(find.text('酷我音乐 · 高保真源'), findsOneWidget);
       expect(find.text('网易云音乐 · 在线源'), findsOneWidget);
     });

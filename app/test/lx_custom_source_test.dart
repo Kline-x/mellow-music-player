@@ -280,7 +280,7 @@ proc.exec('calc.exe');
 
       // 验证官方六维音源卡片与方案 A 默认落雪聚合音源卡片渲染
       expect(find.textContaining('官方预设与多平台音源'), findsOneWidget);
-      expect(find.text('润音内置基准源'), findsOneWidget);
+      expect(find.text('润音内置基准源'), findsNothing);
       expect(find.text('酷我音乐'), findsOneWidget);
       expect(find.text('QQ音乐'), findsOneWidget);
       expect(find.text('网易云音乐'), findsOneWidget);

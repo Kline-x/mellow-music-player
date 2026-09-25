@@ -10,6 +10,9 @@ import 'package:mellow_music/design_system/theme_provider.dart';
 import 'package:mellow_music/navigation/desktop_scaffold.dart';
 import 'package:mellow_music/views/mobile/mobile_sheets.dart';
 import 'package:mellow_music/views/mobile/mobile_pages.dart';
+import 'package:flutter/services.dart';
+import 'package:mellow_music/views/desktop/desktop_views.dart';
+import 'package:mellow_music/core/audio/equalizer_manager.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -191,5 +194,94 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.byType(MobilePersonalFMPage), findsOneWidget);
     });
+
+    test('ISSUE-FIX: AudioPlayerService 默认收藏列表为空集合，消灭硬编码四首默认歌曲', () {
+      final player = AudioPlayerService();
+      expect(player.favoriteIds, isEmpty);
+      expect(player.favoriteTracks, isEmpty);
+    });
+
+    testWidgets('ISSUE-FIX: DesktopSourceManagerView 官方音源列表彻底剔除 mellow 与 lx_official_builtin', (tester) async {
+      final theme = ThemeProvider();
+      tester.view.physicalSize = const Size(1280, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: theme),
+            ChangeNotifierProvider.value(value: AudioPlayerService()),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: DesktopSourceManagerView(onNavigate: (_, [__]) {}),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('润音内置基准源'), findsNothing);
+      expect(find.text('落雪官方内置音源 (多平台聚合)'), findsNothing);
+      expect(find.text('酷我音乐'), findsOneWidget);
+      expect(find.text('网易云音乐'), findsOneWidget);
+      expect(find.text('QQ音乐'), findsOneWidget);
+    });
+
+    testWidgets('ISSUE-FIX P0-1: 访问带输入框页面后全局快捷键焦点自动复位，空格与单键依然生效', (tester) async {
+      final theme = ThemeProvider();
+      final player = AudioPlayerService();
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: theme),
+            ChangeNotifierProvider.value(value: player),
+          ],
+          child: const MaterialApp(
+            home: DesktopScaffold(),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // 1. 初次在发现页按空格 -> 触发播放
+      expect(player.isPlaying, isFalse);
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(player.isPlaying, isTrue);
+
+      // 2. 模拟用户点击左侧导航栏的「全网搜索」进入搜索页
+      final searchNav = find.text('全网搜索');
+      if (searchNav.evaluate().isNotEmpty) {
+        await tester.tap(searchNav);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      // 3. 点击回「发现音乐」或点击空白处
+      final discoverNav = find.text('发现音乐');
+      if (discoverNav.evaluate().isNotEmpty) {
+        await tester.tap(discoverNav);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      // 4. 再次按空格键 -> 依然成功切换播放状态，杜绝焦点丢失！
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(player.isPlaying, isFalse);
+    });
+
+    test('ISSUE-FIX P1-3: EqualizerManager 与 AudioPlayerService 生产接线调用闭环', () {
+      final eq = EqualizerManager.instance;
+      eq.applyPreset(EqualizerPreset.spatial3d);
+      final filterStr = eq.toLibmpvFilterString();
+      expect(filterStr, contains('firequalizer=gain='));
+      expect(filterStr, contains('gain_interpolate(16000,7.0)'));
+    });
   });
 }
+

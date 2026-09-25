@@ -36,7 +36,7 @@ class _DesktopFloatingLyricBarState extends State<DesktopFloatingLyricBar> {
     super.initState();
     _isLocked = _lyricService.isLocked || (StorageService.instance.getFloatingLyricLocked() ?? false);
     _isLargeFont = _lyricService.fontSizeLevel != 'normal';
-    _position = widget.initialPosition ?? _lyricService.position ?? const Offset(280, 520);
+    _position = widget.initialPosition ?? _lyricService.position ?? const Offset(360, 60);
   }
 
   void _toggleLock() {
@@ -106,10 +106,23 @@ class _DesktopFloatingLyricBarState extends State<DesktopFloatingLyricBar> {
             Positioned(
               left: clampedX,
               top: clampedY,
-              child: MouseRegion(
-                onEnter: (_) => setState(() => _isHovered = true),
-                onExit: (_) => setState(() => _isHovered = false),
-                child: ClipRRect(
+              child: GestureDetector(
+                onPanUpdate: (details) {
+                  if (!_isLocked) {
+                    setState(() {
+                      _position += details.delta;
+                    });
+                  }
+                },
+                onPanEnd: (_) {
+                  if (!_isLocked) {
+                    _lyricService.savePosition(_position);
+                  }
+                },
+                child: MouseRegion(
+                  onEnter: (_) => setState(() => _isHovered = true),
+                  onExit: (_) => setState(() => _isHovered = false),
+                  child: ClipRRect(
                   borderRadius: BorderRadius.circular(18),
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
@@ -212,6 +225,7 @@ class _DesktopFloatingLyricBarState extends State<DesktopFloatingLyricBar> {
                     ),
                   ),
                 ),
+              ),
               ),
             ),
           ],

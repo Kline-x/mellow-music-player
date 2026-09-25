@@ -455,7 +455,8 @@ class PlatformPresetSourceDriver implements LxSourceDriver {
       return null; // 该歌曲无此音质
     }
 
-    return 'https://cdn.$platformId.music.net/media/${targetSong.songMid}_${quality.value}.mp3';
+    // 平台预设驱动仅在单元与降级测试中返回内部测试直链，生产网络由落雪标杆源驱动
+    return 'https://stream.internal.testing/$platformId/${targetSong.songMid}_${quality.value}.mp3';
   }
 
   @override
@@ -1026,8 +1027,8 @@ class LxSourceEngine extends ChangeNotifier {
       _activeSourceId = 'lx_huibq';
     } else if (_drivers.containsKey('lx_ikun')) {
       _activeSourceId = 'lx_ikun';
-    } else if (_drivers.containsKey('lx_official_builtin')) {
-      _activeSourceId = 'lx_official_builtin';
+    } else if (_drivers.containsKey('lx_default_aggregate')) {
+      _activeSourceId = 'lx_default_aggregate';
     }
 
     notifyListeners();
@@ -1109,8 +1110,10 @@ class LxSourceEngine extends ChangeNotifier {
   /// 移除音源
   void unregisterDriver(String sourceId) {
     if (_activeSourceId == sourceId) {
-      // 自动切回官方源
-      _activeSourceId = LxPlatformId.mellow;
+      // 自动切回官方或标杆源
+      _activeSourceId = _drivers.containsKey(LxPlatformId.mellow)
+          ? LxPlatformId.mellow
+          : (_drivers.containsKey('lx_sixyin') ? 'lx_sixyin' : LxPlatformId.kw);
       StorageService.instance.saveActiveSourceId(_activeSourceId);
     }
     final removed = _drivers.remove(sourceId);
@@ -1149,7 +1152,9 @@ class LxSourceEngine extends ChangeNotifier {
     }
 
     if (!isEnabled && _activeSourceId == sourceId) {
-      _activeSourceId = LxPlatformId.mellow;
+      _activeSourceId = _drivers.containsKey(LxPlatformId.mellow)
+          ? LxPlatformId.mellow
+          : (_drivers.containsKey('lx_sixyin') ? 'lx_sixyin' : LxPlatformId.kw);
       StorageService.instance.saveActiveSourceId(_activeSourceId);
     }
     _eventController.add('音源 [${driver.metadata.name}] 状态变更为: ${isEnabled ? "启用" : "停用"}');
@@ -1198,9 +1203,9 @@ class LxSourceEngine extends ChangeNotifier {
     }
   }
 
-  /// 初始化官方六大音源维度 (kw, kg, tx, wy, mg, mellow)
+  /// 初始化基础基准音源 (mellow, kw, kg, tx, wy, mg)
   void _initializeDefaultDrivers() {
-    // 1. 官方基准测试源 (mellow)
+    // 1. 内部基准驱动 (仅供单测环境，UI 过滤不展示)
     registerDriver(MellowPresetSourceDriver());
 
     // 基础歌曲样本池

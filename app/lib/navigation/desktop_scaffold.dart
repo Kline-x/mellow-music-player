@@ -17,6 +17,67 @@ import '../views/desktop/fullscreen_lyrics_view.dart';
 import '../views/desktop/desktop_floating_lyric_bar.dart';
 import '../views/common/modals.dart';
 
+class _CustomCallbackIntent extends Intent {
+  final VoidCallback callback;
+  const _CustomCallbackIntent(this.callback);
+}
+
+/// 具有文本输入感知能力的全局快捷键管理器
+/// 当焦点处于 EditableText / TextField 中时，放行空格与单键字符，避免阻断输入法与光标
+class ContextAwareShortcutManager extends ShortcutManager {
+  ContextAwareShortcutManager({super.shortcuts});
+
+  @override
+  KeyEventResult handleKeypress(BuildContext context, KeyEvent event) {
+    final primaryFocus = FocusManager.instance.primaryFocus;
+    if (primaryFocus != null) {
+      final widget = primaryFocus.context?.widget;
+      final isEditable = widget is EditableText ||
+          primaryFocus.context?.findAncestorStateOfType<EditableTextState>() != null;
+      if (isEditable) {
+        // 处于文本输入时，仅放行带 Ctrl / Cmd 修饰键的全局组合键 (如 Ctrl+K, Cmd+D)，单键(空格/方向键/字母)一律放行给输入法
+        final hasModifier = HardwareKeyboard.instance.isControlPressed ||
+            HardwareKeyboard.instance.isMetaPressed;
+        if (!hasModifier) {
+          return KeyEventResult.ignored;
+        }
+      }
+    }
+    return super.handleKeypress(context, event);
+  }
+}
+
+class ContextAwareShortcuts extends StatelessWidget {
+  final Map<ShortcutActivator, VoidCallback> bindings;
+  final Widget child;
+
+  const ContextAwareShortcuts({
+    super.key,
+    required this.bindings,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Shortcuts.manager(
+      manager: ContextAwareShortcutManager(
+        shortcuts: <ShortcutActivator, Intent>{
+          for (final entry in bindings.entries)
+            entry.key: _CustomCallbackIntent(entry.value),
+        },
+      ),
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          _CustomCallbackIntent: CallbackAction<_CustomCallbackIntent>(
+            onInvoke: (_CustomCallbackIntent intent) => intent.callback(),
+          ),
+        },
+        child: child,
+      ),
+    );
+  }
+}
+
 /// 桌面端完整工作台脚手架 (DesktopScaffold)
 class DesktopScaffold extends StatefulWidget {
   const DesktopScaffold({super.key});
@@ -32,6 +93,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
   bool _isFullscreenLyrics = false;
   bool _isFloatingLyricEnabled = false;
   double? _dragPositionMs;
+  final FocusNode _rootFocusNode = FocusNode();
 
   @override
   void initState() {
@@ -56,6 +118,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
 
   @override
   void dispose() {
+    _rootFocusNode.dispose();
     DesktopFloatingLyricService.instance.removeListener(_onFloatingLyricChanged);
     HardwareKeyboard.instance.removeHandler(_handleGlobalHardwareKeyEvent);
     super.dispose();
@@ -108,6 +171,9 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
         _artistDetailParam = extra ?? '周杰伦';
       }
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _rootFocusNode.requestFocus();
+    });
   }
 
   void _goBack() {
@@ -117,6 +183,9 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
       setState(() {
         _activeView = item['view']!;
         _artistDetailParam = item['extra'];
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _rootFocusNode.requestFocus();
       });
     }
   }
@@ -128,6 +197,9 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
       setState(() {
         _activeView = item['view']!;
         _artistDetailParam = item['extra'];
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _rootFocusNode.requestFocus();
       });
     }
   }
@@ -190,11 +262,26 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
       const SingleActivator(LogicalKeyboardKey.keyD, meta: true): _toggleFloatingLyric,
     };
 
-    return CallbackShortcuts(
+    return ContextAwareShortcuts(
       bindings: shortcuts,
       child: Focus(
+        focusNode: _rootFocusNode,
         autofocus: true,
-        child: Scaffold(
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () {
+            final primaryFocus = FocusManager.instance.primaryFocus;
+            if (primaryFocus != null && primaryFocus != _rootFocusNode) {
+              final widget = primaryFocus.context?.widget;
+              final isEditable = widget is EditableText ||
+                  primaryFocus.context?.findAncestorStateOfType<EditableTextState>() != null;
+              if (isEditable) {
+                primaryFocus.unfocus();
+              }
+              _rootFocusNode.requestFocus();
+            }
+          },
+          child: Scaffold(
           backgroundColor: theme.canvasColor,
           body: Stack(
             children: [
@@ -302,6 +389,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                 ),
             ],
           ),
+        ),
         ),
       ),
     );

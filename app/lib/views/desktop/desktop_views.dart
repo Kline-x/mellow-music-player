@@ -3435,12 +3435,14 @@ class DesktopSourceManagerView extends StatelessWidget {
       listenable: LxSourceEngine.instance,
       builder: (context, _) {
         final engine = LxSourceEngine.instance;
-        final allSources = engine.sources;
+        final allSources = engine.sources.where((s) => s.id != 'mellow' && s.id != 'lx_official_builtin').toList();
         final builtinSources = allSources.where((s) => s.isBuiltIn).toList();
         final customSources = allSources.where((s) => !s.isBuiltIn).toList();
         final enabledCount = allSources.where((s) => s.isEnabled).length;
-        final activeDriver = engine.drivers[engine.activeSourceId];
-        final activeName = activeDriver?.metadata.name ?? engine.activeSourceId;
+        final effectiveDriver = (engine.activeSourceId != 'mellow' && engine.activeSourceId != 'lx_official_builtin')
+            ? engine.drivers[engine.activeSourceId]
+            : engine.drivers['lx_sixyin'];
+        final activeName = effectiveDriver?.metadata.name ?? '落雪推荐音源 (智能调度)';
 
         return ListView(
           padding: const EdgeInsets.fromLTRB(32, 24, 32, 128),

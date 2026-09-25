@@ -36,9 +36,12 @@ class RealAudioPlayerBackend implements AudioPlayerBackend {
   @override
   Stream<void> get onPlayerComplete => _player.onPlayerComplete;
 
+  bool _hasSource = false;
+
   @override
   Future<void> play(String uri) async {
     final direct = await OnlineMusicService.unwrapRedirects(uri);
+    _hasSource = true;
     if (direct.startsWith('http://') || direct.startsWith('https://')) {
       await _player.play(UrlSource(direct));
     } else {
@@ -58,6 +61,7 @@ class RealAudioPlayerBackend implements AudioPlayerBackend {
 
   @override
   Future<void> seek(Duration position) async {
+    if (!_hasSource) return;
     try {
       await _player.seek(position);
     } catch (e) {
@@ -72,6 +76,7 @@ class RealAudioPlayerBackend implements AudioPlayerBackend {
 
   @override
   Future<void> dispose() async {
+    _hasSource = false;
     await _player.dispose();
   }
 }

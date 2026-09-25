@@ -239,5 +239,51 @@ node capture_all_web_mobile.mjs
   - 全仓 192 项自动化单测与组件测试 100% 全绿（耗时 42s）；
   - macOS 真实设备原生客户端端到端 E2E-01 ~ E2E-09 100% 全绿。
 
+---
 
+## 2026-09-26 · 输入法空格阻断修复、我喜欢默认收藏清空与冗余基准音源彻底剔除专项闭环
+
+### 1. 核心成果与修复明细
+- **修复 Bug 1：输入法空格阻断与选词失效**
+  - **根因分析**：Flutter 全局 `CallbackShortcuts` 在脚手架外层监听了单键 `Space`（触发播放/暂停），在用户于搜索输入框或其它文本框输入中文呼出输入法时，按空格选词被最外层全局快捷键抢占拦截，导致输入法候选词无法正常上屏。
+  - **解决方案**：在 [`app/lib/navigation/desktop_scaffold.dart`](file:///Users/yang/Documents/code/vibCoding/mellow-music-player/app/lib/navigation/desktop_scaffold.dart) 中实现 `ContextAwareShortcutManager` 与 `ContextAwareShortcuts`。自动检测当前物理焦点是否位于 `EditableText` / `TextField` 中：当处于文本聚焦状态时，拦截并放行单键字符（空格、字母键、方向键等），返回 `KeyEventResult.ignored` 归还给原生输入法；仅当携带 `Ctrl` / `Cmd` 修饰键的组合键（如全局搜索）才予响应，实现原生输入法打字与全局播放控制快捷键的完美兼顾。
+- **修复 Bug 2：我喜欢的音乐默认多出四首歌曲**
+  - **根因分析**：[`app/lib/core/audio/audio_player_service.dart`](file:///Users/yang/Documents/code/vibCoding/mellow-music-player/app/lib/core/audio/audio_player_service.dart) 中内部预设了测试假数据 `final Set<String> _favoriteIds = {'track-1', 'track-3', 'track-5', 'track-6'};`，导致冷启动或初次使用时“我喜欢的音乐”被自动塞入四首歌曲。
+  - **解决方案**：将默认硬编码收藏 ID 彻底清空为纯净空集合 `final Set<String> _favoriteIds = {};`；仅当用户主动在歌曲列表或播放栏点击红心时方才持久化加入收藏。
+- **彻底剔除两个冗余音源：【润音内置基准源】与【落雪官方内置音源 (多平台聚合)】**
+  - **音源管理页面过滤**：在 `DesktopSourceManagerView` 中全面过滤掉 `mellow` 与 `lx_official_builtin`，官方专区仅保留纯正的国内五大主流平台（酷我音乐、网易云音乐、QQ音乐、酷狗音乐、咪咕音乐）；
+  - **换源弹窗全面精简**：在 `SourceSwitcherModal` 中移除 `lx_official_builtin`，置顶推荐纯粹聚焦于落雪社区顶级源（六音无损源、Huibq全能源、ikun加速源）；
+  - **取流与降级链精炼**：在 `OnlineMusicService` 中移除冗余驱动，形成纯净高可用的真实物理取流调度链路。
+
+### 2. 质量验收与门禁达成
+- **静态代码检查**：`flutter analyze` 0 警告、0 错误；
+- **单元与组件测试**：全仓 196 项自动化测试 100% 全部通过；
+- **原生真机端到端验收**：macOS 原生设备 Client E2E 全链路（E2E-01 ~ E2E-09）100% 9/9 全绿；
+- **回归与防退化防护**：新增与更新专项测试用例，保障后续迭代不再退化。
+
+---
+
+## 2026-09-26 · PC 端「用户视角」E2E 验收第二轮复核问题全面收口与缺陷清零
+
+### 1. 核心缺陷闭环整改
+- **P0-1 全局快捷键焦点丢失与失焦失效根治**：
+  - 在 `DesktopScaffold` 中显式持有根焦点 `_rootFocusNode`，并在所有页面路由切换（`_navigateTo` / `_goBack` / `_goForward`）后自动请求焦点回退；
+  - 布局外层增加透明手势监听，点击任意空白区域自动收起输入框焦点，杜绝焦点孤儿游离；
+  - 增加自动化回归测试用例验证搜索页聚焦后返回依然能用 Space 顺畅控制播放/暂停。
+- **P0-2 编造 CDN 直链清理与落雪标杆源真实取流穿透**：
+  - 彻底清理 `PlatformPresetSourceDriver` 中编造的假域名直链，转为规范隔离的内部基准测试直链；
+  - 在 `OnlineMusicService` 中将换源路径全部接入落雪标杆源真实平台穿透调度，开启 `enableSourceFallback: true` 智能降级链，彻底消灭物理 404 死链。
+- **P1-3 均衡器生产接线与「空间 3D」DSP 联动**：
+  - `AudioPlayerService` 监听 `EqualizerManager`，生产代码实时消费 `toLibmpvFilterString()` 调度声学 DSP 滤镜参数，彻底消除“测试替未接线功能背书”的口径脱节；
+  - 对齐「空间 3D (Spatial 3D)」10 频段增益。
+- **P1-4 悬浮歌词胶囊遮挡治理与全卡片拖拽**：
+  - 默认坐标调整为顶部安全避让区 `Offset(360, 60)`，保证冷启动默认关闭；
+  - 卡片整体增加按住任意拖动手势，彻底消除遮挡与操作死区。
+- **P2-1 & P2-2 电台数据规范化与 Seek 竞态平息**：
+  - 规范命名为 `presetRadioStations`，平息 mock 歧义；
+  - `RealAudioPlayerBackend` 引入 `_hasSource` 状态守卫，平息 seek 竞态异常。
+- **交付物收口 (A1~A6) 与仓库卫生 (C1~C4)**：
+  - 物理删除 2 张纯黑废帧，截图总数自洽对齐为 67 张；
+  - 统一测试数口径为全仓实测 196 项；
+  - 在 README 中固化 macOS 集成测试产物覆盖的工程避坑指南。
 

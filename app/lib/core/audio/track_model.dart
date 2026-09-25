@@ -897,8 +897,8 @@ class RadioStation {
   });
 }
 
-/// 声音电台 4 大专属节目曲库
-final List<RadioStation> mockRadioStations = [
+/// 声音电台 4 大专属节目曲库 (高保真白噪音与人文夜读)
+final List<RadioStation> presetRadioStations = [
   RadioStation(
     id: 'radio-1',
     title: '深夜治愈故事馆',
@@ -993,6 +993,9 @@ final List<RadioStation> mockRadioStations = [
     ),
   ),
 ];
+
+/// 别名兼容：确保旧有单测与调用平稳过渡
+List<RadioStation> get mockRadioStations => presetRadioStations;
 
 /// 歌单广场结构化歌单模型
 class SquarePlaylist {

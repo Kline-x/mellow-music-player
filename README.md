@@ -6,7 +6,7 @@
 > - **③ 消除编造数据与虚假文案**：下线公式编造的歌手粉丝数，修正内置基准源与技术能力声明，明确标注高级 DSP 音频滤镜扩展中；
 > - **④ 视口自适应与交互无死区**：治理 13 个主视图底部 128px 安全间距彻底杜绝底栏遮挡，修复搜索长列表滚动受阻并支持触底加载更多，跨视图红心收藏即时双向同步；
 > - **⑤ macOS 跨平台纯化**：本地扫描默认适配 `~/Music`，消除 Windows 专有路径提示，设置中心视窗属性自适应平台展示；
-> - **质量门禁**：全仓 **178 项** Flutter 自动化单测与组件测试 100% 通过（`flutter test` 实测 178/178），macOS 原生真机集成测试 **9/9 100% 全绿**，`flutter analyze` 0 issue。当前版本 **v1.9.0**。
+> - **质量门禁**：全仓 **196 项** Flutter 自动化单测与组件测试 100% 通过（`flutter test` 实测 196/196），macOS 原生真机集成测试 **9/9 100% 全绿**，`flutter analyze` 0 issue。当前版本 **v1.9.0**。
 >
 > ---
 
@@ -14,7 +14,7 @@
 
 > 专为全平台高保真体验打造的 **Modern Soft UI（现代柔和微质感 / Soft Depth & Tactility / Calm Tech）** 原生跨平台音乐播放系统。
 
-[![Flutter Tests](https://img.shields.io/badge/Flutter%20Tests-178%2F178%20Passed%20(100%25)-emerald?style=flat-square&logo=flutter)](app/test)
+[![Flutter Tests](https://img.shields.io/badge/Flutter%20Tests-196%2F196%20Passed%20(100%25)-emerald?style=flat-square&logo=flutter)](app/test)
 [![macOS E2E](https://img.shields.io/badge/macOS%20E2E-9%2F9%20Passed%20(100%25)-emerald?style=flat-square&logo=apple)](app/integration_test)
 [![UI Style](https://img.shields.io/badge/Design%20System-Modern%20Soft%20UI-pink?style=flat-square)](app/lib/theme/tokens.dart)
 [![Audio Engine](https://img.shields.io/badge/Audio-Audioplayers%206.8.1%20Physical-blue?style=flat-square)](#-物理音频生态引擎)
@@ -142,8 +142,16 @@ Prototype meets the full Deliverable Production Standard (交付标准).
 # 进入 Flutter 应用程序根目录
 cd app
 
-# 运行全量自动化测试套件 (172 项测试 100% 通过)
+# 运行全量自动化测试套件 (196 项测试 100% 通过)
 flutter test
+
+# 运行 macOS 原生端到端真实用户全链路验收套件 (9/9 100% 全绿)
+flutter test integration_test/app_client_e2e_test.dart -d macos
+
+# ⚠️ macOS 人工验收避坑提示：跑完上述 integration_test 后，客户端入口会被测试 Runner 改写。
+# 若需手动打开 app 进行人工走查，请务必先重新构建：
+flutter build macos --debug
+open "build/macos/Build/Products/Debug/Mellow Music.app"
 
 # 启动 Windows 桌面客户端调试
 flutter run -d windows

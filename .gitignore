@@ -16,6 +16,8 @@ Thumbs.db
 scratch/
 test_*.png
 *.png
+docs/evidence/
+evidence/
 .system_generated/
 release_windows/
 release_windows_ci/

@@ -108,6 +108,7 @@ void main() {
       sourceEngine.setSourceEnabled('kg', false);
       expect(sourceEngine.getDriver('kg')!.metadata.isEnabled, isFalse);
       expect(sourceEngine.activeSourceId, equals('mellow')); // 自动回退保护
+      sourceEngine.setSourceEnabled('kg', true);
     });
 
     testWidgets('E2E-03: 客户端播放控制底栏与状态机生命周期 (播放/暂停/切歌/循环模式/Seek/音量)', (tester) async {
