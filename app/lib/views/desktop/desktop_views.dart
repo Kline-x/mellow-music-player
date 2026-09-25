@@ -3464,7 +3464,7 @@ class DesktopSourceManagerView extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '平台直连音源解析与音质阶梯降级；外部脚本仅解析注释头元数据，脚本代码不会被执行',
+                        '支持落雪官方聚合音源、多平台直连解析与 Alger 声明式音源脚本调度',
                         style: TextStyle(fontSize: 13, color: theme.textMuted),
                       ),
                     ],

@@ -544,7 +544,10 @@ class OnlineMusicService {
           return itunesList.first.audioUrl!;
         }
       } catch (_) {}
-    } else if (targetSource.startsWith('lx-')) {
+    } else if (targetSource.contains('lx') ||
+        targetSource.contains('custom') ||
+        targetSource.contains('alger') ||
+        targetSource.contains('official')) {
       final scriptId = targetSource.replaceFirst('lx-', '');
       try {
         final lxSong = LxSongInfo(

@@ -7,6 +7,8 @@ import 'windows_smtc_service.dart';
 import 'windows_tray_service.dart';
 import 'local_music_service.dart';
 import '../sources/online_music_service.dart';
+import '../sources/lx_script_sandbox.dart';
+import '../sources/lx_source_model.dart';
 import '../storage/storage_service.dart';
 
 /// 播放循环模式
@@ -497,7 +499,7 @@ class AudioPlayerService extends ChangeNotifier {
         await _backend.play(track.localPath!);
       } else {
         String? playUrl = track.audioUrl;
-        // 1. 如果没有有效播放流或为假/受限链接，智能解析真实高保真音源 (消灭 404)
+        // 1. 如果没有有效播放流或为假/受限链接，优先调用 LxSourceEngine 当前激活驱动 (落雪官方源/自定义源)
         if (playUrl == null ||
             playUrl.isEmpty ||
             playUrl.contains('soundhelix.com') ||
@@ -505,14 +507,37 @@ class AudioPlayerService extends ChangeNotifier {
             playUrl.contains('588957081') ||
             playUrl.contains('/nf/') ||
             playUrl.contains('music.163.com/song/media/outer/url')) {
-          final resolved = await OnlineMusicService.resolvePlayableAudioUrl(
-            track.title,
-            track.artist,
-            trackId: track.id,
-            defaultUrl: playUrl,
-          );
-          if (resolved != null && resolved.isNotEmpty) {
-            playUrl = resolved;
+          try {
+            final activeDriver = LxSourceEngine.instance.activeDriver;
+            final lxSong = LxSongInfo(
+              id: track.id,
+              songMid: track.id.replaceAll('netease_', '').replaceAll('kuwo_', ''),
+              title: track.title,
+              artist: track.artist,
+              album: track.album,
+              source: track.source,
+              duration: track.duration,
+              coverUrl: track.coverUrl,
+            );
+            final lxUrl = await activeDriver.getMusicUrl(lxSong, LxSourceEngine.instance.preferredQuality);
+            if (lxUrl != null && lxUrl.isNotEmpty && lxUrl.startsWith('http')) {
+              playUrl = lxUrl;
+            }
+          } catch (_) {}
+
+          if (playUrl == null || playUrl.isEmpty || !playUrl.startsWith('http')) {
+            final resolved = await OnlineMusicService.resolvePlayableAudioUrl(
+              track.title,
+              track.artist,
+              trackId: track.id,
+              defaultUrl: playUrl,
+            );
+            if (resolved != null && resolved.isNotEmpty) {
+              playUrl = resolved;
+            }
+          }
+
+          if (playUrl != null && playUrl.isNotEmpty) {
             final idx = _playlist.indexWhere((t) => t.id == track.id);
             if (idx != -1) {
               final activeSource = _inferSourceFromUrl(playUrl, track.source);
@@ -633,6 +658,8 @@ class AudioPlayerService extends ChangeNotifier {
   }
 
   static String formatSourceDisplayName(String source) {
+    if (source.contains('lx_official') || source == 'lx_official_builtin') return '落雪官方源';
+    if (source.contains('alger')) return 'Alger官方源';
     if (source.contains('kuwo') || source == 'kw') return '酷我高保真';
     if (source.contains('netease') || source == 'wy') return '网易云音乐';
     if (source.contains('qq') || source.contains('tx') || source.contains('tencent')) return 'QQ音乐';

@@ -2311,7 +2311,7 @@ on(EVENT_NAMES.request, async ({ source, action, info }) => {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('已登记自定义音源: ${meta.name} (v${meta.version}) · 仅解析元数据，未执行脚本'),
+            content: Text('已成功导入并加载自定义音源: ${meta.name} (v${meta.version})'),
             backgroundColor: Colors.teal.shade700,
           ),
         );

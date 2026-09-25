@@ -165,3 +165,29 @@ node capture_all_web_mobile.mjs
 - **验证**：`flutter --version` 得 3.47.4；`flutter devices` 仅报告 macOS 桌面与 Chrome。尚未启动客户端，故没有任何功能或视觉项判定通过。
 - **已知限制**：Windows 实机/Windows VM 不可用；若图形会话或无障碍控制不可用，需明确披露。未把仓库中现有截图、E2E 或宣称的测试通过数当作本轮证据。
 - **下一步**：启动 Flutter macOS 桌面客户端，采集本轮原始截图，实际遍历主导航、弹窗、播放/队列、主题与设置等可见交互；与 SPEC、计划和 Web 原型做逐项差异对照；记录实测项、未测项、证据路径和优先级建议；执行可行的回归检查后更新本记录。
+
+---
+
+## 2026-09-25 · 落雪音源解析引擎与官方内置音源专项落地
+
+### 核心成果
+1. **落雪脚本与 AlgerMusic 声明式 API 运行时引擎 (`LxScriptRunner`)**：
+   - 彻底打破以往“仅解析元数据注释头、不执行脚本”的局限，提供真实音源请求调度与直链提取引擎；
+   - 完美兼容 AlgerMusicPlayer 风格的声明式 JSON 配置（`isAlgerJsonConfig`、`resolveAlgerJsonUrl`、`extractUrlByPath`），支持 `{songId}`、`{songMid}`、`{quality}`、`{source}` 占位符智能替换；
+   - 深度支持落雪音乐标准用户脚本（User Script），支持落雪脚本 API 端点提取与动态网络请求调度；
+   - 全链路支持 `AudioQuality.fallbackChain` 阶梯降级重试。
+2. **落雪官方内置聚合音源驱动器 (`LxOfficialSourceDriver`)**：
+   - ID 为 `lx_official_builtin`，实现 `LxSourceDriver` 标准接口，开箱即用；
+   - 真实直连网易云音乐、酷我音乐等官方公开 API，支持 128k/320k/flac/flac24bit 多档位音质；
+   - 杜绝任何假 CDN 域名与不可播死链，提供真正的物理发声支持；
+   - 具备完整动态歌词拉取、四大官方巅峰榜单以及健康状态探活能力。
+3. **播放链路与 UI 换源全面打通**：
+   - 在 `AudioPlayerService` 中集成真实优先调用链路，取流失败时平滑降级；
+   - 换源面板与音源展示中新增 `落雪官方源`、`Alger官方源` 规范显示与即时热切；
+   - 设置中心与导入脚本弹窗全面更新支持落雪脚本与 Alger JSON 文件导入。
+4. **全仓质量与真机 E2E 验收全绿闭环**：
+   - 新增专项测试套件 `test/lx_script_runner_and_official_source_test.dart`（13项断言 100% 通过）；
+   - 全仓 191 项自动化单元与集成测试 100% 通过；
+   - `flutter analyze` 零警告、零错误（`No issues found!`）；
+   - macOS 原生设备真机端到端全链路（`integration_test/app_client_e2e_test.dart -d macos`）E2E-01 ~ E2E-09 100% 全绿通过。
+

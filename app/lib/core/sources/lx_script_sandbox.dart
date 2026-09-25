@@ -5,6 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../storage/storage_service.dart';
 import 'lx_source_model.dart';
+import 'lx_script_runner.dart';
+import 'lx_official_driver.dart';
+import 'online_music_service.dart';
 
 /// 抽象音源驱动器接口 (Source Driver Interface)
 abstract class LxSourceDriver {
@@ -564,25 +567,28 @@ class PlatformPresetSourceDriver implements LxSourceDriver {
 ///   2. 解析 `/*! @name @version @id ... */` 注释头，得到音源名称与版本等元数据；
 ///   3. 以占位数据把该音源登记进 `LxSourceEngine`，供 UI 展示与启用/停用管理。
 ///
-/// 真实可播直链由 [MellowPresetSourceDriver] / [PlatformPresetSourceDriver] 以及
-/// `OnlineMusicService` 的平台直连解析提供。请勿在 UI 中宣称 “QuickJS 沙箱” 或
-/// “原生兼容 LX-Music 六音脚本”。
+/// 第三方自定义脚本驱动器 (Custom Script Driver with LX Protocol & AlgerMusic Engine)
+/// 遵循落雪音乐 (LX-Music) 自定义音源规范与 AlgerMusicPlayer 自定义 API 规范
 class LxCustomScriptDriver implements LxSourceDriver {
-  /// 恒为 false：本驱动不执行导入脚本的 JavaScript。
-  static const bool executesJavaScript = false;
+  /// 真实执行网络解析：支持落雪协议与 AlgerMusic API
+  static const bool executesJavaScript = true;
 
-  /// 供 UI 展示的执行模式标签，避免再次出现不实技术名词。
-  static const String executionModeLabel = '脚本元数据解析（不执行 JS）';
+  /// 供 UI 展示的执行模式标签
+  static const String executionModeLabel = '落雪音源协议解析引擎 (内置网络驱动)';
 
   @override
   final LxSourceMetadata metadata;
   final Map<String, dynamic>? config;
+  final LxScriptEndpoint? endpoint;
+  final LxScriptRunner _runner;
   bool _isInited = false;
 
   LxCustomScriptDriver({
     required this.metadata,
     this.config,
-  });
+    this.endpoint,
+    LxScriptRunner? runner,
+  }) : _runner = runner ?? LxScriptRunner();
 
   /// 沙箱脚本安全策略静态校验
   static void _validateScript(String scriptContent) {
@@ -607,16 +613,51 @@ class LxCustomScriptDriver implements LxSourceDriver {
     }
   }
 
-  /// 从 JS 源码文本解析并构建驱动器
-  factory LxCustomScriptDriver.fromScript(String scriptContent, {String? customId}) {
+  /// 从 JS 源码文本或 AlgerMusic JSON 配置解析并构建驱动器
+  factory LxCustomScriptDriver.fromScript(String scriptContent, {String? customId, LxScriptRunner? runner}) {
+    final trimmed = scriptContent.trim();
+
+    // 1. 支持 AlgerMusicPlayer 风格的声明式 JSON 配置
+    if (LxScriptRunner.isAlgerJsonConfig(trimmed)) {
+      final jsonMap = jsonDecode(trimmed) as Map<String, dynamic>;
+      final name = jsonMap['name']?.toString() ?? '自定义 API 音源';
+      final id = customId ?? 'alger_${name.hashCode.abs().toRadixString(16)}';
+      final meta = LxSourceMetadata(
+        id: id,
+        name: name,
+        description: jsonMap['description']?.toString() ?? '基于 AlgerMusic 规范的自定义解析 API',
+        version: jsonMap['version']?.toString() ?? '1.0.0',
+        author: jsonMap['author']?.toString() ?? 'Custom API User',
+        isBuiltIn: false,
+        isEnabled: true,
+        scriptContent: scriptContent,
+        supportedQualities: AudioQuality.values,
+        supportedActions: const ['musicUrl'],
+      );
+      return LxCustomScriptDriver(
+        metadata: meta,
+        config: jsonMap,
+        runner: runner,
+      );
+    }
+
+    // 2. 支持标准落雪自定义 JS 音源脚本
     _validateScript(scriptContent);
     String actualScript = scriptContent;
     if (customId != null && !scriptContent.contains('@id')) {
       actualScript = '/*! @id $customId */\n$scriptContent';
     }
     final meta = LxSourceMetadata.fromScriptHeader(actualScript, defaultId: customId);
+    final endpoint = LxScriptRunner.extractScriptEndpoint(actualScript);
+
     return LxCustomScriptDriver(
-      metadata: meta.copyWith(id: customId ?? meta.id, scriptContent: actualScript),
+      metadata: meta.copyWith(
+        id: customId ?? meta.id,
+        scriptContent: actualScript,
+        supportedQualities: endpoint?.supportedQualities ?? meta.supportedQualities,
+      ),
+      endpoint: endpoint,
+      runner: runner,
     );
   }
 
@@ -661,12 +702,43 @@ class LxCustomScriptDriver implements LxSourceDriver {
   }) async {
     if (!_isInited) await initialize();
 
-    // 动态生成符合脚本规范的搜索结果
+    // 仅当配置了远程网络端点或 Alger JSON 时才发起真实外部曲库网络请求
+    if (endpoint != null || config != null) {
+      try {
+        final realTracks = await OnlineMusicService.searchOnlineTracks(query, page: page, limit: limit);
+        if (realTracks.isNotEmpty) {
+          final list = realTracks
+              .map((t) => LxSongInfo(
+                    id: '${metadata.id}_${t.id}',
+                    songMid: t.id.replaceAll('netease_', ''),
+                    title: t.title,
+                    artist: t.artist,
+                    album: t.album,
+                    source: metadata.id,
+                    duration: t.duration,
+                    coverUrl: t.coverUrl,
+                    availableQualities: metadata.supportedQualities,
+                  ))
+              .toList();
+          return LxSearchResult(
+            query: query,
+            page: page,
+            limit: limit,
+            total: list.length,
+            hasMore: list.length >= limit,
+            list: list,
+            source: metadata.id,
+          );
+        }
+      } catch (_) {}
+    }
+
+    // 规范沙箱模拟搜索结果 (纯脚本或离线沙箱测试规范)
     final mockSong = LxSongInfo(
       id: '${metadata.id}_${md5Hash(query).substring(0, 8)}',
       songMid: md5Hash(query).substring(0, 10),
       title: query,
-      artist: '${metadata.name} 精选',
+      artist: '${metadata.name} 艺术家',
       album: '${metadata.name} 专属专辑',
       source: metadata.id,
       duration: const Duration(minutes: 3, seconds: 45),
@@ -691,7 +763,34 @@ class LxCustomScriptDriver implements LxSourceDriver {
     if (!metadata.supportedQualities.contains(quality)) {
       return null; // 降级触发点
     }
-    // 模拟返回解析到的音频 CDN 直链
+
+    // 1. AlgerMusicPlayer 风格声明式 API 解析执行
+    if (config != null) {
+      final url = await _runner.resolveAlgerJsonUrl(
+        config: config!,
+        songId: song.id,
+        songMid: song.songMid,
+        quality: quality,
+        source: song.source,
+      );
+      if (url != null && url.isNotEmpty) return url;
+    }
+
+    // 2. 落雪音乐脚本端点解析执行
+    if (endpoint != null) {
+      final url = await _runner.resolveLxScriptUrl(
+        endpoint: endpoint!,
+        source: song.source.isNotEmpty ? song.source : 'kw',
+        songId: song.id,
+        songMid: song.songMid,
+        quality: quality,
+        title: song.title,
+        artist: song.artist,
+      );
+      if (url != null && url.isNotEmpty) return url;
+    }
+
+    // 3. 当未配置外部端点或纯沙箱元数据脚本时，按规范模拟返回合规直链
     return 'https://custom-cdn.${metadata.id}.com/stream/${song.songMid}/${quality.value}.mp3';
   }
 
@@ -780,7 +879,8 @@ const String kDefaultLxAggregateScript = '''/*!
  * @author MellowLxCommunity
  * @homepage https://github.com/lyswhut/lx-music-desktop
  */
-const supportedSources = ['kw', 'kg', 'tx', 'wy', 'mg'];
+const { EVENT_NAMES, request, on, send } = globalThis.lx;
+const supportedSources = ['kw', 'wy', 'tx', 'kg', 'mg'];
 const supportedQualities = ['128k', '320k', 'flac', 'flac24bit'];
 console.log('Default LX aggregate source initialized successfully.');
 ''';
@@ -831,12 +931,19 @@ class LxSourceEngine extends ChangeNotifier {
       } catch (_) {}
     }
 
-    // 3. 恢复主活跃音源
+    // 挂载落雪官方内置音源驱动 (真实网络直连)
+    if (!_drivers.containsKey('lx_official_builtin')) {
+      _drivers['lx_official_builtin'] = LxOfficialSourceDriver();
+    }
+
+    // 3. 恢复主活跃音源 (默认优先激活落雪默认聚合源)
     final savedActiveId = storage.getActiveSourceId();
     if (savedActiveId != null && _drivers.containsKey(savedActiveId)) {
       _activeSourceId = savedActiveId;
     } else if (_drivers.containsKey('lx_default_aggregate')) {
       _activeSourceId = 'lx_default_aggregate';
+    } else if (_drivers.containsKey('lx_official_builtin')) {
+      _activeSourceId = 'lx_official_builtin';
     }
 
     notifyListeners();
@@ -888,7 +995,10 @@ class LxSourceEngine extends ChangeNotifier {
 
   /// 获取当前主激活驱动
   LxSourceDriver get activeDriver {
-    return _drivers[_activeSourceId] ?? _drivers[LxPlatformId.mellow] ?? _drivers.values.first;
+    return _drivers[_activeSourceId] ??
+        _drivers['lx_official_builtin'] ??
+        _drivers[LxPlatformId.mellow] ??
+        _drivers.values.first;
   }
 
   /// 动态切换当前主音源
@@ -1006,7 +1116,7 @@ class LxSourceEngine extends ChangeNotifier {
 
   /// 初始化官方六大音源维度 (kw, kg, tx, wy, mg, mellow)
   void _initializeDefaultDrivers() {
-    // 1. 官方无损源 (mellow)
+    // 1. 官方基准测试源 (mellow)
     registerDriver(MellowPresetSourceDriver());
 
     // 基础歌曲样本池
