@@ -785,6 +785,7 @@ class _MobileSearchPageState extends State<MobileSearchPage> {
   bool _isLoading = false;
   List<Track> _searchResults = [];
   List<String> _history = [];
+  int _searchToken = 0;
 
   final List<String> _hotSearches = [
     '周杰伦', '告五人', '布拉格广场', '陈奕迅', '林俊杰', '晴天', '海阔天空', '邓紫棋', '粤语经典'
@@ -813,16 +814,19 @@ class _MobileSearchPageState extends State<MobileSearchPage> {
     final clean = query.trim();
     if (clean.isEmpty) return;
 
+    final token = ++_searchToken;
+
     setState(() {
       _isLoading = true;
       _currentQuery = clean;
     });
 
     await StorageService.instance.addSearchHistory(clean);
+    if (!mounted || token != _searchToken) return;
     _loadHistory();
 
     final results = await OnlineMusicService.searchOnlineTracks(clean, limit: 30);
-    if (mounted) {
+    if (mounted && token == _searchToken) {
       setState(() {
         _isLoading = false;
         _searchResults = results;
@@ -831,6 +835,7 @@ class _MobileSearchPageState extends State<MobileSearchPage> {
   }
 
   void _clearSearch() {
+    _searchToken++;
     _searchController.clear();
     setState(() {
       _currentQuery = '';

@@ -8,7 +8,6 @@ import '../../design_system/soft_button.dart';
 import '../../design_system/acoustic_mesh_glow.dart';
 import '../../design_system/mellow_image.dart';
 import '../../core/audio/audio_player_service.dart';
-import '../../core/audio/track_model.dart';
 
 /// 桌面端巨幕沉浸动效大屏歌词 (MusicFull)
 class DesktopFullscreenLyricsView extends StatefulWidget {
@@ -64,9 +63,9 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
     final player = context.watch<AudioPlayerService>();
     final theme = context.watch<ThemeProvider>();
     final isDark = theme.isDarkMode;
-    final track = player.currentTrack ?? mockPresetTracks[0];
+    final track = player.currentTrack;
 
-    if (player.isPlaying) {
+    if (player.isPlaying && track != null) {
       if (!_vinylController.isAnimating) _vinylController.repeat();
       if (!_armController.isAnimating && _armController.value < 1.0) _armController.forward();
     } else {
@@ -76,14 +75,16 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
 
     // 计算当前歌词激活行
     int activeLineIndex = 0;
-    for (int i = 0; i < track.lyrics.length; i++) {
-      if (player.currentPosition >= track.lyrics[i].time) {
-        activeLineIndex = i;
+    if (track != null) {
+      for (int i = 0; i < track.lyrics.length; i++) {
+        if (player.currentPosition >= track.lyrics[i].time) {
+          activeLineIndex = i;
+        }
       }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToActiveLine(activeLineIndex);
+      });
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToActiveLine(activeLineIndex);
-    });
 
     final lyricShortcuts = <ShortcutActivator, VoidCallback>{
       const SingleActivator(LogicalKeyboardKey.escape): widget.onClose,
@@ -130,13 +131,15 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
                 right: 28,
                 child: Row(
                   children: [
-                    SoftButton(
-                      icon: player.isFavorite(track.id) ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                      iconSize: 20,
-                      isCircle: true,
-                      onTap: () => player.toggleFavorite(track.id, track),
-                    ),
-                    const SizedBox(width: 12),
+                    if (track != null) ...[
+                      SoftButton(
+                        icon: player.isFavorite(track.id) ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                        iconSize: 20,
+                        isCircle: true,
+                        onTap: () => player.toggleFavorite(track.id, track),
+                      ),
+                      const SizedBox(width: 12),
+                    ],
                     SoftButton(
                       icon: Icons.fullscreen_exit_rounded,
                       isCircle: true,
@@ -228,11 +231,18 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
                                           border: Border.all(color: Colors.black87, width: 3),
                                         ),
                                         child: ClipOval(
-                                          child: MellowImage(
-                                            url: track.coverUrl,
-                                            width: 126,
-                                            height: 126,
-                                          ),
+                                          child: track != null
+                                              ? MellowImage(
+                                                  url: track.coverUrl,
+                                                  width: 126,
+                                                  height: 126,
+                                                )
+                                              : Container(
+                                                  color: isDark ? const Color(0xFF222226) : const Color(0xFFE5E7EB),
+                                                  child: Center(
+                                                    child: Icon(Icons.music_note_rounded, size: 48, color: theme.accentColor),
+                                                  ),
+                                                ),
                                         ),
                                       ),
                                       // 轴心小金属转心
@@ -273,7 +283,7 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
                         ),
                         const SizedBox(height: 24),
                         Text(
-                          track.title,
+                          track?.title ?? '当前暂无播放曲目',
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -284,7 +294,7 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          '${track.artist} · ${track.album}',
+                          track != null ? '${track.artist} · ${track.album}' : '请在主界面点播喜爱的歌曲',
                           style: TextStyle(
                             fontSize: 14,
                             color: theme.textSecondary,
@@ -296,7 +306,7 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              _formatDuration(player.currentPosition),
+                              _formatDuration(track != null ? player.currentPosition : Duration.zero),
                               style: TextStyle(
                                 fontSize: 11,
                                 color: theme.textMuted,
@@ -315,15 +325,19 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
                                   thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
                                 ),
                                 child: Slider(
-                                  value: player.currentPosition.inMilliseconds.clamp(0, track.duration.inMilliseconds).toDouble(),
-                                  max: max(1.0, track.duration.inMilliseconds.toDouble()),
-                                  onChanged: (val) => player.seek(Duration(milliseconds: val.toInt())),
+                                  value: track != null
+                                      ? player.currentPosition.inMilliseconds.clamp(0, track.duration.inMilliseconds).toDouble()
+                                      : 0.0,
+                                  max: track != null ? max(1.0, track.duration.inMilliseconds.toDouble()) : 1.0,
+                                  onChanged: track != null
+                                      ? (val) => player.seek(Duration(milliseconds: val.toInt()))
+                                      : null,
                                 ),
                               ),
                             ),
                             const SizedBox(width: 10),
                             Text(
-                              track.formattedDuration,
+                              track?.formattedDuration ?? '00:00',
                               style: TextStyle(
                                 fontSize: 11,
                                 color: theme.textMuted,
@@ -392,43 +406,62 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
                   // 右栏：Apple Music 动效歌词系统
                   Expanded(
                     flex: 6,
-                    child: track.lyrics.isEmpty
+                    child: track == null
                         ? Center(
-                            child: Text(
-                              '纯音乐，请静心聆听',
-                              style: TextStyle(fontSize: 18, color: theme.textMuted),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.queue_music_rounded, size: 54, color: theme.textMuted.withValues(alpha: 0.4)),
+                                const SizedBox(height: 16),
+                                Text(
+                                  '当前暂无播放曲目',
+                                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '在歌单或搜索中点播歌曲，开启高保真声学与动效歌词',
+                                  style: TextStyle(fontSize: 14, color: theme.textMuted),
+                                ),
+                              ],
                             ),
                           )
-                        : ListView.builder(
-                            controller: _lyricScrollController,
-                            padding: const EdgeInsets.symmetric(vertical: 180),
-                            itemCount: track.lyrics.length,
-                            itemBuilder: (context, idx) {
-                              final line = track.lyrics[idx];
-                              final isActive = idx == activeLineIndex;
-
-                              return GestureDetector(
-                                onTap: () => player.seek(line.time),
-                                child: AnimatedContainer(
-                                  duration: MellowDurations.normal,
-                                  curve: MellowDurations.smooth,
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  child: AnimatedDefaultTextStyle(
-                                    duration: MellowDurations.normal,
-                                    style: TextStyle(
-                                      fontSize: isActive ? 26 : 18,
-                                      fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                                      color: isActive
-                                          ? theme.accentColor
-                                          : (isDark ? Colors.white.withValues(alpha: 0.35) : Colors.black.withValues(alpha: 0.35)),
-                                      height: 1.4,
-                                    ),
-                                    child: Text(line.text),
-                                  ),
+                        : (track.lyrics.isEmpty
+                            ? Center(
+                                child: Text(
+                                  '纯音乐，请静心聆听',
+                                  style: TextStyle(fontSize: 18, color: theme.textMuted),
                                 ),
-                              );
-                            },
-                          ),
+                              )
+                            : ListView.builder(
+                                controller: _lyricScrollController,
+                                padding: const EdgeInsets.symmetric(vertical: 180),
+                                itemCount: track.lyrics.length,
+                                itemBuilder: (context, idx) {
+                                  final line = track.lyrics[idx];
+                                  final isActive = idx == activeLineIndex;
+
+                                  return GestureDetector(
+                                    onTap: () => player.seek(line.time),
+                                    child: AnimatedContainer(
+                                      duration: MellowDurations.normal,
+                                      curve: MellowDurations.smooth,
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      child: AnimatedDefaultTextStyle(
+                                        duration: MellowDurations.normal,
+                                        style: TextStyle(
+                                          fontSize: isActive ? 26 : 18,
+                                          fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                                          color: isActive
+                                              ? theme.accentColor
+                                              : (isDark ? Colors.white.withValues(alpha: 0.35) : Colors.black.withValues(alpha: 0.35)),
+                                          height: 1.4,
+                                        ),
+                                        child: Text(line.text),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              )),
                   ),
                 ],
               ),

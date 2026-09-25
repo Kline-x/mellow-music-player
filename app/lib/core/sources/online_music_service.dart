@@ -594,20 +594,37 @@ class OnlineMusicService {
     return null;
   }
 
-  /// 展开任意 HTTP 301/302 重定向，获取最终物理直接可播放地址
-  static Future<String> unwrapRedirects(String url) async {
+  /// 展开任意 HTTP 301/302 重定向，获取最终物理直接可播放地址 (最多追踪 3 跳，保证 client.close 杜绝句柄泄漏)
+  static Future<String> unwrapRedirects(String url, {http.Client? customClient, int maxRedirects = 3}) async {
     if (!url.startsWith('http://') && !url.startsWith('https://')) return url;
+    final client = customClient ?? http.Client();
+    var currentUrl = url;
+    var hops = 0;
     try {
-      final client = http.Client();
-      final req = http.Request('GET', Uri.parse(url))..followRedirects = false;
-      req.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
-      final response = await client.send(req).timeout(const Duration(seconds: 4));
-      if (response.isRedirect && response.headers.containsKey('location')) {
-        final loc = response.headers['location']!;
-        if (loc.startsWith('http')) return loc;
+      while (hops < maxRedirects) {
+        final uri = Uri.tryParse(currentUrl);
+        if (uri == null || (!uri.isScheme('http') && !uri.isScheme('https'))) break;
+
+        final req = http.Request('GET', uri)..followRedirects = false;
+        req.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+        final response = await client.send(req).timeout(const Duration(seconds: 4));
+
+        if (response.isRedirect && response.headers.containsKey('location')) {
+          final loc = response.headers['location']!;
+          final resolvedUri = uri.resolve(loc);
+          currentUrl = resolvedUri.toString();
+          hops++;
+        } else {
+          break;
+        }
       }
-    } catch (_) {}
-    return url;
+    } catch (_) {
+    } finally {
+      if (customClient == null) {
+        client.close();
+      }
+    }
+    return currentUrl;
   }
 
   /// 2. 网易云/公开歌单解析与一键导入

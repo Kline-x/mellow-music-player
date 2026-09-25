@@ -12,6 +12,7 @@ import 'package:mellow_music/views/mobile/mobile_sheets.dart';
 import 'package:mellow_music/views/mobile/mobile_pages.dart';
 import 'package:flutter/services.dart';
 import 'package:mellow_music/views/desktop/desktop_views.dart';
+import 'package:mellow_music/views/desktop/fullscreen_lyrics_view.dart';
 import 'package:mellow_music/core/audio/equalizer_manager.dart';
 
 void main() {
@@ -279,6 +280,65 @@ void main() {
       final filterStr = eq.toLibmpvFilterString();
       expect(filterStr, contains('firequalizer=gain='));
       expect(filterStr, contains('gain_interpolate(16000,7.0)'));
+    });
+
+    test('CODE-REVIEW-FIX: Track 实体类重写 operator == 与 hashCode 保持等价性契约', () {
+      const t1 = Track(
+        id: 'track_test_1',
+        title: '测试曲目A',
+        artist: '歌手A',
+        album: '专辑A',
+        coverUrl: 'http://example.com/a.jpg',
+        duration: Duration(minutes: 3),
+      );
+      final t2 = t1.copyWith(isFavorite: true, audioUrl: 'http://example.com/play.mp3');
+      const t3 = Track(
+        id: 'track_test_2',
+        title: '测试曲目B',
+        artist: '歌手B',
+        album: '专辑B',
+        coverUrl: 'http://example.com/b.jpg',
+        duration: Duration(minutes: 4),
+      );
+
+      expect(t1 == t2, isTrue, reason: '相同 id 的 Track copyWith 后应视为等价对象');
+      expect(t1.hashCode, equals(t2.hashCode));
+      expect(t1 == t3, isFalse, reason: '不同 id 的 Track 应判定为不等');
+      final trackSet = {t1, t2, t3};
+      expect(trackSet.length, equals(2), reason: 'Set 集合应基于 id 自动去重');
+    });
+
+    testWidgets('CODE-REVIEW-FIX: FullscreenLyricsView 在播放列表为空时呈现优雅空状态，不填充假歌曲', (tester) async {
+      final theme = ThemeProvider();
+      final player = AudioPlayerService();
+      player.clearQueue();
+      // 确保当前曲目为空
+      expect(player.currentTrack, isNull);
+
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: theme),
+            ChangeNotifierProvider.value(value: player),
+          ],
+          child: MaterialApp(
+            home: DesktopFullscreenLyricsView(onClose: () {}),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(tester.takeException(), isNull);
+      // 验证不应出现 mockPresetTracks[0] 假数据（巫娜 / 云水禅心）
+      expect(find.text('云水禅心'), findsNothing);
+      expect(find.text('巫娜'), findsNothing);
+      // 验证应呈现优雅空状态提示
+      expect(find.text('当前暂无播放曲目'), findsWidgets);
+      expect(find.text('请在主界面点播喜爱的歌曲'), findsOneWidget);
     });
   });
 }

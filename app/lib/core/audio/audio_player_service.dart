@@ -154,6 +154,7 @@ class AudioPlayerService extends ChangeNotifier {
   }
 
   double _lastNonZeroVolume = 0.8;
+  int _playSessionId = 0;
 
   AudioPlayerService({AudioPlayerBackend? backend})
       : _backend = backend ?? AudioPlayerBackendFactory.create() {
@@ -478,6 +479,7 @@ class AudioPlayerService extends ChangeNotifier {
   }
 
   void pause() {
+    _playSessionId++;
     _autoSkipTimer?.cancel();
     _isPlaying = false;
     _backend.pause();
@@ -503,11 +505,14 @@ class AudioPlayerService extends ChangeNotifier {
   }
 
   Future<void> _executeRealPlay(Track track) async {
+    final session = ++_playSessionId;
+    _autoSkipTimer?.cancel();
     try {
       _playbackNotice = null;
       // 0. 本地文件优先直接播放，不经过网络音源解析
       if (track.localPath != null && track.localPath!.isNotEmpty) {
         await _backend.play(track.localPath!);
+        if (session != _playSessionId) return;
       } else {
         String? playUrl = track.audioUrl;
         // 1. 如果没有有效播放流或为假/受限链接，优先调用 LxSourceEngine 当前激活驱动 (落雪官方源/自定义源)
@@ -531,10 +536,13 @@ class AudioPlayerService extends ChangeNotifier {
               coverUrl: track.coverUrl,
             );
             final lxUrl = await activeDriver.getMusicUrl(lxSong, LxSourceEngine.instance.preferredQuality);
+            if (session != _playSessionId) return;
             if (lxUrl != null && lxUrl.isNotEmpty && lxUrl.startsWith('http')) {
               playUrl = lxUrl;
             }
           } catch (_) {}
+
+          if (session != _playSessionId) return;
 
           if (playUrl == null || playUrl.isEmpty || !playUrl.startsWith('http')) {
             final resolved = await OnlineMusicService.resolvePlayableAudioUrl(
@@ -543,10 +551,13 @@ class AudioPlayerService extends ChangeNotifier {
               trackId: track.id,
               defaultUrl: playUrl,
             );
+            if (session != _playSessionId) return;
             if (resolved != null && resolved.isNotEmpty) {
               playUrl = resolved;
             }
           }
+
+          if (session != _playSessionId) return;
 
           if (playUrl != null && playUrl.isNotEmpty) {
             final idx = _playlist.indexWhere((t) => t.id == track.id);
@@ -557,19 +568,25 @@ class AudioPlayerService extends ChangeNotifier {
           }
         }
 
+        if (session != _playSessionId) return;
+
         if (playUrl != null && playUrl.isNotEmpty) {
           await _backend.play(playUrl);
+          if (session != _playSessionId) return;
           _consecutiveFailures = 0;
         } else {
           throw Exception('全网音源暂未匹配到有效可播放音频流');
         }
       }
+      if (session != _playSessionId) return;
       await _backend.setVolume(_volume);
+      if (session != _playSessionId) return;
       WindowsSmtcService.instance.updateMetadata(track);
       WindowsSmtcService.instance.updatePlaybackState(true);
       WindowsSmtcService.instance.updateTimeline(_position, duration);
       WindowsTrayService.instance.updateTooltip(track);
     } catch (e) {
+      if (session != _playSessionId) return;
       debugPrint('[AudioPlayerService] 初始音频播放失败，尝试静默换源: $e');
       if (track.localPath != null && track.localPath!.isNotEmpty) {
         return;
@@ -582,8 +599,10 @@ class AudioPlayerService extends ChangeNotifier {
           trackId: track.id,
           forceRefresh: true,
         );
+        if (session != _playSessionId) return;
         if (fallbackUrl != null && fallbackUrl.isNotEmpty) {
           await _backend.play(fallbackUrl);
+          if (session != _playSessionId) return;
           _consecutiveFailures = 0;
           final idx = _playlist.indexWhere((t) => t.id == track.id);
           if (idx != -1) {
@@ -591,6 +610,7 @@ class AudioPlayerService extends ChangeNotifier {
             _playlist[idx] = _playlist[idx].copyWith(audioUrl: fallbackUrl, source: activeSource);
           }
           await _backend.setVolume(_volume);
+          if (session != _playSessionId) return;
           WindowsSmtcService.instance.updateMetadata(track);
           WindowsSmtcService.instance.updatePlaybackState(true);
           WindowsSmtcService.instance.updateTimeline(_position, duration);
@@ -600,6 +620,8 @@ class AudioPlayerService extends ChangeNotifier {
       } catch (retryErr) {
         debugPrint('[AudioPlayerService] 换源重试亦异常: $retryErr');
       }
+
+      if (session != _playSessionId) return;
 
       // 3. 所有音源均不可用时，给用户清晰浮动提示并自动跳播下一首
       _consecutiveFailures++;
@@ -614,7 +636,7 @@ class AudioPlayerService extends ChangeNotifier {
       _setPlaybackNotice('「${track.title}」所有音源暂不可用，已自动切换至下一首...', autoDismissSeconds: 4);
       _autoSkipTimer?.cancel();
       _autoSkipTimer = Timer(const Duration(milliseconds: 1200), () {
-        if (_playlist.isNotEmpty && _isPlaying) {
+        if (session == _playSessionId && _playlist.isNotEmpty && _isPlaying) {
           next();
         }
       });

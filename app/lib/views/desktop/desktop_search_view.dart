@@ -44,6 +44,7 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
   bool _hasMoreSongs = true;
   String _activeCategory = 'songs'; // 'songs', 'playlists', 'artists'
   List<String> _history = [];
+  int _searchSessionToken = 0;
 
   final List<Map<String, String>> _hotSearches = [
     {'title': '周杰伦', 'badge': 'HOT 1'},
@@ -103,6 +104,8 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
     final cleanQuery = query.trim();
     if (cleanQuery.isEmpty) return;
 
+    final token = ++_searchSessionToken;
+
     setState(() {
       _isLoading = true;
       _currentQuery = cleanQuery;
@@ -113,6 +116,7 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
     });
 
     await StorageService.instance.addSearchHistory(cleanQuery);
+    if (!mounted || token != _searchSessionToken) return;
     _loadHistory();
 
     final tracksFuture = OnlineMusicService.searchOnlineTracks(cleanQuery, page: 1, limit: 35);
@@ -121,7 +125,7 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
 
     final res = await Future.wait([tracksFuture, playlistsFuture, artistsFuture]);
 
-    if (mounted) {
+    if (mounted && token == _searchSessionToken) {
       setState(() {
         _isLoading = false;
         _searchResults = res[0] as List<Track>;
@@ -133,12 +137,13 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
 
   Future<void> _loadMoreSongs() async {
     if (_isLoadingMoreSongs || !_hasMoreSongs || _currentQuery.isEmpty) return;
+    final token = _searchSessionToken;
     setState(() => _isLoadingMoreSongs = true);
 
     try {
       final nextPage = _songPage + 1;
       final more = await OnlineMusicService.searchOnlineTracks(_currentQuery, page: nextPage, limit: 30);
-      if (mounted) {
+      if (mounted && token == _searchSessionToken) {
         setState(() {
           _isLoadingMoreSongs = false;
           _songPage = nextPage;
@@ -150,7 +155,7 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
         });
       }
     } catch (_) {
-      if (mounted) setState(() => _isLoadingMoreSongs = false);
+      if (mounted && token == _searchSessionToken) setState(() => _isLoadingMoreSongs = false);
     }
   }
 

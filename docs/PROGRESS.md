@@ -283,9 +283,9 @@ node capture_all_web_mobile.mjs
 - **P1-4 悬浮歌词胶囊遮挡治理与全卡片拖拽**：
   - 默认坐标调整为顶部安全避让区 `Offset(360, 60)`，保证冷启动默认保持关闭状态；
   - 卡片整体增加按住任意拖动平移手势，消除遮挡与操作死区。
-- **P2-1 电台数据规范化与 mock 命名彻底清除**：
-  - 生产代码与聚合曲目池全量迁移至 `presetRadioStations`，物理删除兼容 getter `mockRadioStations`，全仓无 mock 命名残留；
-  - 电台曲库全量注入真实可用公网广播音频流。
+- **P2-1 电台数据规范化与 mock 别名清理**：
+  - 生产代码与聚合曲目池全量迁移至 `presetRadioStations`，物理删除兼容 getter `mockRadioStations`；
+  - 电台曲库接入真实稳定音频流。
 - **P2-2 Seek 竞态守卫真正下沉**：
   - `RealAudioPlayerBackend` 在 `play()` 准备期间保持 `_hasSource = false`，仅在底层准备完毕并进入播放状态后置 `true`；
   - `seek()` 增加 `_player.state == PlayerState.stopped` 状态拦截，在准备期间静默避让，彻底消灭 `seek exception handled: Bad state`。
@@ -293,4 +293,30 @@ node capture_all_web_mobile.mjs
   - 精准恢复 `README.md` 依赖的 8 张核心 UI 展示截图（位于 `public/` 下，共 2.7MB），保证 GitHub 首页展示图文并茂；
   - `docs/evidence/` 下的所有历史测试截图与过程废帧继续保持清理与忽略，不在 Git 仓库中分发存储；
   - 全仓质量门禁 196 项测试 100% 真实全绿，`flutter analyze` 零警告零错误。
+
+---
+
+## 2026-09-26 · 全仓深度 Code Review 缺陷诊断与高阶闭环修复
+
+### 1. 核心缺陷修复清单
+- **BUG-1: 修复 `unwrapRedirects` 底层 TCP Socket 句柄隐形泄漏与重定向增强 (真修复)**：
+  - 在 [`app/lib/core/sources/online_music_service.dart`](file:///Users/yang/Documents/code/vibCoding/mellow-music-player/app/lib/core/sources/online_music_service.dart) 的 `unwrapRedirects` 中加入 `try-finally` 结构，保证 `client.close()` 无论正常返回或异常中断均 100% 执行；
+  - 增加最多 3 跳的重定向跟随，采用 `uri.resolve(loc)` 规范解析，支持相对路径重定向。
+- **BUG-2: `AudioPlayerService` 引入 `_playSessionId` 会话版本隔离机制 (真修复)**：
+  - 在 [`app/lib/core/audio/audio_player_service.dart`](file:///Users/yang/Documents/code/vibCoding/mellow-music-player/app/lib/core/audio/audio_player_service.dart) 中增加 `_playSessionId` 单调递增计数器；
+  - 在 `pause()` 及 `_executeRealPlay` 的所有异步关键路径（本地流播放、落雪源解析、聚合源解析、网络流播放、静默换源重试、自动切歌 Timer 回调）均校验 `session == _playSessionId`，杜绝快速频繁切歌或点播下的旧请求覆盖与错误切歌。
+- **BUG-3: 桌面与移动端搜索代数令牌保护 (真修复)**：
+  - 在 [`desktop_search_view.dart`](file:///Users/yang/Documents/code/vibCoding/mellow-music-player/app/lib/views/desktop/desktop_search_view.dart) 与 [`mobile_pages.dart`](file:///Users/yang/Documents/code/vibCoding/mellow-music-player/app/lib/views/mobile/mobile_pages.dart) 中引入 `_searchSessionToken` / `_searchToken` 代数机制；
+  - 启动搜索与清理时自增版本，并在异步响应返回时校验版本一致性，彻底消除快速连续输入下的并发乱序与旧结果覆盖。
+- **BUG-4: 全屏歌词页空队列优雅空状态 (真修复)**：
+  - 在 [`fullscreen_lyrics_view.dart`](file:///Users/yang/Documents/code/vibCoding/mellow-music-player/app/lib/views/desktop/fullscreen_lyrics_view.dart) 中彻底移除 `?? mockPresetTracks[0]` 假数据兜底；
+  - 当 `currentTrack == null` 时展示静止唱机微拟物卡片、默认音符封面与“当前暂无播放曲目”优雅居中空状态，进度条与控制键安全兼容。
+- **BUG-5: `Track` 模型补齐基于 `id` 的相等性契约 (真修复)**：
+  - 在 [`track_model.dart`](file:///Users/yang/Documents/code/vibCoding/mellow-music-player/app/lib/core/audio/track_model.dart) 为 `Track` 核心实体类重写 `operator ==` 与 `hashCode`，保证跨集合去重、列表索引匹配与状态比对的正确性。
+
+### 2. 质量验收与门禁达成
+- **静态代码检查**：`flutter analyze` 0 警告、0 错误；
+- **自动化测试套件**：全仓 198 项自动化测试 100% 真实全绿（新增 2 项核心回归用例）；
+- **原生应用编译**：`flutter build macos --debug` 原生桌面编译一次性成功构建；
+- **轻量化原则贯彻**：全仓杜绝任何临时截图进库，保持极简纯净。
 
