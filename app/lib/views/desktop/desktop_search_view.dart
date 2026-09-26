@@ -119,19 +119,29 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
     if (!mounted || token != _searchSessionToken) return;
     _loadHistory();
 
-    final tracksFuture = OnlineMusicService.searchOnlineTracks(cleanQuery, page: 1, limit: 35);
-    final playlistsFuture = OnlineMusicService.searchOnlinePlaylists(cleanQuery, limit: 20);
-    final artistsFuture = OnlineMusicService.searchOnlineArtists(cleanQuery, limit: 20);
+    try {
+      final tracksFuture = OnlineMusicService.searchOnlineTracks(cleanQuery, page: 1, limit: 35);
+      final playlistsFuture = OnlineMusicService.searchOnlinePlaylists(cleanQuery, limit: 20);
+      final artistsFuture = OnlineMusicService.searchOnlineArtists(cleanQuery, limit: 20);
 
-    final res = await Future.wait([tracksFuture, playlistsFuture, artistsFuture]);
+      final res = await Future.wait([tracksFuture, playlistsFuture, artistsFuture]);
 
-    if (mounted && token == _searchSessionToken) {
-      setState(() {
-        _isLoading = false;
-        _searchResults = res[0] as List<Track>;
-        _playlistResults = res[1] as List<ImportedPlaylist>;
-        _artistResults = res[2] as List<ArtistProfile>;
-      });
+      if (mounted && token == _searchSessionToken) {
+        setState(() {
+          _isLoading = false;
+          _searchResults = res[0] as List<Track>;
+          _playlistResults = res[1] as List<ImportedPlaylist>;
+          _artistResults = res[2] as List<ArtistProfile>;
+        });
+      }
+    } catch (e) {
+      debugPrint('[DesktopSearchView] 搜索网络异常: $e');
+      if (mounted && token == _searchSessionToken) {
+        setState(() {
+          _isLoading = false;
+          _hasMoreSongs = false;
+        });
+      }
     }
   }
 

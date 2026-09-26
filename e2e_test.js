@@ -330,8 +330,8 @@ async function runE2ETests() {
     await page.keyboard.press('KeyM'); // Unmute
 
     // Screenshot Desktop Verification
-    const desktopScreenshotPath = path.resolve('public/e2e_desktop_verified.png');
-    fs.mkdirSync('public', { recursive: true });
+    const desktopScreenshotPath = path.resolve('scratch/e2e_desktop_verified.png');
+    fs.mkdirSync('scratch', { recursive: true });
     await page.screenshot({ path: desktopScreenshotPath });
     console.log(`📸 Desktop verified screenshot captured at: ${desktopScreenshotPath}`);
 
@@ -785,7 +785,7 @@ async function runE2ETests() {
     recordResult('Mobile Top Navigation Link to Desktop Prototype', desktopLink === 'index.html', `Link href: "${desktopLink}"`);
 
     // Screenshot Mobile Verification
-    const mobileScreenshotPath = path.resolve('public/e2e_mobile_verified.png');
+    const mobileScreenshotPath = path.resolve('scratch/e2e_mobile_verified.png');
     await mobilePage.screenshot({ path: mobileScreenshotPath });
     console.log(`📸 Mobile verified screenshot captured at: ${mobileScreenshotPath}`);
 

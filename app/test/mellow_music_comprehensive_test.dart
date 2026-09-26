@@ -117,8 +117,8 @@ void main() {
     });
   });
 
-  group('3. EqualizerManager 声学 10 频段 EQ 测试', () {
-    test('预设套用与 firequalizer 滤镜参数生成', () {
+  group('3. EqualizerManager 声学 10 频段 EQ 测试 (声学算法计算模型)', () {
+    test('预设套用与 firequalizer 滤波算法参数生成 (注：audioplayers 物理驱动暂未开放硬件DSP通道)', () {
       final eq = EqualizerManager();
       expect(eq.currentPreset, EqualizerPreset.flat);
       expect(eq.bandGains.every((g) => g == 0.0), true);

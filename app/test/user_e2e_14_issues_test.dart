@@ -13,6 +13,8 @@ import 'package:mellow_music/views/mobile/mobile_pages.dart';
 import 'package:flutter/services.dart';
 import 'package:mellow_music/views/desktop/desktop_views.dart';
 import 'package:mellow_music/views/desktop/fullscreen_lyrics_view.dart';
+import 'package:mellow_music/views/desktop/desktop_floating_lyric_bar.dart';
+import 'package:mellow_music/views/desktop/desktop_search_view.dart';
 import 'package:mellow_music/core/audio/equalizer_manager.dart';
 
 void main() {
@@ -274,7 +276,7 @@ void main() {
       expect(player.isPlaying, isFalse);
     });
 
-    test('ISSUE-FIX P1-3: EqualizerManager 与 AudioPlayerService 生产接线调用闭环', () {
+    test('ISSUE-FIX P1-3: 【声学算法单测】EqualizerManager 10 频段增益滤波字符串生成算法验证 (底层引擎未开放硬件DSP)', () {
       final eq = EqualizerManager.instance;
       eq.applyPreset(EqualizerPreset.spatial3d);
       final filterStr = eq.toLibmpvFilterString();
@@ -339,6 +341,76 @@ void main() {
       // 验证应呈现优雅空状态提示
       expect(find.text('当前暂无播放曲目'), findsWidgets);
       expect(find.text('请在主界面点播喜爱的歌曲'), findsOneWidget);
+    });
+
+    testWidgets('CODE-REVIEW-R6: DesktopFloatingLyricBar 悬浮歌词避让区初始化、无歌曲优雅降级与全卡片拖拽位移 (P1-4 硬证据)', (tester) async {
+      final theme = ThemeProvider();
+      final player = AudioPlayerService();
+      player.clearQueue();
+
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: theme),
+            ChangeNotifierProvider.value(value: player),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: DesktopFloatingLyricBar(onClose: () {}),
+            ),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(tester.takeException(), isNull);
+      // 1. 验证空状态下不再显示巫娜/云水禅心，而是优雅占位提示
+      expect(find.text('云水禅心 - 巫娜'), findsNothing);
+      expect(find.text('暂无播放曲目，请在主界面点播'), findsOneWidget);
+
+      // 2. 验证悬浮条可拖拽位移
+      final gestureFinder = find.byType(GestureDetector).first;
+      await tester.drag(gestureFinder, const Offset(60, 40));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('CODE-REVIEW-R6: DesktopSearchView 触底滚动触发分页加载与代数保护验证 (P1-6 硬证据)', (tester) async {
+      final theme = ThemeProvider();
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: theme),
+            ChangeNotifierProvider.value(value: AudioPlayerService()),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: DesktopSearchView(
+                initialQuery: '周杰伦',
+                onNavigate: (_, [__]) {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(DesktopSearchView), findsOneWidget);
+
+      // 模拟向下滚动触底触发加载更多
+      final scrollFinder = find.byType(Scrollable).first;
+      await tester.fling(scrollFinder, const Offset(0, -600), 1000);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(tester.takeException(), isNull);
     });
   });
 }

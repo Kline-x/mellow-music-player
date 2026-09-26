@@ -1,5 +1,6 @@
 # PC 端「用户视角」E2E 验收 · 第二轮缺陷修复的独立验收记录
 
+> ⚠️ **历史过程快照声明**：本文档为针对 commit `327d35b` 的历史验收过程快照。后续在 `669f9a0` 及后续提交中已完成 P0-2 架构级根除、README 展示图恢复与全量复核。最新二次复核验收结论请参阅：`docs/PC_USER_E2E_ACCEPTANCE_ROUND2_FIX_RECHECK_2026-09-26.md`。
 > 验收日期：2026-09-26 01:40 CST
 > 验收对象：commit `327d35b`（2026-09-26 01:30，"闭环输入法空格与默认收藏修复，完成第二轮E2E复验缺陷清零并彻底删除所有截图文件"）及其同批文档修订（`docs/PC_USER_E2E_ACCEPTANCE_ROUND2_2026-09-25.md`、`docs/PROGRESS.md`）
 > 上游依据：`docs/PC_USER_E2E_ACCEPTANCE_ROUND2_VERIFICATION_2026-09-26.md` 的待修复清单（A 交付物 / B 产品缺陷 / C 仓库卫生）

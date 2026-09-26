@@ -96,7 +96,7 @@ async function runFlutterE2E() {
   }
   const browser = await puppeteer.launch(launchOptions);
 
-  const publicDir = path.join(__dirname, 'public');
+  const publicDir = path.join(__dirname, 'scratch');
   if (!fs.existsSync(publicDir)) {
     fs.mkdirSync(publicDir, { recursive: true });
   }

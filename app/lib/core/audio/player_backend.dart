@@ -41,6 +41,11 @@ class RealAudioPlayerBackend implements AudioPlayerBackend {
   @override
   Future<void> play(String uri) async {
     _hasSource = false; // 切歌与准备期间置为false，静默避让seek竞态
+    if (uri.contains('stream.internal.testing') ||
+        uri.contains('stream.mellowmusic.io') ||
+        uri.contains('custom-cdn')) {
+      throw ArgumentError('非法音频直链: 拦截到测试占位或捏造直链，物理声卡拒绝输出: $uri');
+    }
     final direct = await OnlineMusicService.unwrapRedirects(uri);
     try {
       if (direct.startsWith('http://') || direct.startsWith('https://')) {

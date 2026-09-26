@@ -141,7 +141,7 @@ void main() {
       expect(audioService.volume, equals(0.9));
     });
 
-    testWidgets('E2E-04: 声学 10 频段 EQ 均衡器实时调节与 DSP 参数注入', (tester) async {
+    testWidgets('E2E-04: 【声学算法层】10 频段 EQ 均衡器预设矩阵与 DSP 滤镜参数生成算法验证', (tester) async {
       // 1. 用户套用低音增强预设 Bass Boost
       equalizerManager.applyPreset(EqualizerPreset.bassBoost);
       expect(equalizerManager.currentPreset, equals(EqualizerPreset.bassBoost));

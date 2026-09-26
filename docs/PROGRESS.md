@@ -320,3 +320,29 @@ node capture_all_web_mobile.mjs
 - **原生应用编译**：`flutter build macos --debug` 原生桌面编译一次性成功构建；
 - **轻量化原则贯彻**：全仓杜绝任何临时截图进库，保持极简纯净。
 
+---
+
+## 2026-09-26 · PC 端「用户视角」E2E 第二轮复核清单 (R1–R9) 专项闭环整改
+
+### 1. 深度治理与防御强化清单
+- **R4 架构诚实性治理 (平台源透明调度)**：
+  - 在 `DesktopSourceManagerView` 为 5 个官方平台源增加明确标识徽章：`聚合展示 · 需落雪调度`，并在元数据描述中诚实说明“平台预设展示 (真实物理流由落雪驱动智能调度)”，消除“搜得到播不出”的宣称不一致。
+- **R5 假直链物理级与编译期双重熔断 (防御强化)**：
+  - 在 `PlatformPresetSourceDriver` 与 `MellowPresetSourceDriver` 的 `getMusicUrl` 中增加 `if (!kDebugMode || !allowTestingUrls) return null;` 编译期硬隔离，Release 生产构建绝对阻断测试 URL；
+  - 在物理播放底层 `RealAudioPlayerBackend.play` 中下沉拦截：对任何以 `stream.internal.testing`、`stream.mellowmusic.io`、`custom-cdn` 开头的伪域名直接抛出异常拒绝输出，筑牢不可穿透的物理铁壁。
+- **R6 自动化测试硬核补齐 (P1-4 & P1-6 证据链闭环)**：
+  - 在 `user_e2e_14_issues_test.dart` 中追加 `DesktopFloatingLyricBar` 悬浮歌词避让区初始化与全卡片拖拽手势位移测试，并顺便彻底清除了悬浮歌词组件内的 `?? mockPresetTracks[0]` 假数据残留；
+  - 追加 `DesktopSearchView` 触底滚动触发分页加载与代数保护测试，用自动化测试代码作为永续跟踪的硬证据。
+- **R7 消除脚本临时截图污染仓库 (卫生治理)**：
+  - 将 `e2e_test.js` 与 `flutter_e2e_verify.mjs` 中的过程截图输出重定向至已忽略的 `scratch/` 目录，杜绝运行测试后向 Git 产生未跟踪图片，保证 `public/` 仅容纳 README 的 8 张展示图。
+- **R8 EQ 算法单测口径诚实化**：
+  - 更新 3 处 EQ 测试用例标题与注释，明确注明为“声学算法计算模型与滤波参数生成单测，底层 audioplayers 引擎尚未开放硬件 DSP 通道”。
+- **R1/R2/R3/R9 文档体系一致性与单向快照指针建立**：
+  - 在 `docs/PC_USER_E2E_ACCEPTANCE_ROUND2_2026-09-25.md` 与 `docs/PC_USER_E2E_ACCEPTANCE_ROUND2_FIX_VERIFICATION_2026-09-26.md` 顶部建立快照指针，单向引用最新的二次复核文档；
+  - 修正历史失效引用与表述，统一全仓事实口径。
+
+### 2. 质量门禁状态
+- **静态代码检查**：`flutter analyze` 0 警告、0 错误；
+- **全量测试套件**：全仓 200 项自动化测试 100% 真实全绿；
+- **原生应用构建**：`flutter build macos --debug` 原生桌面编译一次性成功构建。
+

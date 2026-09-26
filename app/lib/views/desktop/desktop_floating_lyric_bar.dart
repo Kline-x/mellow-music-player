@@ -59,13 +59,15 @@ class _DesktopFloatingLyricBarState extends State<DesktopFloatingLyricBar> {
     final player = context.watch<AudioPlayerService>();
     final theme = context.watch<ThemeProvider>();
     final isDark = theme.isDarkMode;
-    final track = player.currentTrack ?? mockPresetTracks[0];
+    final track = player.currentTrack;
 
     // 计算当前歌词行与下一行
     String currentLine = '♪ Mellow Music · 润音 ♪';
-    String nextLine = track.artist.isNotEmpty ? '${track.title} - ${track.artist}' : '';
+    String nextLine = track != null
+        ? (track.artist.isNotEmpty ? '${track.title} - ${track.artist}' : track.title)
+        : '暂无播放曲目，请在主界面点播';
 
-    if (track.lyrics.isNotEmpty) {
+    if (track != null && track.lyrics.isNotEmpty) {
       int activeIndex = -1;
       for (int i = 0; i < track.lyrics.length; i++) {
         if (player.currentPosition >= track.lyrics[i].time) {
@@ -239,7 +241,7 @@ class _DesktopFloatingLyricBarState extends State<DesktopFloatingLyricBar> {
     AudioPlayerService player,
     ThemeProvider theme,
     bool isDark,
-    Track track,
+    Track? track,
   ) {
     return Row(
       children: [
@@ -287,7 +289,7 @@ class _DesktopFloatingLyricBarState extends State<DesktopFloatingLyricBar> {
         // 正在播放简标
         Expanded(
           child: Text(
-            '${track.title} · ${track.artist}',
+            track != null ? '${track.title} · ${track.artist}' : '未在播放曲目',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(

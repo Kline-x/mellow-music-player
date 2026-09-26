@@ -210,8 +210,8 @@ class MellowPresetSourceDriver implements LxSourceDriver {
       return null; // 不支持该音质，交给降级引擎处理
     }
 
-    if (!allowTestingUrls) {
-      // 生产环境预设基准驱动坚决不编造假直链，返回 null 触发真实网络驱动解析
+    if (!kDebugMode || !allowTestingUrls) {
+      // 生产环境预设基准驱动坚决不编造假直链，Release 编译模式绝对阻断测试 URL
       return null;
     }
     final qTag = quality.value;
@@ -386,7 +386,7 @@ class PlatformPresetSourceDriver implements LxSourceDriver {
             LxSourceMetadata(
               id: platformId,
               name: platformName,
-              description: '$platformName 平台直连解析引擎',
+              description: '$platformName 平台预设展示 (真实物理流由落雪驱动智能调度)',
               version: version ?? '2.1.0',
               author: author ?? 'LX Community',
               isBuiltIn: true,
@@ -464,8 +464,8 @@ class PlatformPresetSourceDriver implements LxSourceDriver {
       return null; // 该歌曲无此音质
     }
 
-    if (!allowTestingUrls) {
-      // 生产环境平台预设驱动坚决不编造假直链，返回 null 由真实落雪源 (六音/Huibq/ikun) 解析
+    if (!kDebugMode || !allowTestingUrls) {
+      // 生产环境平台预设驱动坚决不编造假直链，Release 编译模式绝对阻断测试 URL
       return null;
     }
     return 'https://stream.internal.testing/$platformId/${targetSong.songMid}_${quality.value}.mp3';

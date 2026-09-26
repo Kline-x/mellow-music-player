@@ -3836,6 +3836,19 @@ class DesktopSourceManagerView extends StatelessWidget {
                             style: TextStyle(fontSize: 10.5, color: Colors.green, fontWeight: FontWeight.bold),
                           ),
                         ),
+                      ] else ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: theme.accentColor.withValues(alpha: 0.12),
+                            borderRadius: MellowRadii.borderPill,
+                          ),
+                          child: Text(
+                            '聚合展示 · 需落雪调度',
+                            style: TextStyle(fontSize: 10.5, color: theme.accentColor, fontWeight: FontWeight.bold),
+                          ),
+                        ),
                       ],
                     ],
                   ),
