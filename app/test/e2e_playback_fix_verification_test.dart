@@ -84,15 +84,29 @@ void main() {
     expect(audioService.position > Duration.zero, isTrue);
 
     // 捕获真实界面帧作为硬证据
-    final artifactsDir = Platform.environment['SESSION_ARTIFACTS_DIR'] ?? '/Users/yang/.gemini/antigravity/brain/2851b90f-5e83-4e49-a15c-c151162433f7';
+    final customEnv = Platform.environment['SESSION_ARTIFACTS_DIR'];
+    final artifactsDir = (customEnv != null && customEnv.isNotEmpty)
+        ? customEnv
+        : (Directory('/Users/yang/.gemini/antigravity/brain/2851b90f-5e83-4e49-a15c-c151162433f7').existsSync()
+            ? '/Users/yang/.gemini/antigravity/brain/2851b90f-5e83-4e49-a15c-c151162433f7'
+            : '${Directory.systemTemp.path}/mellow_artifacts');
+
     await tester.runAsync(() async {
-      final boundary = repaintKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-      final image = await boundary.toImage(pixelRatio: 1.0);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      final bytes = byteData!.buffer.asUint8List();
-      final file = File('$artifactsDir/audit_25_playback_resumed_evidence.png');
-      file.writeAsBytesSync(bytes);
-      debugPrint('📸 成功捕获播放恢复硬证据帧: ${file.path}');
+      try {
+        final dir = Directory(artifactsDir);
+        if (!dir.existsSync()) {
+          dir.createSync(recursive: true);
+        }
+        final boundary = repaintKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+        final image = await boundary.toImage(pixelRatio: 1.0);
+        final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+        final bytes = byteData!.buffer.asUint8List();
+        final file = File('$artifactsDir/audit_25_playback_resumed_evidence.png');
+        file.writeAsBytesSync(bytes);
+        debugPrint('📸 成功捕获播放恢复硬证据帧: ${file.path}');
+      } catch (e) {
+        debugPrint('硬证据落盘容错处理 (不影响核心断言): $e');
+      }
     });
 
     audioService.pause();
