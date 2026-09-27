@@ -549,6 +549,7 @@ class AudioPlayerService extends ChangeNotifier {
       if (track.localPath != null && track.localPath!.isNotEmpty) {
         await _backend.play(track.localPath!);
         if (session != _playSessionId) return;
+      } else {
         String? playUrl = track.audioUrl;
 
         // 1. 若为网易云真实曲目，直接优先提取原生 320k 高品质 HTTPS 直链，秒开播放

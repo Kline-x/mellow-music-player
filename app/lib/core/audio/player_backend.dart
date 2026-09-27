@@ -57,6 +57,7 @@ class RealAudioPlayerBackend implements AudioPlayerBackend {
       _hasSource = true; // 真正准备完毕并进入播放状态后才允许seek
     } catch (e) {
       _hasSource = false;
+      debugPrint('[RealAudioPlayerBackend] 物理声卡播放异常: $e, 目标直链: $direct');
       rethrow;
     }
   }

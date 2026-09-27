@@ -52,6 +52,10 @@ void main() {
       player.playTrack(testTrack);
       expect(player.isPlaying, isTrue);
       expect(player.currentTrack?.title, equals('布拉格广场'));
+
+      // 等待异步取流与播放驱动执行完成，验证真实backend驱动已成功触发play
+      await Future.delayed(const Duration(milliseconds: 300));
+      expect(backend.isPlaying, isTrue);
     });
   });
 
