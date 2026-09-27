@@ -28,7 +28,6 @@ UninstallDisplayIcon={app}\{#MyAppExeName}
 UninstallDisplayName={#MyAppName} · {#MyAppChineseName}
 
 [Languages]
-Name: "chinesesimp"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
