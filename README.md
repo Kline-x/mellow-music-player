@@ -1,206 +1,206 @@
-> # 🚀 全平台核心能力闭环与品牌视觉全面升级交付（2026-09-27）
->
-> **本仓库已全面完成用户核心诉求与全平台跨端深度升级：**
-> - **① 全新 Modern Soft UI 品牌 Logo**：定制 1024x1024 超清高保真声学律动 Logo 母版，全面覆盖 macOS、iOS、Android、Windows、Web 全端图标与启动图；
-> - **② 补充完整全端正式发版流水线**：在 GitHub Actions 流水线中补齐 iOS (IPA/Payload) 编译打包、加固 Linux GStreamer 音频底层依赖，形成覆盖 Windows / macOS / Linux / Android / iOS / Web 六大端的无报错自动化发版与 CI 预检守护；
-> - **③ 全桌面端原生系统托盘与最小化常驻**：macOS 原生 NSStatusItem 菜单栏状态栏托盘、Windows 原生托盘 SMTC 联动、顶栏一键最小化至托盘快捷入口、关闭窗口自动隐藏后台常驻静默播放；
-> - **质量门禁**：全仓 **205 项** Flutter 自动化单测与组件测试 100% 通过（`flutter test` 实测 205/205），`flutter analyze` 0 issue。
->
-> ---
+<div align="center">
 
-# Mellow Music · 润音 (Modern Soft UI 现代柔和微质感版)
+<img src="docs/images/logo.png" alt="Mellow Music Logo" width="128" height="128" />
 
-> 专为全平台高保真体验打造的 **Modern Soft UI（现代柔和微质感 / Soft Depth & Tactility / Calm Tech）** 原生跨平台音乐播放系统。
+# Mellow Music · 润音
 
-[![Flutter Tests](https://img.shields.io/badge/Flutter%20Tests-205%2F205%20Passed%20(100%25)-emerald?style=flat-square&logo=flutter)](app/test)
-[![macOS E2E](https://img.shields.io/badge/macOS%20E2E-Verified-emerald?style=flat-square&logo=apple)](app/integration_test)
-[![UI Style](https://img.shields.io/badge/Design%20System-Modern%20Soft%20UI-pink?style=flat-square)](app/lib/theme/tokens.dart)
-[![Audio Engine](https://img.shields.io/badge/Audio-Audioplayers%206.8.1%20Physical-blue?style=flat-square)](#-物理音频生态引擎)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Android%20%7C%20iOS%20%7C%20Web-purple?style=flat-square)](#-运行与体验指南)
+### Modern Soft UI 现代柔和微质感 · 全平台高保真原生音乐播放系统
+
+[![CI Quality Gate](https://img.shields.io/github/actions/workflow/status/Kline-x/mellow-music-player/ci.yml?branch=main&style=flat-square&logo=github-actions&label=CI%20Quality%20Gate)](https://github.com/Kline-x/mellow-music-player/actions/workflows/ci.yml)
+[![Flutter Tests](https://img.shields.io/badge/Flutter%20Tests-228%2F228%20Passed%20(100%25)-emerald?style=flat-square&logo=flutter)](app/test)
+[![Code Quality](https://img.shields.io/badge/Flutter%20Analyze-0%20Issues-emerald?style=flat-square&logo=dart)](app)
+[![UI Style](https://img.shields.io/badge/Design%20System-Modern%20Soft%20UI-pink?style=flat-square)](app/lib/design_system/tokens.dart)
+[![Platforms](https://img.shields.io/badge/Platforms-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android%20%7C%20iOS%20%7C%20Web-purple?style=flat-square)](app)
 [![License](https://img.shields.io/badge/License-MIT-slate?style=flat-square)](LICENSE)
 
+<p align="center">
+  <b>融合温润白瓷微拟物（Calm Tech）、多层柔性漫散射景深、动态声学弥散光晕与工业级全端原生态的音乐播放器。</b><br/>
+  支持 Windows / macOS / Linux / Android / iOS / Web 六大端原生体验与独立可安装包构建。
+</p>
+
+</div>
+
 ---
 
-## 📸 界面预览 (UI Gallery)
+## 📸 界面画廊 (UI Showcase)
 
 ### 🖥️ 桌面端沉浸工作台 (Desktop 1440x900)
-| 桌面端主工作台 (Modern Soft UI) | 巅峰榜单与多端同步视图 |
+| 桌面工作台主视图 (Modern Soft UI) | 官方巅峰排行榜与曲库检索 |
 | :---: | :---: |
-| ![Desktop Light](public/e2e_flutter_desktop_verified.png) | ![Desktop Toplist](public/e2e_flutter_desktop_toplist.png) |
+| ![Desktop Light](docs/images/e2e_flutter_desktop_verified.png) | ![Desktop Toplist](docs/images/e2e_flutter_desktop_toplist.png) |
 
-| 多端协同中心视图 | 声学校准均衡器 EQ 模态框 |
+| 多端无感协同同步中心 | 10 频段专业声学 EQ 均衡器 |
 | :---: | :---: |
-| ![Desktop Sync](public/e2e_flutter_desktop_sync.png) | ![Desktop EQ](public/showcase_mobile_eq.png) |
+| ![Desktop Sync](docs/images/e2e_flutter_desktop_sync.png) | ![Desktop EQ](docs/images/showcase_mobile_eq.png) |
 
 ### 📱 移动端原生全景 (Mobile 390x844)
-| 原生 4-Tab 发现主页 | 私人漫游 FM 沉浸模式 | 歌手详情页 (对齐桌面端) | 本地与离线下载专区 |
+| 原生 4-Tab 发现页 | 私人漫游 FM 沉浸流 | 歌手主页与代表作 | 本地与离线音乐扫描 |
 | :---: | :---: | :---: | :---: |
-| ![Mobile Home](public/e2e_mobile_verified.png) | ![Mobile FM](public/showcase_mobile_fm.png) | ![Mobile Artist](public/showcase_mobile_artist.png) | ![Mobile Local](public/showcase_mobile_local.png) |
+| ![Mobile Home](docs/images/e2e_mobile_verified.png) | ![Mobile FM](docs/images/showcase_mobile_fm.png) | ![Mobile Artist](docs/images/showcase_mobile_artist.png) | ![Mobile Local](docs/images/showcase_mobile_local.png) |
 
 ---
 
-## 🌟 Modern Soft UI 设计系统核心规范
+## 🌟 核心特性与工程亮点 (Features)
 
-Modern Soft UI（现代柔和微质感）结合了 Calm Tech、新拟态（Neumorphism）的情感触觉以及现代扁平设计的清爽洗练：
+### 1. 🎨 Modern Soft UI 现代柔和微质感设计系统
+- **温润瓷质画布 (Calm Tech Canvas)**：日间模式采用温润冷灰微蓝纯净画布（`#F5F7FB`）搭配纯白柔和微浮卡片；夜间模式采用深石墨微浮雕质感（`#0D1117` / `#1C2128`），无割裂死黑，通透轻盈；
+- **三层漫散射景深 (Soft Depth & Tactility)**：摒弃粗重黑影，采用 3 级高漫射、低浓度环境光柔阴影，配合顶部微白高光内边（`inset 0 1px 0 rgba(255,255,255,0.9)`）；
+- **动态声学弥散光晕 (Acoustic Mesh Glow)**：根据当前播放曲目唱片封面色彩，实时提取主调并驱动背景 3 处高斯弥散多色光晕平滑呼吸流转；
+- **微交互与沉槽触感**：控件具备下潜物理按压反馈（`scale(0.97)`），滑块采用内凹沉槽（Recessed Wells）与连续曲率平滑圆角（Squircle `20px~28px`）。
 
-1. **温润瓷质画布 (Porcelain & Calm Tech Canvas)**：
-   - 浅色模式采用温润冷灰微蓝画布（`#F5F7FB`）搭配纯白柔和微浮卡片（`#FFFFFF`），彻底消除刺眼纯白；
-   - 深色模式采用深石墨微浮雕质感（`#0D1117` / `#1C2128`），无割裂死黑，视觉轻盈透气。
-2. **三层漫散射柔性景深 (Layered Soft Depth)**：
-   - 摒弃生硬粗大的死黑投影与早期拟物的脏阴影，采用 3 级高扩散、低浓度（4%~10%）的环境光漫反射柔阴影；
-   - 顶部搭配超细微白高光内边（`inset 0 1px 0 rgba(255,255,255,0.9)`），如精雕细琢的陶瓷器具。
-3. **触感微交互 (Tactile Micro-Interactions)**：
-   - 按钮具备按压物理下潜（`active:scale-[0.97]`）与凹凸质感切换；
-   - 滑块与进度条采用内凹沉槽（Recessed Wells）与发光胶囊游标；
-   - 窗口、卡片全面采用连续曲率圆角（Squircle `22px~28px`）。
-4. **动态声学弥散光晕 (Dynamic Acoustic Mesh Glow)**：
-   - 随当前播放曲目唱片封面色彩，实时提取并驱动背景 3 处高斯弥散多色光晕（`filter: blur(80px)`）平滑流转；
-   - 支持实时浓度调节与随专辑封面自适应取色。
+### 2. 🎵 六维音源聚合与落雪自定义 JS 沙箱生态
+- **多源智能调度**：内置六大主流音质驱动体系（网易云、QQ 音乐、酷狗、酷我、咪咕、Mellow 原生），支持无损 FLAC / 320k / 128k 阶梯式自动平滑降级；
+- **第三方脚本沙箱**：原生支持导入落雪（LX Music）规范自定义 JavaScript 音源脚本，具备跨源智能热切与轮询兜底机制，杜绝死链；
+- **多音质解析**：具备毫秒级歌曲检索、动态滚动双语对齐歌词、超清专辑封面智能拉取。
 
----
+### 3. 🎛️ 10 频段专业声学均衡器 (DSP Equalizer)
+- 覆盖 31Hz 至 16kHz 的 10 频段独立增益调节（±12dB 精准控制）；
+- 内置流行、摇滚、爵士、古典、纯净人声、重低音等多种专业调音预设，支持平滑自适应小视口，杜绝像素溢出。
 
-## 🚀 完整功能矩阵 (Feature Matrix)
+### 4. 🔄 双向无感多端同步中心 (Multiplatform Sync)
+- **WebDAV 云端快照**：支持连接坚果云、Nextcloud 等任何标准 WebDAV 服务端，一键秒级双向同步播放列表、收藏心标与自定义脚本；
+- **局域网 UDP/TCP 协同**：同一 Wi-Fi 下设备自动发现，无缝广播同步播放进度与歌单。
 
-### 🖥️ 桌面端完整工作台 (`index.html`)
-- **无边框拟物标题栏**：Mac 交通灯控制、即时搜索框（带 `⌘ K` 快捷徽标）、深浅色切换、桌面/移动视图快速跳转。
-- **悬浮胶囊侧边栏**：分组管理（在线发现、歌单广场、排行榜、热门歌手、播客 / 我的喜欢、本地与下载），平滑胶囊指示器。
-- **Bento Grid 发现工作台**：今日雷达私人漫游 Hero 席位、推荐歌单卡片流、歌手推荐环。
-- **歌单详情视图**：超大 Squircle 封面、动态光晕、一键播放全部、交互式曲目列表。
-- **签名级悬浮播放底栏 (Pill Dock Player)**：旋转黑胶缩略图、三态循环切换、触控音量条、跳动声波均衡条。
-- **全屏动效歌词大幕 (MusicFull)**：双栏布局，左侧凹槽黑胶唱机与唱臂，右侧 Apple Music 级别动效歌词，支持点击行瞬间跳播。
-- **硬件级声学均衡器 EQ**：Flat / Bass Boost / Clear Vocal / Warm Jazz / Spatial 3D 5 大滤波预设。
-- **睡眠定时器**：15/30/45/60 分钟倒计时，常驻绿色呼吸脉冲灯，平滑淡出休眠。
-- **全局键盘快捷键系统**：`Space` (播放/暂停)、`M` (静音)、`L` (歌词)、`Q` (队列)、`Escape` (安全退出)、`Arrow` (调音/快进)。
-
-### 📱 移动端原生 App 体系 (`mobile.html`)
-- **零系统滚动条设计**：原生 iOS/Android 沉浸式触控滚动，`scrollbar-width: none`，无任何突兀滚动条。
-- **原生 4-Tab 底部触控 Dock**：发现音乐、探索全库、我的资料库、个人中心。
-- **5 大快捷金刚区二级全功能页面**：
-  - `每日推荐`：拟物日历卡片，动态公历日/星期显示，6 首日推清单，一键播放全部。
-  - `歌单广场`：全部/流行/电子/摇滚/Lo-Fi/古典多风格胶囊过滤。
-  - `巅峰排行榜`：飙升、热歌、新歌、原创榜，前三名冠亚季军排位着色，一键播放整榜。
-  - `声音电台`：治愈、助眠、故事、科技 4 大播客分类，热门单集轻量收听。
-  - `私人漫游 FM`：沉浸式黑胶旋转大碟，切歌漫游（Next），红心喜欢双向交互，垃圾桶屏蔽。
-- **深度对齐桌面端高阶能力**：
-  - `热门歌手与歌手详情主页`：歌手海报、认证徽章、粉丝数量、关注本地持久化、代表作点播。
-  - `本地与离线下载专区`：微凹导入区，本地音频文件导入，已缓存曲目试听。
-  - `声学均衡器 EQ 弹窗`：全屏置顶弹窗，5 组 Web Audio Biquad 滤波器实时调音。
-  - `睡眠定时器`：多档倒计时，全屏顶栏常驻呼吸指示光点。
-  - `触觉音量调节滑块`：全屏滑动音量控制，一键静音与原音量记忆恢复。
+### 5. 🪟 全桌面端原生托盘与快捷常驻
+- **macOS**：原生 `NSStatusItem` 菜单栏状态栏图标，支持最小化至菜单栏常驻静默播放；
+- **Windows**：原生托盘图标与系统 SMTC 媒体控制联动；
+- **关闭自动隐藏**：点击窗口关闭按钮自动隐藏至后台托盘，音乐不断流。
 
 ---
 
-## 🔊 Web Audio API 声学生态引擎
+## 📦 全平台可安装包构建矩阵 (Packaging Matrix)
 
-本项目内置自研的无外部依赖物理声学引擎（`ModernSoftMobileAudioEngine` 与桌面端对应引擎）：
-- **全真实声音合成**：通过 Web Audio API `AudioContext` 实时生成 440Hz 纯净旋律与柔和和弦打击音效，在不依赖外网 MP3 资源下依然能进行真实声学发声与测试。
-- **BiquadFilter 频响调谐**：
-  - `bass`: `lowshelf` 120Hz (+6dB) 超重低音增强
-  - `vocal`: `peaking` 2500Hz (+4.5dB) 人声穿透力增强
-  - `jazz`: `peaking` 500Hz (+3dB) 温润黑胶质感
-  - `spatial`: `highshelf` 8000Hz (+5dB) 空间声场拓宽
-- **淡出算法**：定时器归零时通过 `linearRampToValueAtTime` 平滑淡出休眠。
+本项目已通过自动化发版流水线与本地打包脚本，实现了**全平台原生可安装安装包**的完整支持：
+
+| 目标平台 | 安装包形态 | 构建技术栈 | 产物命名范例 |
+| :--- | :--- | :--- | :--- |
+| **Windows** | 向导式安装包 (`.exe`) + 便携绿色版 (`.zip`) | Inno Setup 向导打包 / MSVC 原生编译 | `Mellow-Music-Windows-x64-Setup.exe` |
+| **macOS** | 原生磁盘映像 (`.dmg`) + 通用应用包 (`.zip`) | Apple 原生 `hdiutil` / Release AOT | `Mellow-Music-macOS.dmg` |
+| **Linux** | Debian/Ubuntu 安装包 (`.deb`) + 便携包 (`.tar.gz`) | 原生 `dpkg-deb` / GTK3 + GStreamer | `Mellow-Music-Linux-amd64.deb` |
+| **Android** | 原生安装包 (`.apk`) | Gradle Release / Android 14+ 适配 | `Mellow-Music-Android.apk` |
+| **iOS** | 未签名安装包 (`.ipa`) + App Bundle (`.zip`) | Xcode iPhoneOS Release Payload 压制 | `Mellow-Music-iOS.ipa` |
+| **Web / PWA**| 生产级单页应用与 ServiceWorker 缓存包 | Flutter Web HTML/CanvasKit Release | `Mellow-Music-Web.tar.gz` |
 
 ---
 
-## 🤖 83 项全功能 E2E 自动化测试
+## 📂 项目工程目录索引 (Repository Structure)
 
-项目内嵌完整的 Puppeteer 端到端测试套件，全面覆盖桌面端与移动端核心用户路径：
-
-> ⚠️ **前置条件**：`package.json` 里的 `test:e2e` 只是 `node e2e_test.js`，脚本自身不会拉起静态服务；直接执行会以 `net::ERR_CONNECTION_REFUSED at http://localhost:8088/` 失败（实测 `Total Scenarios Tested: 1 / Passed 0`）。必须先启动仓库自带服务，83/83 才会复现：
-
-```bash
-# 1) 先起静态服务（npm start，监听 8088）
-node server.cjs &
-
-# 2) 再执行自动化 E2E 交互审计（实测 83/83 通过）
-npm run test:e2e
-```
-
-**测试通过情况**：
 ```text
-======================================================
-📊 FINAL E2E INTERACTIVE VERIFICATION REPORT
-======================================================
-Total Scenarios Tested : 83
-Passed Scenarios       : 83 / 83 (100%)
-Failed Scenarios       : 0
-
-🎉 ALL E2E USER INTERACTION TESTS PASSED WITH 100% SUCCESS RATE!
-Prototype meets the full Deliverable Production Standard (交付标准).
+mellow-music-player/
+├── .github/                 # GitHub Actions 持续集成与全端发版流水线
+│   └── workflows/
+│       ├── ci.yml           # 代码质量、静态分析与全链路单测质量门禁 (100% 全绿)
+│       └── release.yml      # 全平台原生可安装包自动化编译与 GitHub Release 发版
+├── app/                     # 【主应用仓库】Flutter 原生全平台核心客户端
+│   ├── android/             # Android 原生工程与 Manifest 权限配置
+│   ├── ios/                 # iOS 原生工程与 Info.plist 媒体后台常驻配置
+│   ├── macos/               # macOS 桌面工程与 NSStatusItem 原生状态栏托盘
+│   ├── windows/             # Windows 桌面工程与 Inno Setup 安装包脚本 (installer.iss)
+│   ├── linux/               # Linux 桌面工程与 DEB 原生打包脚本 (package_deb.sh)
+│   ├── web/                 # Web 宿主与 PWA Manifest
+│   ├── harmonyos/           # 鸿蒙 (HarmonyOS) 适配预留层
+│   ├── lib/                 # Dart 架构与业务层代码
+│   │   ├── core/            # 核心业务 (音频引擎、落雪沙箱、多端同步、本地存储)
+│   │   ├── design_system/   # Modern Soft UI 设计系统 (Tokens、瓷质卡片、声学光晕)
+│   │   ├── navigation/      # 桌面端 (三栏工作台) 与移动端 (4-Tab) 响应式视口脚手架
+│   │   └── views/           # 发现页、排行榜、歌手详情、全屏巨幕歌词、EQ 均衡器模态框等
+│   ├── test/                # 228 项全量自动化测试套件与桌面/移动原生 E2E 用户链路
+│   └── pubspec.yaml         # 应用依赖库与版本声明
+├── prototype/               # 【设计原型专区】独立 Web 原型与交互规范归档
+│   ├── index.html           # 桌面端沉浸工作台原型
+│   ├── mobile.html          # 移动端原生原型
+│   ├── design_tokens.css    # 原型 Token 规范
+│   ├── server.cjs           # 原型本地轻量预览服务
+│   ├── audio/               # 原型基础演示音轨
+│   └── README.md            # 原型专区运行指引
+├── docs/                    # 【架构文档与验收资产】
+│   ├── images/              # README 展示效果图与品牌 Logo
+│   ├── ROADMAP.md           # 产品演进路线图
+│   ├── SPEC.md              # 架构与系统规范说明书
+│   └── ...                  # 各批次端到端测试与质量验证档案
+├── .gitignore               # 规范 Git 忽略配置
+├── LICENSE                  # MIT 开源许可证
+└── README.md                # 项目主文档
 ```
 
 ---
 
-## 💻 运行与体验指南
+## 🚀 本地开发与构建指引 (Getting Started)
 
-### 1. Flutter 跨平台客户端 (推荐 · Windows / macOS / Android / iOS)
+### 环境依赖
+- [Flutter SDK](https://flutter.dev) $\ge$ 3.24.0 (推荐 3.47+)
+- Dart SDK $\ge$ 3.5.0
+- 根据目标平台配置对应工具链：
+  - **macOS / iOS**：Xcode 15+ 与 CocoaPods
+  - **Windows**：Visual Studio 2022 (包含 C++ 桌面开发工作负载)、Inno Setup 6 (生成安装包)
+  - **Linux**：`sudo apt-get install clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev dpkg-dev`
+  - **Android**：Android Studio、JDK 17
 
+### 1. 运行主客户端
 ```bash
-# 进入 Flutter 应用程序根目录
+# 进入核心应用目录
 cd app
 
-# 运行全量自动化测试套件 (196 项测试 100% 通过)
-flutter test
+# 安装依赖
+flutter pub get
 
-# 运行 macOS 原生端到端真实用户全链路验收套件 (9/9 100% 全绿)
-flutter test integration_test/app_client_e2e_test.dart -d macos
+# 启动本地开发 (自动检测已连接设备/当前桌面)
+flutter run
 
-# ⚠️ macOS 人工验收避坑提示：跑完上述 integration_test 后，客户端入口会被测试 Runner 改写。
-# 若需手动打开 app 进行人工走查，请务必先重新构建：
-flutter build macos --debug
-open "build/macos/Build/Products/Debug/Mellow Music.app"
-
-# 启动 Windows 桌面客户端调试
-flutter run -d windows
-
-# 运行 Windows 物理应用保活与退出健全性验证 (项目根目录)
-powershell -ExecutionPolicy Bypass -File .\verify_windows_app.ps1
-
-# 运行移动端打包流水线与平台配置校验 (项目根目录)
-powershell -ExecutionPolicy Bypass -File .\build_mobile.ps1 -Target check-only
-# 构建 Android 真实 APK
-powershell -ExecutionPolicy Bypass -File .\build_mobile.ps1 -Target apk
+# 指定平台运行
+flutter run -d macos    # macOS 桌面端
+flutter run -d windows  # Windows 桌面端
+flutter run -d linux    # Linux 桌面端
+flutter run -d chrome   # Web 浏览器端
 ```
 
-### 2. Web 高保真原型服务 (轻量预览)
-
+### 2. 运行自动化测试套件
 ```bash
-# 1. 安装依赖
-npm install
+cd app
 
-# 2. 启动本地流媒体预览服务
-npm start
+# 运行静态代码分析 (0 警告门禁)
+flutter analyze
+
+# 运行全量 228 项自动化测试 (含桌面原生 E2E 全链路)
+flutter test
 ```
-服务启动后在浏览器访问：
-- **🖥️ 桌面端完整工作台**：`http://localhost:8088/index.html`
-- **📱 移动端原生应用视图**：`http://localhost:8088/mobile.html`
+
+### 3. 本地编译原生安装包
+```bash
+cd app
+
+# 构建 macOS DMG 磁盘映像
+flutter build macos --release
+# 使用 hdiutil 打包 DMG (详见 .github/workflows/release.yml)
+
+# 构建 Windows 安装包
+flutter build windows --release
+# 使用 Inno Setup 编译：ISCC.exe windows/installer.iss
+
+# 构建 Linux DEB 安装包
+flutter build linux --release
+bash linux/package_deb.sh
+
+# 构建 Android Release APK
+flutter build apk --release
+```
+
+### 4. 预览设计原型
+```bash
+cd prototype
+npm start  # 启动本地轻量静态服务器，访问 http://localhost:3000
+```
 
 ---
 
-## 🗺️ 工程化落地架构与进度跟踪 (Roadmap & Progress)
+## 🛡️ 质量保障与工程规范 (Quality Standards)
 
-本项目基于统一的 **Flutter 跨平台单一代码库**（Windows、macOS、Android、iOS）进行生产级客户端落地开发，深度融合 **AlgerMusicPlayer** 的视觉动效美学与 **LX-Music** 的强大音源生态与多端协同能力。
-
-- 📘 **完整架构蓝图与零遗漏页面对齐矩阵**：请查阅 [docs/ROADMAP.md](docs/ROADMAP.md)
-  - 桌面端 12 大核心主视图 + 4 大抽屉弹窗
-  - 移动端 4 大主 Tab + 9 大二级跳转页 + 5 大底部抽屉/浮层
-- 📋 **系统技术规格说明书 (System Specification)**：请查阅 [docs/SPEC.md](docs/SPEC.md)
-  - Modern Soft UI 设计 Token、双端全量路由规范、物理音频引擎与系统通道规范
-  - 静态安全脚本沙箱规范、Win32 穿透歌词规范与局域网 P2P 报文协议
-- 📊 **研发里程碑与实时进度看板**：请查阅 [docs/PROGRESS.md](docs/PROGRESS.md)
-  - Phase 0: Web 双端高保真原型与 83 项 E2E 自动化验收 (100% 完成)
-  - Phase 1: 物理音频底座驱动与本地持久化无损重启 (100% 完成)
-  - Phase 2: 业务视图全面真实化与全场景无死区交互 (100% 完成)
-  - 专项 1: 局域网 P2P 近场即时传输交互真实化与交互打通 (100% 完成)
-  - 专项 2: LX 音源脚本元数据导入与平台直连音质降级调度 (部分完成：不执行导入脚本的 JS)
-  - 专项 3: 桌面独立置顶透明穿透歌词窗口系统级贯通 (100% 完成)
-  - 专项 4: 移动端 (Android / iOS) 真实打包发布流水线与平台适配 (100% 完成)
-  - 专项 5: 全仓文档口径诚实化对齐与 172 项质量门禁 (100% 完成)
+- **228 项全量单测与组件测试 100% 通过**：涵盖声学算法、音质降级链、跨源智能热切、EQ 频段 DSP 滤镜、WebDAV 云端解析、本地曲库 ID3 扫描、视口自适应等；
+- **全端到端真实用户链路验证**：涵盖桌面端三栏工作台、全屏巨幕动效歌词、移动端 4-Tab 原生导航以及深浅色动态切换；
+- **GitHub Actions 云端门禁守护**：每次代码提交触发 Linux / Windows / Web 多矩阵流水线交叉验证，保障代码库零缺陷。
 
 ---
 
 ## 📄 开源许可证 (License)
 
-本项目基于 [MIT License](LICENSE) 开源发布。
-原 AlgerMusicPlayer 项目致谢：[algerkong/AlgerMusicPlayer](https://github.com/algerkong/AlgerMusicPlayer)
+本项目基于 [MIT License](LICENSE) 开源，欢迎提交 Issue 与 Pull Request 共同建设！

@@ -1,6 +1,8 @@
 # Dependencies
 node_modules/
 package-lock.json
+prototype/node_modules/
+prototype/package-lock.json
 
 # Logs
 *.log
@@ -16,7 +18,7 @@ Thumbs.db
 scratch/
 test_*.png
 *.png
-!public/*.png
+!docs/images/**
 !app/assets/**
 !app/**/Assets.xcassets/**
 docs/evidence/
