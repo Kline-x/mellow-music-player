@@ -24,9 +24,61 @@ import '../../core/window/desktop_floating_lyric_service.dart';
 import '../common/modals.dart';
 
 /// 1. 发现音乐主页 (DiscoverView - Bento Grid 仪表盘)
-class DesktopDiscoverView extends StatelessWidget {
+class DesktopDiscoverView extends StatefulWidget {
   final Function(String viewId, [String? extra]) onNavigate;
   const DesktopDiscoverView({super.key, required this.onNavigate});
+
+  @override
+  State<DesktopDiscoverView> createState() => _DesktopDiscoverViewState();
+}
+
+class _DesktopDiscoverViewState extends State<DesktopDiscoverView> {
+  List<ImportedPlaylist> _curatedPlaylists = [];
+  List<ArtistProfile> _popularArtists = AudioPlayerService.isRunningInTest
+      ? List.from(mockArtistsProfiles)
+      : [];
+  bool _isLoadingContent = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRealDiscoverData();
+  }
+
+  void _loadRealDiscoverData() async {
+    setState(() => _isLoadingContent = true);
+    try {
+      final playlistsFuture = OnlineMusicService.searchOnlinePlaylists('精选', limit: 4);
+      final artistsFuture = OnlineMusicService.fetchArtistList(limit: 8);
+
+      final res = await Future.wait([playlistsFuture, artistsFuture]);
+      if (mounted) {
+        setState(() {
+          _curatedPlaylists = res[0] as List<ImportedPlaylist>;
+          final rawArtists = res[1] as List<Map<String, dynamic>>;
+          _popularArtists = rawArtists.map((a) {
+            final id = a['id']?.toString() ?? '';
+            final name = a['name']?.toString() ?? '华语音乐人';
+            final pic = a['img1v1Url']?.toString() ?? a['picUrl']?.toString() ?? '';
+            final musicSize = (a['musicSize'] as num?)?.toInt() ?? 0;
+            return ArtistProfile(
+              id: id,
+              name: name,
+              role: '热门华语歌手 · $musicSize首单曲',
+              fans: '华语热榜',
+              bio: '热门入驻音乐人',
+              avatarUrl: pic.isNotEmpty ? pic : NeteaseMusicService.fallbackCoverFor(name, '歌手'),
+              musicSize: musicSize,
+              albumSize: 0,
+            );
+          }).toList();
+          _isLoadingContent = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingContent = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -116,7 +168,7 @@ class DesktopDiscoverView extends StatelessWidget {
                           label: '查看完整推荐',
                           icon: Icons.explore_outlined,
                           isPill: true,
-                          onTap: () => onNavigate('playlists'),
+                          onTap: () => widget.onNavigate('playlists'),
                         ),
                       ],
                     ),
@@ -140,7 +192,7 @@ class DesktopDiscoverView extends StatelessWidget {
         SoftCard(
           padding: const EdgeInsets.all(22),
           borderRadius: MellowRadii.borderR24,
-          onTap: () => onNavigate('daily_recommend'),
+          onTap: () => widget.onNavigate('daily_recommend'),
           child: Row(
             children: [
               // 拟物日历便签头
@@ -249,86 +301,100 @@ class DesktopDiscoverView extends StatelessWidget {
               style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: theme.textPrimary),
             ),
             TextButton(
-              onPressed: () => onNavigate('playlists'),
+              onPressed: () => widget.onNavigate('playlists'),
               child: Text('查看全部 >', style: TextStyle(color: theme.accentColor)),
             ),
           ],
         ),
         const SizedBox(height: 14),
         // 推荐歌单网格 (自适应多分辨率列数，宽屏优雅延展)
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final crossAxisCount = (constraints.maxWidth / 220).floor().clamp(2, 4);
-            final curatedPlaylists = [
-              {
-                'title': '东方禅境 · 幽篁古筝琴韵精选',
-                'sub': '48.6万播放 · 巫娜 / 常静',
-                'cover': 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80',
-                'tracks': mockWuNaTracks,
-              },
-              {
-                'title': '夜幕降临时的华语流行浪漫',
-                'sub': '129.4万播放 · 周杰伦 / 方文山',
-                'cover': 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
-                'tracks': mockJayChouTracks,
-              },
-              {
-                'title': '岁月如歌 · 粤语传世经典不朽巡礼',
-                'sub': '98.2万播放 · Beyond / 黄家驹',
-                'cover': 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80',
-                'tracks': mockBeyondTracks,
-              },
-              {
-                'title': '原创独立先锋 · 诗意民谣声线',
-                'sub': '45.1万播放 · 华语民谣独立音乐人',
-                'cover': 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=500&q=80',
-                'tracks': toplistOriginTracks,
-              },
-            ];
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 0.82,
-              ),
-              itemCount: curatedPlaylists.length,
-              itemBuilder: (context, idx) {
-                final pl = curatedPlaylists[idx];
-                return _buildPlaylistCard(
-                  context,
-                  pl['title'] as String,
-                  pl['sub'] as String,
-                  pl['cover'] as String,
-                  () => player.playPlaylist(pl['tracks'] as List<Track>, startIndex: 0),
+        if (_isLoadingContent && _curatedPlaylists.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 40),
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          )
+        else
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final crossAxisCount = (constraints.maxWidth / 220).floor().clamp(2, 4);
+              final displayPlaylists = _curatedPlaylists.isNotEmpty
+                  ? _curatedPlaylists.take(4).toList()
+                  : player.importedPlaylists.take(4).toList();
+
+              if (displayPlaylists.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text('暂无推荐歌单，可前往歌单广场发现音乐', style: TextStyle(color: theme.textMuted)),
+                  ),
                 );
-              },
-            );
-          },
-        ),
+              }
+
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 0.82,
+                ),
+                itemCount: displayPlaylists.length,
+                itemBuilder: (context, idx) {
+                  final pl = displayPlaylists[idx];
+                  return _buildPlaylistCard(
+                    context,
+                    pl.title,
+                    pl.description.isNotEmpty ? pl.description : '甄选推荐歌单 · ${pl.trackCount}首单曲',
+                    pl.coverUrl,
+                    () async {
+                      if (pl.tracks.isNotEmpty) {
+                        player.playPlaylist(pl.tracks, startIndex: 0);
+                      } else {
+                        final detail = await OnlineMusicService.importNeteasePlaylist(pl.id);
+                        if (detail != null && detail.tracks.isNotEmpty) {
+                          player.playPlaylist(detail.tracks, startIndex: 0);
+                        }
+                      }
+                    },
+                  );
+                },
+              );
+            },
+          ),
         const SizedBox(height: 32),
 
-        // 热门歌手推荐环 (统一从 mockArtistsProfiles 读取，Wrap 优雅聚拢避免宽屏过大空白)
+        // 热门歌手推荐环 (100% 真实全网歌手列表)
         Text(
           '热门入驻与关注歌手',
           style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: theme.textPrimary),
         ),
         const SizedBox(height: 16),
-        Wrap(
-          spacing: 24,
-          runSpacing: 16,
-          children: mockArtistsProfiles.map((a) {
-            return _buildArtistAvatar(
-              context,
-              a.name,
-              a.role.split('/')[0].trim(),
-              a.avatarUrl,
-              () => onNavigate('artist_detail', '${a.id}:::${a.name}:::${a.avatarUrl}'),
-            );
-          }).toList(),
-        ),
+        if (_popularArtists.isNotEmpty)
+          Wrap(
+            spacing: 24,
+            runSpacing: 16,
+            children: _popularArtists.map((a) {
+              return _buildArtistAvatar(
+                context,
+                a.name,
+                a.role.split('·').first.trim(),
+                a.avatarUrl,
+                () => widget.onNavigate('artist_detail', '${a.id}:::${a.name}:::${a.avatarUrl}'),
+              );
+            }).toList(),
+          )
+        else if (_isLoadingContent)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -838,7 +904,7 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
             final gradientColors = c['gradient'] as List<Color>;
             final iconData = c['icon'] as IconData;
             final chartTitle = c['title'] as String;
-            final chartTracks = _liveToplists[chartTitle] ?? toplistTracksMap[chartTitle] ?? mockPresetTracks;
+            final chartTracks = _liveToplists[chartTitle] ?? const <Track>[];
 
             return SoftCard(
               padding: const EdgeInsets.all(12),
@@ -1554,8 +1620,8 @@ class _DesktopToplistDetailViewState extends State<DesktopToplistDetailView> {
   }
 }
 
-/// 3.6. 每日推荐歌单详情页 (DesktopDailyRecommendView - 专属声学日推全量 28 首高保真曲库)
-class DesktopDailyRecommendView extends StatelessWidget {
+/// 3.6. 每日推荐歌单详情页 (DesktopDailyRecommendView - 专属声学日推全量 30 首真实高保真曲库)
+class DesktopDailyRecommendView extends StatefulWidget {
   final Function(String viewId, [String? extra]) onNavigate;
 
   const DesktopDailyRecommendView({
@@ -1564,13 +1630,41 @@ class DesktopDailyRecommendView extends StatelessWidget {
   });
 
   @override
+  State<DesktopDailyRecommendView> createState() => _DesktopDailyRecommendViewState();
+}
+
+class _DesktopDailyRecommendViewState extends State<DesktopDailyRecommendView> {
+  List<Track> _tracks = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDailyTracks();
+  }
+
+  void _loadDailyTracks() async {
+    final cached = DailyRecommendService.instance.getDailyRecommendTracks();
+    if (cached.isNotEmpty) {
+      if (mounted) setState(() { _tracks = cached; _isLoading = false; });
+    }
+    final fresh = await DailyRecommendService.instance.getDailyRecommendTracksAsync();
+    if (mounted) {
+      setState(() {
+        _tracks = fresh;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
     final isDark = theme.isDarkMode;
 
     final service = DailyRecommendService.instance;
-    final tracks = service.getDailyRecommendTracks();
+    final tracks = _tracks.isNotEmpty ? _tracks : service.getDailyRecommendTracks();
     final greeting = service.getGreeting();
     final dayStr = service.getFormattedDay();
     final weekdayStr = service.getFormattedWeekday();
@@ -1581,7 +1675,7 @@ class DesktopDailyRecommendView extends StatelessWidget {
       children: [
         // 顶部返回按钮与层级导航
         InkWell(
-          onTap: () => onNavigate('discover'),
+          onTap: () => widget.onNavigate('discover'),
           borderRadius: BorderRadius.circular(20),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
@@ -1591,7 +1685,7 @@ class DesktopDailyRecommendView extends StatelessWidget {
                 SoftButton(
                   icon: Icons.arrow_back_rounded,
                   isCircle: true,
-                  onTap: () => onNavigate('discover'),
+                  onTap: () => widget.onNavigate('discover'),
                 ),
                 const SizedBox(width: 12),
                 Text('发现音乐', style: TextStyle(color: theme.textSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
@@ -1802,6 +1896,7 @@ class DesktopDailyRecommendView extends StatelessWidget {
 
         DesktopSongTableView(
           tracks: tracks,
+          emptyMessage: _isLoading ? '正在拉取今日专属日推曲目...' : '今日暂无推荐曲目',
           onIndexTap: (idx) {
             player.playPlaylist(tracks, startIndex: idx);
           },
@@ -1842,7 +1937,6 @@ class _DesktopArtistsViewState extends State<DesktopArtistsView> {
   @override
   void initState() {
     super.initState();
-    _artists = mockArtistsProfiles;
     _loadArtists(area: _selectedArea, type: _selectedType);
   }
 

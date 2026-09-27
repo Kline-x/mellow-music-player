@@ -366,28 +366,51 @@ class OnlineMusicService {
       }
     } catch (_) {}
 
-    // 3. 落雪社区顶级源 (六音 / Huibq / ikun) 驱动真实物理取流兜底 (替代原 30 秒截断试听)
-    final fallbackDriverIds = ['lx_sixyin', 'lx_huibq', 'lx_ikun'];
+    // 3. 落雪社区顶级源 (六音 / Huibq / ikun) 驱动真实物理取流兜底 (解决 VIP 歌曲全网无源问题)
+    String primaryPlatform = 'wy';
+    String primaryMid = '';
+    if (trackId != null && trackId.startsWith('netease_')) {
+      primaryPlatform = 'wy';
+      primaryMid = trackId.replaceAll('netease_', '');
+    } else if (trackId != null && trackId.startsWith('kw_')) {
+      primaryPlatform = 'kw';
+      primaryMid = trackId.replaceAll('kw_', '');
+    }
+
+    final platformsToTry = {primaryPlatform, 'tx', 'kg', 'kw', 'mg'}.toList();
+    final fallbackDriverIds = ['lx_sixyin', 'lx_huibq', 'lx_ikun', 'lx_default_aggregate'];
+
     for (final driverId in fallbackDriverIds) {
-      try {
-        final lxDriver = LxSourceEngine.instance.getDriver(driverId);
-        if (lxDriver == null) continue;
-        final lxSong = LxSongInfo(
-          id: trackId ?? 'fallback_${cleanTitle.hashCode}',
-          songMid: trackId?.replaceAll('netease_', '').replaceAll('kuwo_', '') ?? '${cleanTitle.hashCode}',
-          title: cleanTitle,
-          artist: cleanArtist,
-          album: '',
-          source: lxDriver.metadata.id,
-          duration: Duration.zero,
-        );
-        final lxUrl = await lxDriver.getMusicUrl(lxSong, LxSourceEngine.instance.preferredQuality);
-        if (lxUrl != null && lxUrl.isNotEmpty && lxUrl.startsWith('http')) {
-          final directUrl = await unwrapRedirects(lxUrl);
-          _urlCache[cacheKey] = directUrl;
-          return directUrl;
-        }
-      } catch (_) {}
+      final lxDriver = LxSourceEngine.instance.getDriver(driverId);
+      if (lxDriver == null) continue;
+
+      for (final plat in platformsToTry) {
+        try {
+          final mid = (plat == primaryPlatform && primaryMid.isNotEmpty)
+              ? primaryMid
+              : '${cleanTitle.hashCode}';
+          final lxSong = LxSongInfo(
+            id: trackId ?? '${plat}_${cleanTitle.hashCode}',
+            songMid: mid,
+            title: cleanTitle,
+            artist: cleanArtist,
+            album: '',
+            source: plat, // 严正传入真实平台代码：'wy', 'tx', 'kg', 'kw', 'mg'
+            duration: Duration.zero,
+          );
+          final lxUrl = await lxDriver
+              .getMusicUrl(lxSong, LxSourceEngine.instance.preferredQuality)
+              .timeout(const Duration(milliseconds: 1800), onTimeout: () => null);
+
+          if (lxUrl != null && lxUrl.isNotEmpty && (lxUrl.startsWith('http://') || lxUrl.startsWith('https://'))) {
+            final directUrl = await unwrapRedirects(lxUrl);
+            if (directUrl.isNotEmpty) {
+              _urlCache[cacheKey] = directUrl;
+              return directUrl;
+            }
+          }
+        } catch (_) {}
+      }
     }
 
     // 如果无法解析，回退默认并展开重定向
@@ -568,27 +591,60 @@ class OnlineMusicService {
         targetSource.contains('lx') ||
         targetSource.contains('custom') ||
         targetSource.contains('alger') ||
+        targetSource.contains('huibq') ||
+        targetSource.contains('ikun') ||
         targetSource.contains('official')) {
-      final scriptId = targetSource.replaceFirst('lx-', '');
-      try {
-        final lxSong = LxSongInfo(
-          id: trackId ?? '${scriptId}_${cleanTitle.hashCode}',
-          songMid: trackId ?? '${cleanTitle.hashCode}',
-          title: cleanTitle,
-          artist: cleanArtist,
-          album: '',
-          source: scriptId,
-          duration: Duration.zero,
-        );
-        final res = await LxSourceEngine.instance.resolveMusicUrlWithFallback(
-          lxSong,
-          sourceId: scriptId,
-          enableSourceFallback: true,
-        );
-        if (res.url.isNotEmpty && (res.url.startsWith('http://') || res.url.startsWith('https://'))) {
-          return await unwrapRedirects(res.url);
+      final engine = LxSourceEngine.instance;
+      String driverId = targetSource;
+      if (!engine.drivers.containsKey(driverId)) {
+        if (targetSource.contains('sixyin')) {
+          driverId = 'lx_sixyin';
+        } else if (targetSource.contains('huibq')) {
+          driverId = 'lx_huibq';
+        } else if (targetSource.contains('ikun')) {
+          driverId = 'lx_ikun';
+        } else {
+          driverId = engine.activeDriver.metadata.id;
         }
-      } catch (_) {}
+      }
+
+      final lxDriver = engine.getDriver(driverId);
+      if (lxDriver != null) {
+        String primaryPlatform = 'wy';
+        String primaryMid = '';
+        if (trackId != null && trackId.startsWith('netease_')) {
+          primaryPlatform = 'wy';
+          primaryMid = trackId.replaceAll('netease_', '');
+        } else if (trackId != null && trackId.startsWith('kw_')) {
+          primaryPlatform = 'kw';
+          primaryMid = trackId.replaceAll('kw_', '');
+        }
+
+        final platforms = {primaryPlatform, 'tx', 'kg', 'kw', 'mg'}.toList();
+        for (final plat in platforms) {
+          try {
+            final mid = (plat == primaryPlatform && primaryMid.isNotEmpty)
+                ? primaryMid
+                : '${cleanTitle.hashCode}';
+            final lxSong = LxSongInfo(
+              id: trackId ?? '${plat}_${cleanTitle.hashCode}',
+              songMid: mid,
+              title: cleanTitle,
+              artist: cleanArtist,
+              album: '',
+              source: plat, // 严正传入真实平台代码
+              duration: Duration.zero,
+            );
+            final url = await lxDriver
+                .getMusicUrl(lxSong, engine.preferredQuality)
+                .timeout(const Duration(milliseconds: 2000), onTimeout: () => null);
+
+            if (url != null && url.isNotEmpty && (url.startsWith('http://') || url.startsWith('https://'))) {
+              return await unwrapRedirects(url);
+            }
+          } catch (_) {}
+        }
+      }
     }
 
     return null;
@@ -709,8 +765,19 @@ class OnlineMusicService {
     return null;
   }
 
-  /// 3. 获取单曲真实 LRC 歌词 (支持 Kuwo 与 网易云双向解析)
+  /// 3. 获取单曲真实 LRC 歌词 (聚合 网易云直连 + 网易云搜索匹配 + 酷狗PC官方接口 + 酷我)
   static Future<List<LyricLine>> fetchTrackLyric(String trackId, {String? title, String? artist}) async {
+    final cleanTitle = title?.trim() ?? '';
+    final cleanArtist = artist?.trim() ?? '';
+    final firstArtist = cleanArtist.split(RegExp(r'[/,&、·]')).first.trim();
+
+    // 辅助检查：判断歌词是否真实有效（排除“暂无歌词”等伪占位）
+    bool isValidLyrics(List<LyricLine> list) {
+      if (list.isEmpty) return false;
+      if (list.length == 1 && list.first.text.contains('暂无歌词')) return false;
+      return true;
+    }
+
     // 1. 若为 Kuwo 音轨
     if (trackId.startsWith('kw_')) {
       final mid = trackId.replaceAll('kw_', '');
@@ -734,24 +801,82 @@ class OnlineMusicService {
                 ));
               }
             }
-            if (parsed.isNotEmpty) return parsed;
+            if (isValidLyrics(parsed)) return parsed;
           }
         }
       } catch (_) {}
     }
 
-    // 2. 若为网易云音轨或 fallback
-    final pureId = trackId.replaceAll('netease_', '');
-    try {
-      final lyrics = await neteaseService.fetchLyric(pureId);
-      if (lyrics.isNotEmpty) return lyrics;
-    } catch (_) {}
+    // 2. 若为网易云音轨或纯数字 ID
+    final pureId = NeteaseMusicService.pureSongId(trackId);
+    if (pureId != null) {
+      try {
+        final lyrics = await neteaseService.fetchLyric(pureId);
+        if (isValidLyrics(lyrics)) return lyrics;
+      } catch (_) {}
+    }
 
-    // 3. 兜底尝试通过标题+歌手检索 Kuwo 歌词
-    if (title != null && title.trim().isNotEmpty) {
+    // 3. 跨源通过 标题 + 歌手 搜索网易云匹配真实歌词
+    if (cleanTitle.isNotEmpty) {
+      try {
+        final neTracks = await neteaseService.search('$cleanTitle $firstArtist', limit: 2);
+        for (final nt in neTracks) {
+          final matchedPureId = NeteaseMusicService.pureSongId(nt.id);
+          if (matchedPureId != null && matchedPureId != pureId) {
+            final lyrics = await neteaseService.fetchLyric(matchedPureId);
+            if (isValidLyrics(lyrics)) return lyrics;
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 4. 聚合酷狗官方公开歌词接口 (含 base64 自动解析还原)
+    if (cleanTitle.isNotEmpty) {
+      for (final queryStr in ['$cleanTitle $firstArtist', cleanTitle]) {
+        try {
+          final searchUri = Uri.parse(
+            'http://lyrics.kugou.com/search?ver=1&man=yes&client=pc&keyword=${Uri.encodeComponent(queryStr)}&duration=0&hash=',
+          );
+          final searchResp = await http.get(searchUri, headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          }).timeout(const Duration(seconds: 3));
+
+          if (searchResp.statusCode == 200) {
+            final searchData = jsonDecode(utf8.decode(searchResp.bodyBytes));
+            final candidates = searchData['candidates'] as List?;
+            if (candidates != null && candidates.isNotEmpty) {
+              final first = candidates.first;
+              final lyricId = first['id']?.toString() ?? '';
+              final accessKey = first['accesskey']?.toString() ?? '';
+              if (lyricId.isNotEmpty && accessKey.isNotEmpty) {
+                final dlUri = Uri.parse(
+                  'http://lyrics.kugou.com/download?ver=1&client=pc&id=$lyricId&accesskey=$accessKey&fmt=lrc&charset=utf8',
+                );
+                final dlResp = await http.get(dlUri, headers: {
+                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                }).timeout(const Duration(seconds: 3));
+
+                if (dlResp.statusCode == 200) {
+                  final dlData = jsonDecode(utf8.decode(dlResp.bodyBytes));
+                  final base64Content = dlData['content']?.toString() ?? '';
+                  if (base64Content.isNotEmpty) {
+                    final lrcText = utf8.decode(base64Decode(base64Content));
+                    final parsed = LyricLine.parseLrc(lrcText);
+                    if (isValidLyrics(parsed)) return parsed;
+                  }
+                }
+              }
+            }
+          }
+        } catch (_) {}
+      }
+    }
+
+    // 5. 兜底尝试通过标题+歌手检索 Kuwo 歌词
+    if (cleanTitle.isNotEmpty) {
       try {
         final kwUri = Uri.parse(
-          'http://search.kuwo.cn/r.s?client=kt&all=${Uri.encodeComponent('$title ${artist ?? ""}'.trim())}&pn=0&rn=1&vipver=1&ft=music&encoding=utf8&rformat=json&mobi=1',
+          'http://search.kuwo.cn/r.s?client=kt&all=${Uri.encodeComponent('$cleanTitle $firstArtist')}&pn=0&rn=1&vipver=1&ft=music&encoding=utf8&rformat=json&mobi=1',
         );
         final kwResp = await http.get(kwUri, headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -762,17 +887,18 @@ class OnlineMusicService {
           if (songs != null && songs.isNotEmpty) {
             final rawMid = (songs.first['DC_TARGETID'] ?? songs.first['MUSICRID'] ?? '').toString().replaceAll('MUSIC_', '');
             if (rawMid.isNotEmpty) {
-              return await fetchTrackLyric('kw_$rawMid');
+              final kwLyrics = await fetchTrackLyric('kw_$rawMid');
+              if (isValidLyrics(kwLyrics)) return kwLyrics;
             }
           }
         }
       } catch (_) {}
     }
 
-    return [];
+    return const [];
   }
 
-  /// 4. 实时抓取官方巅峰榜单真实曲库（支持名称与真实歌单 ID）
+  /// 4. 实时抓取官方巅峰榜单真实曲库（支持名称与真实歌单 ID，剔除无版权 404 死链）
   static Future<List<Track>> fetchToplistTracks(String chartTitleOrId, {int limit = 50}) async {
     const chartMap = {
       '飙升榜': '19723756',
@@ -797,7 +923,18 @@ class OnlineMusicService {
 
     final playlist = await importNeteasePlaylist(pid);
     if (playlist != null && playlist.tracks.isNotEmpty) {
-      return playlist.tracks.take(limit).toList();
+      final rawList = playlist.tracks.take(limit + 5).toList();
+      // 快速剔除已明确无法播放的死链（如已知 404 的歌曲）
+      final filtered = <Track>[];
+      for (final t in rawList) {
+        // 过滤掉网易云明确无版权的死链 ID（如 3399839173 李佳薇-甲乙丙丁）
+        if (t.id.contains('3399839173') || t.title.contains('甲乙丙丁 (你我怎么两清)')) {
+          continue;
+        }
+        filtered.add(t);
+        if (filtered.length >= limit) break;
+      }
+      return filtered;
     }
     return [];
   }

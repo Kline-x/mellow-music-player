@@ -218,7 +218,44 @@ class _MobilePersonalFMPageState extends State<MobilePersonalFMPage>
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
-    final track = player.currentTrack ?? mockPresetTracks[0];
+    final track = player.currentTrack;
+    if (track == null) {
+      return Scaffold(
+        backgroundColor: theme.canvasColor,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.textPrimary, size: 20),
+            onPressed: widget.onBack,
+          ),
+          title: Text('私人漫游 FM', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary, fontSize: 17)),
+          centerTitle: true,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.radio_rounded, size: 54, color: theme.textMuted),
+              const SizedBox(height: 16),
+              Text('漫游雷达待命中', style: TextStyle(color: theme.textSecondary, fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text('轻触开启你的专属音乐旅程', style: TextStyle(color: theme.textMuted, fontSize: 13)),
+              const SizedBox(height: 20),
+              SoftButton(
+                label: '开启漫游',
+                icon: Icons.play_arrow_rounded,
+                isPill: true,
+                onTap: () async {
+                  final list = await DailyRecommendService.instance.getDailyRecommendTracksAsync();
+                  if (list.isNotEmpty) player.playPlaylist(list, startIndex: 0);
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     if (player.isPlaying) {
       if (!_rotationController.isAnimating) _rotationController.repeat();
@@ -313,9 +350,37 @@ class _MobilePersonalFMPageState extends State<MobilePersonalFMPage>
 }
 
 /// 3. 歌单广场二级页 (MobilePlaylistSquarePage)
-class MobilePlaylistSquarePage extends StatelessWidget {
+class MobilePlaylistSquarePage extends StatefulWidget {
   final VoidCallback onBack;
   const MobilePlaylistSquarePage({super.key, required this.onBack});
+
+  @override
+  State<MobilePlaylistSquarePage> createState() => _MobilePlaylistSquarePageState();
+}
+
+class _MobilePlaylistSquarePageState extends State<MobilePlaylistSquarePage> {
+  List<ImportedPlaylist> _playlists = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPlaylists();
+  }
+
+  void _loadPlaylists() async {
+    try {
+      final res = await OnlineMusicService.searchOnlinePlaylists('精选', limit: 20);
+      if (mounted) {
+        setState(() {
+          _playlists = res;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -329,56 +394,109 @@ class MobilePlaylistSquarePage extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.textPrimary, size: 20),
-          onPressed: onBack,
+          onPressed: widget.onBack,
         ),
         title: Text('歌单广场', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary, fontSize: 17)),
         centerTitle: true,
       ),
-      body: GridView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 0.88,
-        ),
-        itemCount: mockPresetTracks.length,
-        itemBuilder: (context, idx) {
-          final t = mockPresetTracks[idx];
-          return SoftCard(
-            padding: const EdgeInsets.all(10),
-            onTap: () => player.playTrack(t),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: MellowImage(url: t.coverUrl, width: double.infinity, height: double.infinity, borderRadius: MellowRadii.borderR12),
-                ),
-                const SizedBox(height: 8),
-                Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.textPrimary)),
-                Text('${t.artist} · ${t.album}', style: TextStyle(fontSize: 11, color: theme.textMuted)),
-              ],
+      body: _isLoading && _playlists.isEmpty
+          ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
+          : GridView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.88,
+              ),
+              itemCount: _playlists.length,
+              itemBuilder: (context, idx) {
+                final pl = _playlists[idx];
+                return SoftCard(
+                  padding: const EdgeInsets.all(10),
+                  onTap: () async {
+                    if (pl.tracks.isNotEmpty) {
+                      player.playPlaylist(pl.tracks, startIndex: 0);
+                    } else {
+                      final detail = await OnlineMusicService.importNeteasePlaylist(pl.id);
+                      if (detail != null && detail.tracks.isNotEmpty) {
+                        player.playPlaylist(detail.tracks, startIndex: 0);
+                      }
+                    }
+                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: MellowImage(
+                          url: pl.coverUrl,
+                          width: double.infinity,
+                          height: double.infinity,
+                          borderRadius: MellowRadii.borderR12,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        pl.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.textPrimary),
+                      ),
+                      Text(
+                        pl.description.isNotEmpty ? pl.description : '${pl.trackCount}首精选歌曲',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 11, color: theme.textMuted),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
-          );
-        },
-      ),
     );
   }
 }
 
 /// 4. 巅峰排行榜二级页 (MobileToplistPage)
-class MobileToplistPage extends StatelessWidget {
+class MobileToplistPage extends StatefulWidget {
   final VoidCallback onBack;
   final Function(String chartName)? onSelectToplist;
 
   const MobileToplistPage({super.key, required this.onBack, this.onSelectToplist});
 
   @override
+  State<MobileToplistPage> createState() => _MobileToplistPageState();
+}
+
+class _MobileToplistPageState extends State<MobileToplistPage> {
+  final charts = ['飙升榜', '热歌榜', '新歌榜', '原创榜'];
+  final Map<String, List<Track>> _liveToplists = {};
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadToplists();
+  }
+
+  void _loadToplists() async {
+    for (final chart in charts) {
+      try {
+        final tracks = await OnlineMusicService.fetchToplistTracks(chart, limit: 10);
+        if (mounted && tracks.isNotEmpty) {
+          setState(() {
+            _liveToplists[chart] = tracks;
+          });
+        }
+      } catch (_) {}
+    }
+    if (mounted) setState(() => _isLoading = false);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
-
-    final charts = ['飙升榜', '热歌榜', '新歌榜', '原创榜'];
 
     return Scaffold(
       backgroundColor: theme.canvasColor,
@@ -387,7 +505,7 @@ class MobileToplistPage extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.textPrimary, size: 20),
-          onPressed: onBack,
+          onPressed: widget.onBack,
         ),
         title: Text('官方巅峰排行榜', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary, fontSize: 17)),
         centerTitle: true,
@@ -398,12 +516,12 @@ class MobileToplistPage extends StatelessWidget {
         separatorBuilder: (_, __) => const SizedBox(height: 12),
         itemBuilder: (context, idx) {
           final chartName = charts[idx];
-          final chartTracks = toplistTracksMap[chartName] ?? mockPresetTracks;
+          final chartTracks = _liveToplists[chartName] ?? const <Track>[];
           return SoftCard(
             padding: const EdgeInsets.all(16),
             onTap: () {
-              if (onSelectToplist != null) {
-                onSelectToplist!(chartName);
+              if (widget.onSelectToplist != null) {
+                widget.onSelectToplist!(chartName);
               } else if (chartTracks.isNotEmpty) {
                 player.playPlaylist(chartTracks, startIndex: 0);
               }
@@ -424,7 +542,12 @@ class MobileToplistPage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 10),
-                ...List.generate(chartTracks.length.clamp(0, 3), (i) {
+                if (chartTracks.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(_isLoading ? '正在拉取实时官方榜单...' : '暂无榜单数据', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                  )
+                else ...List.generate(chartTracks.length.clamp(0, 3), (i) {
                   final t = chartTracks[i];
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 2),
@@ -440,7 +563,10 @@ class MobileToplistPage extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Text('查看完整榜单 (${chartTracks.length}首) >', style: TextStyle(fontSize: 11.5, color: theme.accentColor, fontWeight: FontWeight.w600)),
+                    Text(
+                      chartTracks.isNotEmpty ? '查看完整榜单 (${chartTracks.length}首) >' : '查看完整榜单 >',
+                      style: TextStyle(fontSize: 11.5, color: theme.accentColor, fontWeight: FontWeight.w600),
+                    ),
                   ],
                 ),
               ],
@@ -729,15 +855,57 @@ class MobileRadioPage extends StatelessWidget {
 }
 
 /// 6. 热门歌手列表二级页 (MobileArtistsPage)
-class MobileArtistsPage extends StatelessWidget {
+class MobileArtistsPage extends StatefulWidget {
   final VoidCallback onBack;
   final Function(String artistName) onSelectArtist;
   const MobileArtistsPage({super.key, required this.onBack, required this.onSelectArtist});
 
   @override
+  State<MobileArtistsPage> createState() => _MobileArtistsPageState();
+}
+
+class _MobileArtistsPageState extends State<MobileArtistsPage> {
+  List<ArtistProfile> _artists = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadArtists();
+  }
+
+  void _loadArtists() async {
+    try {
+      final rawList = await OnlineMusicService.fetchArtistList(limit: 50);
+      if (mounted) {
+        setState(() {
+          _artists = rawList.map((item) {
+            final id = item['id']?.toString() ?? '';
+            final name = item['name']?.toString() ?? '歌手';
+            var picUrl = item['img1v1Url']?.toString() ?? item['picUrl']?.toString() ?? '';
+            final musicSize = (item['musicSize'] as num?)?.toInt() ?? 0;
+            return ArtistProfile(
+              id: id,
+              name: name,
+              role: '华语音乐人 · $musicSize首单曲',
+              fans: '华语热度榜',
+              bio: '热门入驻音乐人',
+              avatarUrl: picUrl.isNotEmpty ? picUrl : NeteaseMusicService.fallbackCoverFor(name, '歌手'),
+              musicSize: musicSize,
+              albumSize: 0,
+            );
+          }).toList();
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
-    final artists = mockArtistsProfiles;
 
     return Scaffold(
       backgroundColor: theme.canvasColor,
@@ -746,22 +914,24 @@ class MobileArtistsPage extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.textPrimary, size: 20),
-          onPressed: onBack,
+          onPressed: widget.onBack,
         ),
         title: Text('热门入驻歌手', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary, fontSize: 17)),
         centerTitle: true,
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-        itemCount: artists.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
-        itemBuilder: (context, idx) {
-          final a = artists[idx];
-          return SoftCard(
-            padding: const EdgeInsets.all(12),
-            onTap: () => onSelectArtist(a.name),
-            child: Row(
-              children: [
+      body: _isLoading && _artists.isEmpty
+          ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
+          : ListView.separated(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+              itemCount: _artists.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              itemBuilder: (context, idx) {
+                final a = _artists[idx];
+                return SoftCard(
+                  padding: const EdgeInsets.all(12),
+                  onTap: () => widget.onSelectArtist(a.name),
+                  child: Row(
+                    children: [
                 MellowAvatar(radius: 26, url: a.avatarUrl),
                 const SizedBox(width: 14),
                 Expanded(

@@ -1134,20 +1134,11 @@ List<Track> getAllKnownTracks() {
   return map.values.toList();
 }
 
-/// 全局已知曲库寻轨辅助函数 (解决收藏与历史跨列表检索)
+/// 全局已知曲库寻轨辅助函数 (仅在真实曲目库中查找，杜绝Mock假歌兜底)
 Track? findKnownTrackById(String id) {
+  final targetId = (id == 'track-1') ? 'netease_160488' : id;
   for (final t in getAllKnownTracks()) {
-    if (t.id == id) return t;
-  }
-  // 兼容老版本预设曲目索引 ID（例如 track-1 对应首支预设曲目 云水禅心）
-  if (id == 'track-1') {
-    return mockPresetTracks.firstWhere((t) => t.title == '云水禅心', orElse: () => mockPresetTracks.first);
-  }
-  if (id.startsWith('track-')) {
-    final idx = int.tryParse(id.substring(6));
-    if (idx != null && idx > 0 && idx <= mockPresetTracks.length) {
-      return mockPresetTracks[idx - 1];
-    }
+    if (t.id == targetId) return t;
   }
   return null;
 }

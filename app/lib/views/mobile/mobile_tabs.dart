@@ -8,6 +8,7 @@ import '../../design_system/soft_card.dart';
 import '../../design_system/soft_button.dart';
 import '../../core/audio/audio_player_service.dart';
 import '../../core/audio/track_model.dart';
+import '../../core/sources/online_music_service.dart';
 import '../common/modals.dart';
 
 /// 1. 移动端 Tab 1: 发现音乐 (MobileDiscoverTab - 1:1 原型复刻)
@@ -354,12 +355,16 @@ class MobileDiscoverTab extends StatelessWidget {
                               title: '午夜霓虹',
                               artist: 'M83',
                               coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&q=80',
-                              onPlay: () {
-                                final t = player.playlist.firstWhere(
+                              onPlay: () async {
+                                final t = player.playlist.where(
                                   (x) => x.title.contains('Midnight') || x.artist.contains('M83'),
-                                  orElse: () => mockPresetTracks[0],
-                                );
-                                player.playTrack(t);
+                                ).firstOrNull;
+                                if (t != null) {
+                                  player.playTrack(t);
+                                } else {
+                                  final searched = await OnlineMusicService.searchOnlineTracks('Midnight M83', limit: 1);
+                                  if (searched.isNotEmpty) player.playTrack(searched.first);
+                                }
                               },
                             ),
                           ),
@@ -778,6 +783,30 @@ class MobileExploreTab extends StatefulWidget {
 class _MobileExploreTabState extends State<MobileExploreTab> {
   String _currentTag = '全部';
   final List<String> _tags = ['全部', '华语', '流行', '摇滚', '民谣', '电子', '古典'];
+  List<Track> _tracks = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExploreTracks(_currentTag);
+  }
+
+  void _loadExploreTracks(String tag) async {
+    setState(() => _isLoading = true);
+    try {
+      final query = tag == '全部' ? '精选热歌' : '$tag 精选';
+      final res = await OnlineMusicService.searchOnlineTracks(query, limit: 20);
+      if (mounted) {
+        setState(() {
+          _tracks = res;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -801,39 +830,48 @@ class _MobileExploreTabState extends State<MobileExploreTab> {
                   isActive: isSel,
                   isPill: true,
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  onTap: () => setState(() => _currentTag = tag),
+                  onTap: () {
+                    setState(() => _currentTag = tag);
+                    _loadExploreTracks(tag);
+                  },
                 ),
               );
             }).toList(),
           ),
         ),
         const SizedBox(height: 20),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.78,
-          ),
-          itemCount: mockPresetTracks.length,
-          itemBuilder: (context, idx) {
-            final t = mockPresetTracks[idx];
-            return SoftCard(
-              padding: const EdgeInsets.all(10),
-              onTap: () => player.playTrack(t),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: MellowImage(
-                      url: t.coverUrl,
-                      width: double.infinity,
-                      height: double.infinity,
-                      borderRadius: MellowRadii.borderR12,
+        if (_isLoading && _tracks.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 40),
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          )
+        else
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.78,
+            ),
+            itemCount: _tracks.length,
+            itemBuilder: (context, idx) {
+              final t = _tracks[idx];
+              return SoftCard(
+                padding: const EdgeInsets.all(10),
+                onTap: () => player.playTrack(t),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: MellowImage(
+                        url: t.coverUrl,
+                        width: double.infinity,
+                        height: double.infinity,
+                        borderRadius: MellowRadii.borderR12,
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 8),
                   Text(
                     t.title,

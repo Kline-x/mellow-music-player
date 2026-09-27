@@ -359,6 +359,8 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
                   controller: _searchController,
                   focusNode: _focusNode,
                   autofocus: widget.initialQuery == null,
+                  keyboardType: TextInputType.text,
+                  enableInteractiveSelection: true,
                   style: TextStyle(
                     fontSize: 15,
                     color: theme.textPrimary,

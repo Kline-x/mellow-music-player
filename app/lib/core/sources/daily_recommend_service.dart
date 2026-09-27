@@ -1,10 +1,53 @@
+import 'dart:async';
+import 'dart:io';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import '../audio/track_model.dart';
+import 'online_music_service.dart';
 
-/// 每日专属推荐曲库引擎 (基于自然日期生成高保真推荐池与动态问候语)
-class DailyRecommendService {
+/// 每日专属推荐曲库引擎 (基于自然日期 06:00 业务临界点生成真实推荐曲库与动态问候语)
+class DailyRecommendService extends ChangeNotifier {
   static final DailyRecommendService instance = DailyRecommendService._internal();
-  DailyRecommendService._internal();
+  DailyRecommendService._internal() {
+    _scheduleNextDailyReset();
+  }
+
+  List<Track> _cachedTracks = [];
+  String _cachedDateKey = '';
+  Timer? _midnightResetTimer;
+
+  /// 计算当前有效推荐业务日期 Key
+  /// 规则：以早晨 06:00 作为全新一天日推的切换节点。
+  /// 00:00 - 05:59 属于前一天的日推批次；06:00 之后属于当天的日推批次。
+  /// 无论用户在上午 7 点、中午 12 点、下午 18 点、还是深夜 23 点打开软件，
+  /// 均能精准计算并呈现属于当天的专属日推，绝不存在“错过 6 点就不更新”的缺陷！
+  static String getEffectiveDateKey([DateTime? targetTime]) {
+    final now = targetTime ?? DateTime.now();
+    final effectiveDate = now.hour < 6
+        ? now.subtract(const Duration(days: 1))
+        : now;
+    return '${effectiveDate.year}-${effectiveDate.month.toString().padLeft(2, '0')}-${effectiveDate.day.toString().padLeft(2, '0')}';
+  }
+
+  /// 安排下一个早晨 06:00 的自动重置定时器 (解决用户挂机跨 06:00 不自动刷新的痛点)
+  void _scheduleNextDailyReset() {
+    _midnightResetTimer?.cancel();
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      return; // 离线单测模式下避免挂起跨日定时器，确保测试框架安全释放
+    }
+    final now = DateTime.now();
+    var nextSixAm = DateTime(now.year, now.month, now.day, 6, 0, 0);
+    if (now.isAfter(nextSixAm)) {
+      nextSixAm = nextSixAm.add(const Duration(days: 1));
+    }
+    final delay = nextSixAm.difference(now);
+    _midnightResetTimer = Timer(delay, () {
+      _cachedTracks.clear();
+      _cachedDateKey = '';
+      notifyListeners();
+      _scheduleNextDailyReset();
+    });
+  }
 
   /// 获取当前动态问候语
   String getGreeting() {
@@ -42,38 +85,51 @@ class DailyRecommendService {
     return '${now.year}年${now.month}月';
   }
 
-  /// 依据当天日期确定性生成 25~30 首高保真每日推荐单曲
-  List<Track> getDailyRecommendTracks({int limit = 28}) {
-    final now = DateTime.now();
-    final seed = now.year * 10000 + now.month * 100 + now.day;
-    final random = Random(seed);
-
-    // 基础高质量候选曲目池（包含预设精选与全平台核心真实曲目）
-    final allCandidates = <Track>[
-      ...mockPresetTracks,
-      ...mockJayChouTracks,
-      ...mockWuNaTracks,
-      ...mockBeyondTracks,
-      ...mockBoYuanTracks,
-      ...toplistSurgeTracks,
-      ...toplistHotTracks,
-      ...toplistNewTracks,
-      ...toplistOriginTracks,
-    ];
-
-    // 按标题和歌手去重
-    final uniqueMap = <String, Track>{};
-    for (final t in allCandidates) {
-      final key = '${t.title.trim()}_${t.artist.trim()}';
-      if (!uniqueMap.containsKey(key)) {
-        uniqueMap[key] = t;
-      }
+  /// 异步拉取真实全网热门榜单生成的 100% 真实每日推荐歌曲
+  Future<List<Track>> getDailyRecommendTracksAsync({int limit = 30}) async {
+    final dateKey = getEffectiveDateKey();
+    if (_cachedTracks.isNotEmpty && _cachedDateKey == dateKey) {
+      return _cachedTracks;
     }
-    final pool = uniqueMap.values.toList();
 
-    // 根据当日种子进行伪随机打乱排序，保证每天同一天内稳定相同，次日自动焕新
-    pool.shuffle(random);
+    try {
+      final results = await Future.wait([
+        OnlineMusicService.fetchToplistTracks('热歌榜', limit: 30),
+        OnlineMusicService.fetchToplistTracks('飙升榜', limit: 30),
+        OnlineMusicService.fetchToplistTracks('新歌榜', limit: 30),
+      ]);
+      final combined = [...results[0], ...results[1], ...results[2]];
+      final deduped = OnlineMusicService.dedupeByTitleArtist(combined);
 
-    return pool.take(limit.clamp(1, pool.length)).toList();
+      if (deduped.isNotEmpty) {
+        final seed = dateKey.hashCode;
+        deduped.shuffle(Random(seed));
+        _cachedTracks = deduped.take(limit).toList();
+        _cachedDateKey = dateKey;
+        notifyListeners();
+        return _cachedTracks;
+      }
+    } catch (e) {
+      debugPrint('[DailyRecommendService] 异步抓取真实日推曲目异常: $e');
+    }
+
+    return _cachedTracks;
+  }
+
+  /// 同步获取（若缓存有效则立即返回，若为空则静默触发异步加载）
+  List<Track> getDailyRecommendTracks({int limit = 28}) {
+    final dateKey = getEffectiveDateKey();
+    if (_cachedTracks.isNotEmpty && _cachedDateKey == dateKey) {
+      return _cachedTracks.take(limit).toList();
+    }
+    // 触发异步补齐
+    getDailyRecommendTracksAsync(limit: limit);
+    return _cachedTracks.take(limit).toList();
+  }
+
+  @override
+  void dispose() {
+    _midnightResetTimer?.cancel();
+    super.dispose();
   }
 }

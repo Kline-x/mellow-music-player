@@ -5,7 +5,6 @@ import '../design_system/theme_provider.dart';
 import '../design_system/acoustic_mesh_glow.dart';
 import '../design_system/mellow_image.dart';
 import '../core/audio/audio_player_service.dart';
-import '../core/audio/track_model.dart';
 import '../views/mobile/mobile_tabs.dart';
 import '../views/mobile/mobile_pages.dart';
 import '../views/mobile/mobile_sheets.dart';
@@ -93,7 +92,10 @@ class _MobileScaffoldState extends State<MobileScaffold> {
   Widget _buildDynamicIslandHeader(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
-    final track = player.currentTrack ?? mockPresetTracks[0];
+    final track = player.currentTrack;
+    if (track == null) {
+      return const SizedBox(height: 38);
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
@@ -189,7 +191,8 @@ class _MobileScaffoldState extends State<MobileScaffold> {
   Widget _buildFloatingMiniPlayer(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
-    final track = player.currentTrack ?? mockPresetTracks[0];
+    final track = player.currentTrack;
+    if (track == null) return const SizedBox.shrink();
     final isFav = player.isFavorite(track.id);
 
     final totalMs = player.duration.inMilliseconds;

@@ -199,9 +199,15 @@ class LxOfficialSourceDriver implements LxSourceDriver {
   }) async {
     final boards = await getLeaderboards();
     final board = boards.firstWhere((b) => b.id == boardId, orElse: () => boards.first);
+    List<LxSongInfo> songList = [];
+    try {
+      final realTracks = await OnlineMusicService.fetchToplistTracks(board.name, limit: limit);
+      songList = realTracks.map((t) => _trackToLxSong(t)).toList();
+    } catch (_) {}
+
     return LxLeaderboardDetail(
       board: board,
-      songs: mockPresetTracks.take(limit).map((t) => _trackToLxSong(t)).toList(),
+      songs: songList,
       page: page,
       limit: limit,
     );
@@ -239,9 +245,15 @@ class LxOfficialSourceDriver implements LxSourceDriver {
   Future<LxPlaylistDetail> getPlaylistDetail(String playlistId) async {
     final playlists = await getPlaylists();
     final pl = playlists.firstWhere((p) => p.id == playlistId, orElse: () => playlists.first);
+    List<LxSongInfo> songList = [];
+    try {
+      final realTracks = await OnlineMusicService.fetchToplistTracks('热歌榜', limit: 15);
+      songList = realTracks.map((t) => _trackToLxSong(t)).toList();
+    } catch (_) {}
+
     return LxPlaylistDetail(
       playlist: pl,
-      songs: mockPresetTracks.take(15).map((t) => _trackToLxSong(t)).toList(),
+      songs: songList,
     );
   }
 

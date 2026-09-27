@@ -8,7 +8,6 @@ import '../../design_system/soft_button.dart';
 import '../../design_system/acoustic_mesh_glow.dart';
 import '../../design_system/mellow_image.dart';
 import '../../core/audio/audio_player_service.dart';
-import '../../core/audio/track_model.dart';
 import '../common/modals.dart';
 
 /// 1. 移动端全屏播放器/歌词页 (大黑胶与动效歌词横滑切换)
@@ -64,7 +63,30 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
     final player = context.watch<AudioPlayerService>();
     final theme = context.watch<ThemeProvider>();
     final isDark = theme.isDarkMode;
-    final track = player.currentTrack ?? mockPresetTracks[0];
+    final track = player.currentTrack;
+    if (track == null) {
+      return Container(
+        height: MediaQuery.of(context).size.height * 0.5,
+        decoration: BoxDecoration(
+          color: theme.canvasColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.music_note_rounded, size: 48, color: theme.textMuted),
+              const SizedBox(height: 16),
+              Text('暂未播放任何歌曲', style: TextStyle(color: theme.textSecondary, fontSize: 16, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Text('前往发现页或搜索以挑选心仪单曲', style: TextStyle(color: theme.textMuted, fontSize: 13)),
+              const SizedBox(height: 20),
+              SoftButton(label: '返回', onTap: widget.onClose, isPill: true),
+            ],
+          ),
+        ),
+      );
+    }
 
     if (player.isPlaying) {
       if (!_turntableController.isAnimating) _turntableController.repeat();

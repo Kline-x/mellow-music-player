@@ -144,6 +144,10 @@ void main() {
       // 验证没有 RenderFlex overflow
       expect(tester.takeException(), isNull);
       expect(find.byType(DesktopScaffold), findsOneWidget);
+
+      // 安全卸载 widget 树清理定时器
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(milliseconds: 100));
     });
 
     testWidgets('ISSUE-04 & ISSUE-05: 移动端全屏抽屉歌词单行高亮与滑动控制器绑定', (tester) async {

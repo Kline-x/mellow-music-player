@@ -476,20 +476,8 @@ class PlatformPresetSourceDriver implements LxSourceDriver {
     if (latency > Duration.zero) await Future.delayed(latency);
     if (simulateFailure) return null;
 
-    final target = _mockDatabase.firstWhere(
-      (s) => s.id == song.id || s.title == song.title,
-      orElse: () => song,
-    );
-
-    return LxLyricResult(
-      songId: target.id,
-      lyric: '[00:00.00]${target.title} - ${target.artist} ($platformName 版)\n'
-          '[00:05.00]流光溢彩，微风轻抚过耳际\n'
-          '[00:15.00]时光在旋律里悄然流转\n'
-          '[00:25.00]Mellow Music 六维音源平滑解析',
-      tlyric: '[00:05.00]Colors shining, soft breeze brushing ears\n'
-          '[00:15.00]Time flows quietly through the melody',
-    );
+    // 严禁编造任何虚假文案或假歌词，查不到歌词时诚实返回 null 交由多源聚合引擎处理
+    return null;
   }
 
   @override
@@ -1343,6 +1331,36 @@ class LxSourceEngine extends ChangeNotifier {
       mockSongs: sampleSongs.map((s) => s.copyWith(source: LxPlatformId.mg)).toList(),
       allowTestingUrls: enableTestingUrls,
     ));
+
+    // 7. 预装六音高保真无损解析源 (默认内置标杆音源之一)
+    try {
+      final sixyinDriver = LxCustomScriptDriver.fromScript(
+        kSixYinAggregateScript,
+        customId: 'lx_sixyin',
+      );
+      registerDriver(sixyinDriver);
+    } catch (_) {}
+
+    // 8. 预装 Huibq 全能无损解析源 (默认内置标杆音源之二)
+    try {
+      final huibqDriver = LxCustomScriptDriver.fromScript(
+        kHuibqAggregateScript,
+        customId: 'lx_huibq',
+      );
+      registerDriver(huibqDriver);
+    } catch (_) {}
+
+    // 9. 预装 ikun 高并发加速源 (默认内置标杆音源之三)
+    try {
+      final ikunDriver = LxCustomScriptDriver.fromScript(
+        kIkunAggregateScript,
+        customId: 'lx_ikun',
+      );
+      registerDriver(ikunDriver);
+    } catch (_) {}
+
+    // 10. 挂载落雪官方内置音源驱动
+    registerDriver(LxOfficialSourceDriver());
   }
 
   // ==========================================

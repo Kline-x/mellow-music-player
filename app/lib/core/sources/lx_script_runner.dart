@@ -275,11 +275,13 @@ class LxScriptRunner {
         }
       }
 
+      bool hostFailed = false;
       for (final url in candidates) {
+        if (hostFailed) break;
         try {
           final resp = await _client
               .get(Uri.parse(url), headers: headers)
-              .timeout(const Duration(seconds: 6));
+              .timeout(const Duration(milliseconds: 1200));
 
           if (resp.statusCode >= 200 && resp.statusCode < 300) {
             final body = utf8.decode(resp.bodyBytes);
@@ -298,7 +300,8 @@ class LxScriptRunner {
             }
           }
         } catch (e) {
-          debugPrint('[LxScriptRunner] 尝试请求落雪端点 [$url] 异常: $e');
+          debugPrint('[LxScriptRunner] 尝试请求落雪端点 [$url] 异常 (触发短熔断): $e');
+          hostFailed = true; // 同主机首个请求失败立即短路，不再死等其他候选项
         }
       }
     }

@@ -29,20 +29,47 @@ class _CustomCallbackIntent extends Intent {
 class ContextAwareShortcutManager extends ShortcutManager {
   ContextAwareShortcutManager({super.shortcuts});
 
+  /// 深度探测当前全局焦点是否处于文本编辑输入控件内部
+  static bool isTextInputFocused() {
+    final primaryFocus = FocusManager.instance.primaryFocus;
+    if (primaryFocus == null) return false;
+    final ctx = primaryFocus.context;
+    if (ctx == null) return false;
+
+    // 1. 直接检查当前 widget 是否为文本输入类
+    if (ctx.widget is EditableText || ctx.widget is TextField) return true;
+
+    // 2. 检查祖先树是否包含 EditableText / TextField
+    if (ctx.findAncestorStateOfType<EditableTextState>() != null ||
+        ctx.findAncestorWidgetOfExactType<EditableText>() != null ||
+        ctx.findAncestorWidgetOfExactType<TextField>() != null) {
+      return true;
+    }
+
+    // 3. 检查直接子节点 (Flutter 中 TextField 的 Focus 往往包裹在 EditableText 外层)
+    bool hasEditableChild = false;
+    void visitor(Element element) {
+      if (element.widget is EditableText) {
+        hasEditableChild = true;
+        return;
+      }
+      if (!hasEditableChild) {
+        element.visitChildren(visitor);
+      }
+    }
+    ctx.visitChildElements(visitor);
+    return hasEditableChild;
+  }
+
   @override
   KeyEventResult handleKeypress(BuildContext context, KeyEvent event) {
-    final primaryFocus = FocusManager.instance.primaryFocus;
-    if (primaryFocus != null) {
-      final widget = primaryFocus.context?.widget;
-      final isEditable = widget is EditableText ||
-          primaryFocus.context?.findAncestorStateOfType<EditableTextState>() != null;
-      if (isEditable) {
-        // 处于文本输入时，仅放行带 Ctrl / Cmd 修饰键的全局组合键 (如 Ctrl+K, Cmd+D)，单键(空格/方向键/字母)一律放行给输入法
-        final hasModifier = HardwareKeyboard.instance.isControlPressed ||
-            HardwareKeyboard.instance.isMetaPressed;
-        if (!hasModifier) {
-          return KeyEventResult.ignored;
-        }
+    if (isTextInputFocused()) {
+      // 处于文本输入时，仅放行带 Ctrl / Cmd 修饰键的全局组合键 (如 Ctrl+K, Cmd+K)，
+      // 其余所有单键 (空格、英文字母、方向键、回车) 100% 放行给输入法与编辑光标
+      final hasModifier = HardwareKeyboard.instance.isControlPressed ||
+          HardwareKeyboard.instance.isMetaPressed;
+      if (!hasModifier) {
+        return KeyEventResult.ignored;
       }
     }
     return super.handleKeypress(context, event);
@@ -177,7 +204,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
       }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _rootFocusNode.requestFocus();
+      if (mounted && _activeView != 'search') _rootFocusNode.requestFocus();
     });
   }
 
@@ -194,7 +221,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
         }
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _rootFocusNode.requestFocus();
+        if (mounted && _activeView != 'search') _rootFocusNode.requestFocus();
       });
     }
   }
@@ -212,7 +239,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
         }
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _rootFocusNode.requestFocus();
+        if (mounted && _activeView != 'search') _rootFocusNode.requestFocus();
       });
     }
   }
@@ -280,21 +307,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
       child: Focus(
         focusNode: _rootFocusNode,
         autofocus: true,
-        child: GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onTap: () {
-            final primaryFocus = FocusManager.instance.primaryFocus;
-            if (primaryFocus != null && primaryFocus != _rootFocusNode) {
-              final widget = primaryFocus.context?.widget;
-              final isEditable = widget is EditableText ||
-                  primaryFocus.context?.findAncestorStateOfType<EditableTextState>() != null;
-              if (isEditable) {
-                primaryFocus.unfocus();
-              }
-              _rootFocusNode.requestFocus();
-            }
-          },
-          child: Scaffold(
+        child: Scaffold(
           backgroundColor: theme.canvasColor,
           body: Stack(
             children: [
@@ -402,7 +415,6 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                 ),
             ],
           ),
-        ),
         ),
       ),
     );

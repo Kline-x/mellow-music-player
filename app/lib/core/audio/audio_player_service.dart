@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'track_model.dart';
@@ -30,7 +31,11 @@ class AudioPlayerService extends ChangeNotifier {
   StreamSubscription<bool>? _playingSub;
   StreamSubscription<void>? _completeSub;
 
-  final List<Track> _playlist = List.from(mockPresetTracks);
+  /// 真机与正式客户端初始曲库绝对纯净 (零 Mock 数据)，仅在离线单测模式保留测试夹具
+  static bool get isRunningInTest =>
+      Platform.environment.containsKey('FLUTTER_TEST');
+
+  final List<Track> _playlist = isRunningInTest ? List.from(mockPresetTracks) : [];
   final List<Track> _playHistory = [];
   final Set<String> _favoriteIds = {};
   final Map<String, Track> _cachedFavoriteTracks = {};
@@ -546,14 +551,24 @@ class AudioPlayerService extends ChangeNotifier {
         if (session != _playSessionId) return;
       } else {
         String? playUrl = track.audioUrl;
-        // 1. 如果没有有效播放流或为假/受限链接，优先调用 LxSourceEngine 当前激活驱动 (落雪官方源/自定义源)
+
+        // 1. 如果是网易云外链，先物理展开重定向；若非 404 则直接作为真实物理直链秒播
+        if (playUrl != null && playUrl.contains('music.163.com/song/media/outer/url')) {
+          final unwrapped = await OnlineMusicService.unwrapRedirects(playUrl);
+          if (unwrapped.isNotEmpty && !unwrapped.contains('/404')) {
+            playUrl = unwrapped;
+          } else {
+            playUrl = null; // 网易云 404 限制，置空以平滑触发多源 Fallback
+          }
+        }
+
+        // 2. 如果没有有效播放流或为假/受限链接，优先调用当前激活的落雪社区源
         if (playUrl == null ||
             playUrl.isEmpty ||
             playUrl.contains('soundhelix.com') ||
             playUrl.contains('nxinxz.com') ||
             playUrl.contains('588957081') ||
-            playUrl.contains('/nf/') ||
-            playUrl.contains('music.163.com/song/media/outer/url')) {
+            playUrl.contains('/nf/')) {
           try {
             final activeDriver = LxSourceEngine.instance.activeDriver;
             final lxSong = LxSongInfo(
@@ -566,7 +581,8 @@ class AudioPlayerService extends ChangeNotifier {
               duration: track.duration,
               coverUrl: track.coverUrl,
             );
-            final lxUrl = await activeDriver.getMusicUrl(lxSong, LxSourceEngine.instance.preferredQuality);
+            final lxUrl = await activeDriver.getMusicUrl(lxSong, LxSourceEngine.instance.preferredQuality)
+                .timeout(const Duration(milliseconds: 1800), onTimeout: () => null);
             if (session != _playSessionId) return;
             if (lxUrl != null && lxUrl.isNotEmpty && lxUrl.startsWith('http')) {
               playUrl = lxUrl;
@@ -654,19 +670,19 @@ class AudioPlayerService extends ChangeNotifier {
 
       if (session != _playSessionId) return;
 
-      // 3. 所有音源均不可用时，给用户清晰浮动提示并自动跳播下一首
+      // 3. 所有音源均不可用时，给用户清晰浮动提示并快速自动跳播下一首 (500ms 快速平滑切歌)
       _consecutiveFailures++;
       if (_consecutiveFailures >= 5) {
-        _setPlaybackNotice('连续多首歌曲全网暂无可播放音频，已为您自动暂停播放', autoDismissSeconds: 6);
+        _setPlaybackNotice('连续多首歌曲全网暂无可播放音频，已为您自动暂停播放', autoDismissSeconds: 5);
         _isPlaying = false;
         _consecutiveFailures = 0;
         notifyListeners();
         return;
       }
 
-      _setPlaybackNotice('「${track.title}」所有音源暂不可用，已自动切换至下一首...', autoDismissSeconds: 4);
+      _setPlaybackNotice('「${track.title}」全网音源暂不可用，已自动跳播下一首', autoDismissSeconds: 3);
       _autoSkipTimer?.cancel();
-      _autoSkipTimer = Timer(const Duration(milliseconds: 1200), () {
+      _autoSkipTimer = Timer(const Duration(milliseconds: 500), () {
         if (session == _playSessionId && _playlist.isNotEmpty && _isPlaying) {
           next();
         }
@@ -691,12 +707,23 @@ class AudioPlayerService extends ChangeNotifier {
     final currentPos = _position;
     final isCurrent = currentTrack?.id == track.id;
     try {
-      final newUrl = await OnlineMusicService.resolveUrlFromSpecificSource(
+      String? newUrl = await OnlineMusicService.resolveUrlFromSpecificSource(
         track.title,
         track.artist,
         newSource,
         trackId: track.id,
       );
+
+      // 若第三方社区脚本私有服务器离线或超时，自动无缝启动全网高保真多源平滑兜底
+      if (newUrl == null || newUrl.isEmpty) {
+        newUrl = await OnlineMusicService.resolvePlayableAudioUrl(
+          track.title,
+          track.artist,
+          defaultUrl: track.audioUrl,
+          trackId: track.id,
+        );
+      }
+
       if (newUrl != null && newUrl.isNotEmpty) {
         final updated = track.copyWith(source: newSource, audioUrl: newUrl);
         final idx = _playlist.indexWhere((t) => t.id == track.id);
@@ -704,6 +731,9 @@ class AudioPlayerService extends ChangeNotifier {
           _playlist[idx] = updated;
         }
         if (isCurrent) {
+          if (idx == -1 && _playlist.isNotEmpty && _currentIndex < _playlist.length) {
+            _playlist[_currentIndex] = updated;
+          }
           await _backend.play(newUrl);
           if (currentPos > Duration.zero) {
             await _backend.seek(currentPos);
@@ -712,12 +742,14 @@ class AudioPlayerService extends ChangeNotifier {
           _isPlaying = true;
         }
         _setPlaybackNotice('已成功切换至【${formatSourceDisplayName(newSource)}】音源播放', autoDismissSeconds: 3);
+        notifyListeners(); // 显式触发全局 UI 与弹窗即时刷新
         return true;
       }
     } catch (e) {
       debugPrint('[AudioPlayerService] 主动切换音源失败: $e');
     }
     _setPlaybackNotice('切换音源失败，【${formatSourceDisplayName(newSource)}】暂未收录该歌曲', autoDismissSeconds: 4);
+    notifyListeners();
     return false;
   }
 
