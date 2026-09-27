@@ -1275,6 +1275,21 @@ class LxSourceEngine extends ChangeNotifier {
           AudioQuality.flac24bit,
         ],
       ),
+      const LxSongInfo(
+        id: 'sample_06',
+        songMid: 'sample_06',
+        title: '青花瓷',
+        artist: '周杰伦',
+        album: '我很忙',
+        source: 'kw',
+        duration: Duration(minutes: 3, seconds: 59),
+        availableQualities: [
+          AudioQuality.k128k,
+          AudioQuality.k320k,
+          AudioQuality.flac,
+          AudioQuality.flac24bit,
+        ],
+      ),
     ];
 
     // 2. 酷我 (kw)
