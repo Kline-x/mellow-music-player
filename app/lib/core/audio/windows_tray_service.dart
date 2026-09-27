@@ -4,14 +4,19 @@ import 'package:flutter/services.dart';
 import 'track_model.dart';
 import '../storage/storage_service.dart';
 
-/// Windows 系统托盘与常驻后台管理服务
-class WindowsTrayService {
-  static const String channelName = 'com.kline.mellow_music/tray';
-  static final WindowsTrayService instance = WindowsTrayService._internal();
+/// 跨桌面平台（Windows / macOS / Linux）系统托盘与常驻后台管理服务
+class DesktopTrayService {
+  static const String trayChannelName = 'com.kline.mellow_music/tray';
+  static const String channelName = trayChannelName;
+  static const String windowChannelName = 'com.kline.mellow_music/window';
 
-  WindowsTrayService._internal();
+  static final DesktopTrayService instance = DesktopTrayService._internal();
 
-  MethodChannel _channel = const MethodChannel(channelName);
+  DesktopTrayService._internal();
+
+  MethodChannel _trayChannel = const MethodChannel(trayChannelName);
+  MethodChannel _windowChannel = const MethodChannel(windowChannelName);
+
   bool _initialized = false;
   bool _isSupportedPlatform = false;
   bool _minimizeToTray = true;
@@ -20,29 +25,41 @@ class WindowsTrayService {
   bool get isInitialized => _initialized;
   bool get minimizeToTray => _minimizeToTray;
   String? get lastTooltip => _lastTooltip;
+  bool get isSupported => _isSupportedPlatform;
 
   @visibleForTesting
   void setMockMethodChannel(MethodChannel channel) {
-    _channel = channel;
+    _trayChannel = channel;
+    _windowChannel = channel;
     _isSupportedPlatform = true;
+  }
+
+  @visibleForTesting
+  void setMockChannels({MethodChannel? trayChannel, MethodChannel? windowChannel, bool supported = true}) {
+    if (trayChannel != null) _trayChannel = trayChannel;
+    if (windowChannel != null) _windowChannel = windowChannel;
+    _isSupportedPlatform = supported;
   }
 
   /// 初始化托盘通道与读取偏好
   Future<void> init() async {
-    _isSupportedPlatform = !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
-    _minimizeToTray = StorageService.instance.getMinimizeToTray();
+    _isSupportedPlatform = _isSupportedPlatform || (!kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.windows ||
+         defaultTargetPlatform == TargetPlatform.macOS ||
+         defaultTargetPlatform == TargetPlatform.linux));
 
-    _channel.setMethodCallHandler(_handleNativeCall);
+    _minimizeToTray = StorageService.instance.getMinimizeToTray();
+    _trayChannel.setMethodCallHandler(_handleNativeCall);
 
     if (_isSupportedPlatform) {
       try {
-        await _channel.invokeMethod('init', {
+        await _trayChannel.invokeMethod('init', {
           'minimizeToTray': _minimizeToTray,
           'defaultTooltip': 'Mellow Music · 润音',
         });
         _initialized = true;
       } catch (e) {
-        debugPrint('[WindowsTrayService] 原生托盘初始化降级: $e');
+        debugPrint('[DesktopTrayService] 原生托盘初始化降级: $e');
         _initialized = false;
       }
     } else {
@@ -54,7 +71,7 @@ class WindowsTrayService {
     switch (call.method) {
       case 'onTrayAction':
         final action = call.arguments?.toString();
-        debugPrint('[WindowsTrayService] 接收托盘动作: $action');
+        debugPrint('[DesktopTrayService] 接收托盘动作: $action');
         return true;
       default:
         return null;
@@ -69,11 +86,11 @@ class WindowsTrayService {
     if (!_isSupportedPlatform) return;
 
     try {
-      await _channel.invokeMethod('updateTrayTooltip', {
+      await _trayChannel.invokeMethod('updateTrayTooltip', {
         'tooltip': tip,
       });
     } catch (e) {
-      debugPrint('[WindowsTrayService] updateTrayTooltip 异常: $e');
+      debugPrint('[DesktopTrayService] updateTrayTooltip 异常: $e');
     }
   }
 
@@ -85,11 +102,11 @@ class WindowsTrayService {
     if (!_isSupportedPlatform) return;
 
     try {
-      await _channel.invokeMethod('setMinimizeToTray', {
+      await _trayChannel.invokeMethod('setMinimizeToTray', {
         'enabled': enabled,
       });
     } catch (e) {
-      debugPrint('[WindowsTrayService] setMinimizeToTray 异常: $e');
+      debugPrint('[DesktopTrayService] setMinimizeToTray 异常: $e');
     }
   }
 
@@ -97,7 +114,7 @@ class WindowsTrayService {
   Future<void> showWindow() async {
     if (!_isSupportedPlatform) return;
     try {
-      await _channel.invokeMethod('showWindow');
+      await _trayChannel.invokeMethod('showWindow');
     } catch (_) {}
   }
 
@@ -105,12 +122,27 @@ class WindowsTrayService {
   Future<void> hideWindow() async {
     if (!_isSupportedPlatform) return;
     try {
-      await _channel.invokeMethod('hideWindow');
+      await _trayChannel.invokeMethod('hideWindow');
     } catch (_) {}
   }
 
+  /// 最小化窗口 (到系统任务栏 / Dock)
+  Future<void> minimizeWindow() async {
+    if (!_isSupportedPlatform) return;
+    try {
+      await _windowChannel.invokeMethod('minimize');
+    } catch (_) {
+      try {
+        await _trayChannel.invokeMethod('minimizeWindow');
+      } catch (_) {}
+    }
+  }
+
   void dispose() {
-    _channel.setMethodCallHandler(null);
+    _trayChannel.setMethodCallHandler(null);
     _initialized = false;
   }
 }
+
+/// 兼容历史命名
+typedef WindowsTrayService = DesktopTrayService;

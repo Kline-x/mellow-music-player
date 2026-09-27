@@ -126,7 +126,7 @@ final List<Track> mockPresetTracks = [
     duration: const Duration(minutes: 4, seconds: 28),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=383023&level=standard&type=mp3',
-    isFavorite: true,
+    isFavorite: false,
     lyrics: [
       LyricLine(time: Duration.zero, text: '云水禅心 - 巫娜'),
       LyricLine(time: const Duration(seconds: 12), text: '古筝幽弦，流水静淌'),
@@ -168,7 +168,7 @@ final List<Track> mockPresetTracks = [
     duration: const Duration(minutes: 5, seconds: 24),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=5886682&level=standard&type=mp3',
-    isFavorite: true,
+    isFavorite: false,
     lyrics: [
       LyricLine(time: Duration.zero, text: '海阔天空 - Beyond'),
       LyricLine(time: const Duration(seconds: 18), text: '今天我 寒夜里看雪飘过'),
@@ -210,7 +210,7 @@ final List<Track> mockPresetTracks = [
     duration: const Duration(minutes: 2, seconds: 58),
     source: 'preset-320k',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=14187063&level=standard&type=mp3',
-    isFavorite: true,
+    isFavorite: false,
     lyrics: [
       LyricLine(time: Duration.zero, text: 'City of Stars - La La Land'),
       LyricLine(time: const Duration(seconds: 8), text: 'City of stars, are you shining just for me?'),
@@ -228,7 +228,7 @@ final List<Track> mockPresetTracks = [
     duration: const Duration(minutes: 5, seconds: 12),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=7149583&level=standard&type=mp3',
-    isFavorite: true,
+    isFavorite: false,
     lyrics: [
       LyricLine(time: Duration.zero, text: '起风了 - 买辣椒也用券'),
       LyricLine(time: const Duration(seconds: 14), text: '这一路上走走停停 顺着少年漂流的痕迹'),

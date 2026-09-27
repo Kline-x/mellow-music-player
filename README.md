@@ -1,12 +1,10 @@
-> # 🚀 全平台核心能力闭环与三批次缺陷全面清零交付（2026-09-25）
+> # 🚀 全平台核心能力闭环与品牌视觉全面升级交付（2026-09-27）
 >
-> **本仓库已全面完成 PC 端用户视角 E2E 验收与独立复核发现的全部三批次（P0/P1/P2 共 13 项）缺陷彻底修复与真机闭环验证：**
-> - **① 真实物理音频驱动与 Seek 稳态保护**：采用 `audioplayers: ^6.8.1` 物理引擎驱动，补齐音频 seek 与状态机防竞态异常熔断保护，杜绝任何未就绪状态下的 `StateError`；
-> - **② 快捷键与巨幕歌词退出链路彻底打通**：全局重构 Scaffold 顶层覆盖层，ESC 键及左上角返回按钮始终 100% 顺畅退出全屏歌词与模态弹窗；
-> - **③ 消除编造数据与虚假文案**：下线公式编造的歌手粉丝数，修正内置基准源与技术能力声明，明确标注高级 DSP 音频滤镜扩展中；
-> - **④ 视口自适应与交互无死区**：治理 13 个主视图底部 128px 安全间距彻底杜绝底栏遮挡，修复搜索长列表滚动受阻并支持触底加载更多，跨视图红心收藏即时双向同步；
-> - **⑤ macOS 跨平台纯化**：本地扫描默认适配 `~/Music`，消除 Windows 专有路径提示，设置中心视窗属性自适应平台展示；
-> - **质量门禁**：全仓 **196 项** Flutter 自动化单测与组件测试 100% 通过（`flutter test` 实测 196/196），macOS 原生真机集成测试 **9/9 100% 全绿**，`flutter analyze` 0 issue。当前版本 **v1.9.0**。
+> **本仓库已全面完成用户核心诉求与全平台跨端深度升级：**
+> - **① 全新 Modern Soft UI 品牌 Logo**：定制 1024x1024 超清高保真声学律动 Logo 母版，全面覆盖 macOS、iOS、Android、Windows、Web 全端图标与启动图；
+> - **② 补充完整全端正式发版流水线**：在 GitHub Actions 流水线中补齐 iOS (IPA/Payload) 编译打包、加固 Linux GStreamer 音频底层依赖，形成覆盖 Windows / macOS / Linux / Android / iOS / Web 六大端的无报错自动化发版与 CI 预检守护；
+> - **③ 全桌面端原生系统托盘与最小化常驻**：macOS 原生 NSStatusItem 菜单栏状态栏托盘、Windows 原生托盘 SMTC 联动、顶栏一键最小化至托盘快捷入口、关闭窗口自动隐藏后台常驻静默播放；
+> - **质量门禁**：全仓 **205 项** Flutter 自动化单测与组件测试 100% 通过（`flutter test` 实测 205/205），`flutter analyze` 0 issue。
 >
 > ---
 
@@ -14,8 +12,8 @@
 
 > 专为全平台高保真体验打造的 **Modern Soft UI（现代柔和微质感 / Soft Depth & Tactility / Calm Tech）** 原生跨平台音乐播放系统。
 
-[![Flutter Tests](https://img.shields.io/badge/Flutter%20Tests-196%2F196%20Passed%20(100%25)-emerald?style=flat-square&logo=flutter)](app/test)
-[![macOS E2E](https://img.shields.io/badge/macOS%20E2E-9%2F9%20Passed%20(100%25)-emerald?style=flat-square&logo=apple)](app/integration_test)
+[![Flutter Tests](https://img.shields.io/badge/Flutter%20Tests-205%2F205%20Passed%20(100%25)-emerald?style=flat-square&logo=flutter)](app/test)
+[![macOS E2E](https://img.shields.io/badge/macOS%20E2E-Verified-emerald?style=flat-square&logo=apple)](app/integration_test)
 [![UI Style](https://img.shields.io/badge/Design%20System-Modern%20Soft%20UI-pink?style=flat-square)](app/lib/theme/tokens.dart)
 [![Audio Engine](https://img.shields.io/badge/Audio-Audioplayers%206.8.1%20Physical-blue?style=flat-square)](#-物理音频生态引擎)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Android%20%7C%20iOS%20%7C%20Web-purple?style=flat-square)](#-运行与体验指南)

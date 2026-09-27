@@ -20,9 +20,12 @@ class MainFlutterWindow: NSWindow {
     self.titleVisibility = .hidden
     self.styleMask.insert(.fullSizeContentView)
     self.isMovableByWindowBackground = true
-
     RegisterGeneratedPlugins(registry: flutterViewController)
 
     super.awakeFromNib()
+
+    if let appDelegate = NSApp.delegate as? AppDelegate {
+      appDelegate.registerMainWindow(self)
+    }
   }
 }

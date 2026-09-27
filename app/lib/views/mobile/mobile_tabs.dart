@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../design_system/mellow_image.dart';
+import '../../design_system/mellow_logo.dart';
 import 'package:provider/provider.dart';
 import '../../design_system/tokens.dart';
 import '../../design_system/theme_provider.dart';
@@ -1230,6 +1231,18 @@ class MobileProfileTab extends StatelessWidget {
                   );
                 }).toList(),
               ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        Center(
+          child: Column(
+            children: [
+              const MellowBrandLogo(size: 44, borderRadius: 12, showGlow: true),
+              const SizedBox(height: 8),
+              Text('Mellow Music · 润音', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: theme.textPrimary)),
+              const SizedBox(height: 4),
+              Text('Modern Soft UI 全平台温润声学音乐播放器', style: TextStyle(fontSize: 11, color: theme.textMuted)),
             ],
           ),
         ),

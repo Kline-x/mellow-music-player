@@ -7,8 +7,9 @@ on:
     branches: [ main ]
 
 jobs:
+  # 1. 静态代码分析与全量测试套件
   code-quality-and-desktop-tests:
-    name: Code Quality & Desktop Test Suites
+    name: Code Quality & Test Suites
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -32,6 +33,39 @@ jobs:
         working-directory: app
         run: flutter test
 
+  # 2. Web 与 Android 快速预编译门禁 (Ubuntu)
+  verify-web-and-android-build:
+    name: Verify Web & Android Release Builds
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        working-directory: app
+        run: flutter pub get
+
+      - name: Compile Web Target
+        working-directory: app
+        run: flutter build web --release
+
+      - name: Compile Android APK Target
+        working-directory: app
+        run: flutter build apk --release
+
+  # 3. Windows 原生客户端编译预检 (Windows)
   build-windows-desktop-client:
     name: Build Windows Desktop Release Executable
     runs-on: windows-latest
@@ -56,5 +90,5 @@ jobs:
       - name: Archive and Upload Windows Desktop Binary
         uses: actions/upload-artifact@v4
         with:
-          name: mellow-music-windows-x64-release
+          name: mellow-music-windows-x64-ci
           path: app/build/windows/x64/runner/Release/

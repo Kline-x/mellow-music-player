@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../design_system/tokens.dart';
@@ -46,6 +47,13 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
   List<String> _history = [];
   int _searchSessionToken = 0;
 
+  // 搜索即时联想状态 (输入前几个字弹出相关歌曲，即点即播)
+  List<Track> _suggestedTracks = [];
+  bool _isLoadingSuggestions = false;
+  bool _showSuggestions = false;
+  Timer? _debounceTimer;
+  int _suggestSessionToken = 0;
+
   final List<Map<String, String>> _hotSearches = [
     {'title': '周杰伦', 'badge': 'HOT 1'},
     {'title': '告五人', 'badge': 'HOT 2'},
@@ -86,6 +94,7 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _searchController.dispose();
@@ -101,12 +110,14 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
   }
 
   Future<void> _executeSearch(String query) async {
+    _debounceTimer?.cancel();
     final cleanQuery = query.trim();
     if (cleanQuery.isEmpty) return;
 
     final token = ++_searchSessionToken;
 
     setState(() {
+      _showSuggestions = false;
       _isLoading = true;
       _currentQuery = cleanQuery;
       _songPage = 1;
@@ -200,15 +211,78 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
   }
 
   void _clearSearch() {
+    _debounceTimer?.cancel();
     _searchController.clear();
     setState(() {
       _currentQuery = '';
       _searchResults.clear();
       _playlistResults.clear();
       _artistResults.clear();
+      _suggestedTracks.clear();
+      _showSuggestions = false;
+      _isLoadingSuggestions = false;
       _isLoading = false;
     });
     _focusNode.requestFocus();
+  }
+
+  void _onQueryChanged(String text) {
+    _debounceTimer?.cancel();
+    final query = text.trim();
+    if (query.isEmpty) {
+      setState(() {
+        _suggestedTracks = [];
+        _isLoadingSuggestions = false;
+        _showSuggestions = false;
+      });
+      return;
+    }
+
+    // 1. 本地已知曲库与预置曲目毫秒级快速匹配
+    final lower = query.toLowerCase();
+    final localMatches = getAllKnownTracks().where((t) {
+      return t.title.toLowerCase().contains(lower) ||
+          t.artist.toLowerCase().contains(lower) ||
+          t.album.toLowerCase().contains(lower);
+    }).take(6).toList();
+
+    setState(() {
+      _showSuggestions = true;
+      _isLoadingSuggestions = true;
+      if (localMatches.isNotEmpty) {
+        _suggestedTracks = localMatches;
+      }
+    });
+
+    // 2. 250ms 防抖网络联想 (并发全网多源)
+    final token = ++_suggestSessionToken;
+    _debounceTimer = Timer(const Duration(milliseconds: 250), () async {
+      try {
+        final onlineResults = await OnlineMusicService.searchOnlineTracks(query, limit: 6);
+        if (!mounted || token != _suggestSessionToken) return;
+
+        final merged = <Track>[];
+        final seen = <String>{};
+        for (final t in [...onlineResults, ...localMatches]) {
+          final key = '${t.title.trim().toLowerCase()}_${t.artist.trim().toLowerCase()}';
+          if (seen.add(key)) {
+            merged.add(t);
+            if (merged.length >= 6) break;
+          }
+        }
+
+        setState(() {
+          _suggestedTracks = merged;
+          _isLoadingSuggestions = false;
+        });
+      } catch (_) {
+        if (mounted && token == _suggestSessionToken) {
+          setState(() {
+            _isLoadingSuggestions = false;
+          });
+        }
+      }
+    });
   }
 
   @override
@@ -297,6 +371,7 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(vertical: 10),
                   ),
+                  onChanged: _onQueryChanged,
                   onSubmitted: _executeSearch,
                   textInputAction: TextInputAction.search,
                 ),
@@ -319,7 +394,13 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
             ],
           ),
         ),
-        const SizedBox(height: 28),
+
+        // 2.5 实时歌曲联想提示 (输入前几个字弹出相关歌曲，即点即播)
+        if (_showSuggestions && (_suggestedTracks.isNotEmpty || _isLoadingSuggestions)) ...[
+          const SizedBox(height: 12),
+          _buildSearchSuggestions(theme, player),
+        ],
+        const SizedBox(height: 20),
 
         // 3. 搜索内容区
         if (_isLoading)
@@ -331,6 +412,194 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
         else
           _buildPreSearchView(theme),
       ],
+      ),
+    );
+  }
+
+  Widget _buildSearchSuggestions(ThemeProvider theme, AudioPlayerService player) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: SoftCard(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        borderRadius: MellowRadii.borderR20,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.auto_awesome_rounded, size: 16, color: theme.accentColor),
+                const SizedBox(width: 8),
+                Text(
+                  '为你联想相关歌曲 (输入即搜 · 即点即播)',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.bold,
+                    color: theme.accentColor,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                if (_isLoadingSuggestions) ...[
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: theme.accentColor),
+                  ),
+                ],
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => setState(() => _showSuggestions = false),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(Icons.close_rounded, size: 16, color: theme.textMuted),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ..._suggestedTracks.map((track) => _buildSuggestionItem(theme, player, track)),
+            const Divider(height: 14),
+            InkWell(
+              onTap: () => _executeSearch(_searchController.text),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                child: Row(
+                  children: [
+                    Icon(Icons.search_rounded, size: 15, color: theme.textMuted),
+                    const SizedBox(width: 8),
+                    Text(
+                      '按回车查看「${_searchController.text.trim()}」的全部搜索结果',
+                      style: TextStyle(fontSize: 12, color: theme.textMuted),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: theme.accentColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text('Enter ↵', style: TextStyle(fontSize: 10, color: theme.accentColor, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSuggestionItem(ThemeProvider theme, AudioPlayerService player, Track track) {
+    final query = _searchController.text.trim();
+    return InkWell(
+      onTap: () {
+        player.playPlaylist([track, ..._suggestedTracks]);
+      },
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: MellowImage(
+                url: track.coverUrl,
+                width: 38,
+                height: 38,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHighlightedText(track.title, query, theme.textPrimary, theme.accentColor),
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          track.artist,
+                          style: TextStyle(fontSize: 11.5, color: theme.textMuted),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (track.source.isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: theme.accentColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            track.source.contains('flac') ? 'FLAC' : 'HQ',
+                            style: TextStyle(fontSize: 9, color: theme.accentColor, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Tooltip(
+              message: '即点即播',
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    player.playPlaylist([track, ..._suggestedTracks]);
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: theme.accentColor.withValues(alpha: 0.12),
+                    ),
+                    child: Icon(Icons.play_arrow_rounded, size: 20, color: theme.accentColor),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHighlightedText(String text, String query, Color normalColor, Color highlightColor) {
+    if (query.isEmpty) {
+      return Text(text, style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: normalColor), maxLines: 1, overflow: TextOverflow.ellipsis);
+    }
+    final lowerText = text.toLowerCase();
+    final lowerQuery = query.toLowerCase();
+    final index = lowerText.indexOf(lowerQuery);
+    if (index == -1) {
+      return Text(text, style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: normalColor), maxLines: 1, overflow: TextOverflow.ellipsis);
+    }
+
+    final before = text.substring(0, index);
+    final match = text.substring(index, index + query.length);
+    final after = text.substring(index + query.length);
+
+    return RichText(
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      text: TextSpan(
+        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: normalColor),
+        children: [
+          TextSpan(text: before),
+          TextSpan(text: match, style: TextStyle(color: highlightColor, fontWeight: FontWeight.w900)),
+          TextSpan(text: after),
+        ],
       ),
     );
   }

@@ -8,7 +8,9 @@ import '../design_system/soft_button.dart';
 import '../design_system/recessed_well.dart';
 import '../design_system/acoustic_mesh_glow.dart';
 import '../design_system/mellow_image.dart';
+import '../design_system/mellow_logo.dart';
 import '../core/audio/audio_player_service.dart';
+import '../core/audio/windows_tray_service.dart';
 import '../core/storage/storage_service.dart';
 import '../core/window/desktop_floating_lyric_service.dart';
 import '../views/desktop/desktop_views.dart';
@@ -89,6 +91,7 @@ class DesktopScaffold extends StatefulWidget {
 class _DesktopScaffoldState extends State<DesktopScaffold> {
   String _activeView = 'discover';
   String? _artistDetailParam;
+  String? _toplistDetailParam;
   bool _isQueueOpen = false;
   bool _isFullscreenLyrics = false;
   bool _isFloatingLyricEnabled = false;
@@ -158,7 +161,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
   int _historyIndex = 0;
 
   void _navigateTo(String viewId, [String? extra]) {
-    if (_activeView == viewId && _artistDetailParam == extra) return;
+    if (_activeView == viewId && (_artistDetailParam == extra || _toplistDetailParam == extra)) return;
     if (_historyIndex < _history.length - 1) {
       _history.removeRange(_historyIndex + 1, _history.length);
     }
@@ -169,6 +172,8 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
       _activeView = viewId;
       if (viewId == 'artist_detail') {
         _artistDetailParam = extra ?? '周杰伦';
+      } else if (viewId == 'toplist_detail') {
+        _toplistDetailParam = extra ?? '飙升榜';
       }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -182,7 +187,11 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
       final item = _history[_historyIndex];
       setState(() {
         _activeView = item['view']!;
-        _artistDetailParam = item['extra'];
+        if (item['view'] == 'artist_detail') {
+          _artistDetailParam = item['extra'];
+        } else if (item['view'] == 'toplist_detail') {
+          _toplistDetailParam = item['extra'];
+        }
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _rootFocusNode.requestFocus();
@@ -196,7 +205,11 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
       final item = _history[_historyIndex];
       setState(() {
         _activeView = item['view']!;
-        _artistDetailParam = item['extra'];
+        if (item['view'] == 'artist_detail') {
+          _artistDetailParam = item['extra'];
+        } else if (item['view'] == 'toplist_detail') {
+          _toplistDetailParam = item['extra'];
+        }
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _rootFocusNode.requestFocus();
@@ -422,13 +435,10 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
               // 品牌与路由导航
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(7),
-                    decoration: BoxDecoration(
-                      color: theme.accentColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(Icons.graphic_eq_rounded, color: theme.accentColor, size: 20),
+                  const MellowBrandLogo(
+                    size: 28,
+                    borderRadius: 8,
+                    showGlow: true,
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -472,17 +482,17 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                 Expanded(
                   child: Center(
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 380),
+                      constraints: BoxConstraints(maxWidth: constraints.maxWidth < 900 ? 180 : 380),
                       child: GestureDetector(
                         onTap: () => _navigateTo('search'),
                         child: RecessedWell(
                           height: 38,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
                           borderRadius: MellowRadii.borderPill,
                           child: Row(
                             children: [
                               Icon(Icons.search_rounded, size: 18, color: theme.accentColor),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
                                   isCompact ? '搜索歌曲/歌手...' : '即时搜索全网歌曲、歌手、专辑...',
@@ -490,17 +500,20 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
-                                  borderRadius: MellowRadii.borderR8,
+                              if (constraints.maxWidth >= 860) ...[
+                                const SizedBox(width: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+                                    borderRadius: MellowRadii.borderR8,
+                                  ),
+                                  child: Text(
+                                    '⌘K',
+                                    style: TextStyle(fontSize: 10, color: theme.textSecondary, fontWeight: FontWeight.bold),
+                                  ),
                                 ),
-                                child: Text(
-                                  '⌘K',
-                                  style: TextStyle(fontSize: 10, color: theme.textSecondary, fontWeight: FontWeight.bold),
-                                ),
-                              ),
+                              ],
                             ],
                           ),
                         ),
@@ -587,6 +600,15 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                     tooltip: '设置与多端同步',
                     isCircle: true,
                     onTap: () => _navigateTo('settings'),
+                  ),
+                  const SizedBox(width: 6),
+
+                  // 5. 最小化到系统托盘 / 隐藏窗口
+                  SoftButton(
+                    icon: Icons.remove_rounded,
+                    tooltip: '最小化到托盘',
+                    isCircle: true,
+                    onTap: () => DesktopTrayService.instance.hideWindow(),
                   ),
                 ],
               ),
@@ -680,6 +702,14 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
         return DesktopPlaylistSquareView(onNavigate: _navigateTo);
       case 'toplist':
         return DesktopToplistView(onNavigate: _navigateTo);
+      case 'toplist_detail':
+        return DesktopToplistDetailView(
+          key: ValueKey(_toplistDetailParam),
+          chartName: _toplistDetailParam ?? '飙升榜',
+          onNavigate: _navigateTo,
+        );
+      case 'daily_recommend':
+        return DesktopDailyRecommendView(onNavigate: _navigateTo);
       case 'artists':
         return DesktopArtistsView(onNavigate: _navigateTo);
       case 'artist_detail':

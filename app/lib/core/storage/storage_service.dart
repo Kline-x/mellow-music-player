@@ -57,6 +57,7 @@ class StorageService {
   static const _keyActiveSourceId = 'mellow_active_source_id';
   static const _keyPreferredQuality = 'mellow_preferred_quality';
   static const _keySearchHistory = 'mellow_search_history';
+  static const _keyCleanedLegacyFavs = 'mellow_cleaned_legacy_favs_v3';
 
   // --- 搜索历史记录持久化 ---
   List<String> getSearchHistory() => _prefs?.getStringList(_keySearchHistory) ?? [];
@@ -209,6 +210,10 @@ class StorageService {
 
   Future<bool> saveFavoriteIds(Set<String> ids) async =>
       (await _prefs?.setStringList(_keyFavoriteIds, ids.toList())) ?? false;
+
+  bool hasCleanedLegacyFavorites() => _prefs?.getBool(_keyCleanedLegacyFavs) ?? false;
+  Future<bool> markCleanedLegacyFavorites() async =>
+      (await _prefs?.setBool(_keyCleanedLegacyFavs, true)) ?? false;
 
   List<Track>? getFavoriteTracks() {
     final raw = _prefs?.getString(_keyFavoriteTracks);

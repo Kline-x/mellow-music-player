@@ -225,7 +225,7 @@ class AudioPlayerService extends ChangeNotifier {
       }
     }
 
-    // 3. 恢复红心收藏与实体
+    // 3. 恢复红心收藏与实体 (带沙盒历史脏数据自动清洗升级守卫)
     final savedFavs = storage.getFavoriteIds();
     if (savedFavs != null) {
       _favoriteIds.clear();
@@ -236,6 +236,30 @@ class AudioPlayerService extends ChangeNotifier {
       for (final t in savedFavTracks) {
         _cachedFavoriteTracks[t.id] = t;
       }
+    }
+
+    // 历史假数据升级自动清洗守卫：
+    // 若尚未清洗过，且本地收藏只包含历史老预设 ID（如 track-1, track-3, track-5, track-6 或老预设4首），
+    // 则彻底清空并持久化重置为干净状态，避免用户真机沙盒出现未收藏的默认4首歌。
+    if (!storage.hasCleanedLegacyFavorites()) {
+      const legacyMockIds = {'track-1', 'track-3', 'track-5', 'track-6', 'netease_160488', 'netease_1357375695', 'netease_448316848', 'netease_1330348068'};
+      if (_favoriteIds.isNotEmpty && _favoriteIds.every((id) => legacyMockIds.contains(id))) {
+        _favoriteIds.clear();
+        _cachedFavoriteTracks.clear();
+        storage.saveFavoriteIds(_favoriteIds);
+        storage.saveFavoriteTracks([]);
+      } else {
+        final toRemove = _favoriteIds.where((id) => id.startsWith('track-')).toList();
+        if (toRemove.isNotEmpty) {
+          _favoriteIds.removeAll(toRemove);
+          for (final rid in toRemove) {
+            _cachedFavoriteTracks.remove(rid);
+          }
+          storage.saveFavoriteIds(_favoriteIds);
+          storage.saveFavoriteTracks(_cachedFavoriteTracks.values.toList());
+        }
+      }
+      storage.markCleanedLegacyFavorites();
     }
 
     // 4. 恢复历史记录
@@ -443,6 +467,13 @@ class AudioPlayerService extends ChangeNotifier {
     _recordHistory(_playlist[_currentIndex]);
     playTrack(_playlist[_currentIndex]);
     _loadLyricIfNeed(_playlist[_currentIndex]);
+  }
+
+  // 追加多首歌曲到当前待播列表
+  void appendPlaylist(List<Track> tracks) {
+    if (tracks.isEmpty) return;
+    _playlist.addAll(tracks);
+    notifyListeners();
   }
 
   void _loadLyricIfNeed(Track track) {

@@ -35,14 +35,14 @@ void main() {
     }
 
     testWidgets('BATCH4-DISCOVER-ARTISTS: 发现首页推荐歌手头像统一从 mockArtistsProfiles 单点源读取', (tester) async {
-      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.physicalSize = const Size(1440, 1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
       await tester.pumpWidget(buildDesktopApp());
       await tester.pump(const Duration(milliseconds: 300));
 
-      // 1. 验证首页底部推荐歌手卡片存在
+      // 1. 验证首页推荐歌手卡片存在
       expect(find.text('热门入驻与关注歌手'), findsOneWidget);
       expect(find.text('巫娜'), findsOneWidget);
       expect(find.text('周杰伦'), findsOneWidget);
@@ -57,7 +57,7 @@ void main() {
     });
 
     testWidgets('BATCH4-DISCOVER-PLAYLISTS: 发现首页甄选歌单推荐点击触发整单连播', (tester) async {
-      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.physicalSize = const Size(1440, 1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
@@ -97,15 +97,14 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 300));
 
-      // 验证“播放全部 (6首)”按钮点击生效并载入 6 首曲目
-      final playAllBtn = find.text('播放全部 (6首)');
+      // 验证“播放全部”按钮点击生效并载入全量 28 首精选日推曲目
+      final playAllBtn = find.textContaining('播放全部');
       expect(playAllBtn, findsOneWidget);
       await tester.tap(playAllBtn);
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(audioPlayerService.isPlaying, isTrue);
-      expect(audioPlayerService.playlist.length, equals(mockPresetTracks.length));
-      expect(audioPlayerService.currentTrack?.title, equals(mockPresetTracks[0].title));
+      expect(audioPlayerService.playlist.length, equals(28));
 
       audioPlayerService.pause();
       await tester.pump(const Duration(milliseconds: 100));

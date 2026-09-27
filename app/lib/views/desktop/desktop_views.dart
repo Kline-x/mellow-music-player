@@ -12,6 +12,7 @@ import '../../core/audio/audio_player_service.dart';
 import '../../core/audio/track_model.dart';
 import '../../core/audio/windows_tray_service.dart';
 import '../../core/audio/equalizer_manager.dart';
+import '../../core/sources/daily_recommend_service.dart';
 import '../../core/sources/online_music_service.dart';
 import '../../core/sources/lx_source_model.dart';
 import '../../core/sources/lx_script_sandbox.dart';
@@ -129,6 +130,110 @@ class DesktopDiscoverView extends StatelessWidget {
                 width: 150,
                 height: 150,
                 borderRadius: MellowRadii.borderR20,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // 每日专属推荐 Bento 卡片 (拟物日历便签头，点击下钻专属日推详情页)
+        SoftCard(
+          padding: const EdgeInsets.all(22),
+          borderRadius: MellowRadii.borderR24,
+          onTap: () => onNavigate('daily_recommend'),
+          child: Row(
+            children: [
+              // 拟物日历便签头
+              Container(
+                width: 86,
+                height: 86,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF3366), Color(0xFFFF655B)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: MellowRadii.borderR20,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFF3366).withValues(alpha: 0.35),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      DailyRecommendService.instance.getFormattedWeekday(),
+                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      DailyRecommendService.instance.getFormattedDay(),
+                      style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900, height: 1.1),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: theme.accentColor.withValues(alpha: 0.14),
+                            borderRadius: MellowRadii.borderPill,
+                          ),
+                          child: Text(
+                            '专属日推 · 每日06:00更新',
+                            style: TextStyle(color: theme.accentColor, fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        Text(
+                          '共 ${DailyRecommendService.instance.getDailyRecommendTracks().length} 首精选单曲',
+                          style: TextStyle(color: theme.textMuted, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      DailyRecommendService.instance.getGreeting(),
+                      style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '根据您的真实听歌品味深度算法定制，点击查看今日完整推荐曲目',
+                      style: TextStyle(fontSize: 12.5, color: theme.textSecondary),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              SoftButton(
+                label: '播放全部',
+                icon: Icons.play_arrow_rounded,
+                isActive: true,
+                isPill: true,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                onTap: () {
+                  final tracks = DailyRecommendService.instance.getDailyRecommendTracks();
+                  if (tracks.isNotEmpty) {
+                    player.playPlaylist(tracks, startIndex: 0);
+                  }
+                },
               ),
             ],
           ),
@@ -349,6 +454,75 @@ class _DesktopPlaylistSquareViewState extends State<DesktopPlaylistSquareView> {
           ),
         ),
         const SizedBox(height: 24),
+        if (_activeTag == '精选推荐') ...[
+          SoftCard(
+            padding: const EdgeInsets.all(18),
+            borderRadius: MellowRadii.borderR20,
+            onTap: () => widget.onNavigate('daily_recommend'),
+            child: Row(
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFF3366), Color(0xFFFF655B)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: MellowRadii.borderR16,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        DailyRecommendService.instance.getFormattedWeekday(),
+                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        DailyRecommendService.instance.getFormattedDay(),
+                        style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900, height: 1.1),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 18),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF3366).withValues(alpha: 0.12),
+                              borderRadius: MellowRadii.borderPill,
+                            ),
+                            child: const Text('官方精选置顶', style: TextStyle(color: Color(0xFFFF3366), fontSize: 10.5, fontWeight: FontWeight.bold)),
+                          ),
+                          const SizedBox(width: 8),
+                          Text('每日 06:00 更新', style: TextStyle(color: theme.textMuted, fontSize: 11)),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text('专属声学每日推荐 · 28 首高保真单曲', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                      Text(DailyRecommendService.instance.getGreeting(), style: TextStyle(fontSize: 12, color: theme.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ],
+                  ),
+                ),
+                SoftButton(
+                  label: '进入日推歌单',
+                  icon: Icons.arrow_forward_rounded,
+                  isActive: true,
+                  isPill: true,
+                  onTap: () => widget.onNavigate('daily_recommend'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -428,6 +602,42 @@ class _DesktopPlaylistSquareViewState extends State<DesktopPlaylistSquareView> {
     );
   }
 }
+
+/// 官方四大核心权威榜单配置
+final desktopCoreCharts = [
+  {
+    'title': '飙升榜',
+    'desc': '近24小时全网播放量暴涨',
+    'update': '每日09:00更新 · 100首',
+    'badge': 'HOT',
+    'gradient': const [Color(0xFFFF3366), Color(0xFFFF655B)],
+    'icon': Icons.trending_up_rounded,
+  },
+  {
+    'title': '热歌榜',
+    'desc': '全平台亿级收听总榜单',
+    'update': '每周四更新 · 200首',
+    'badge': 'TOP',
+    'gradient': const [Color(0xFFFF7A00), Color(0xFFFFB800)],
+    'icon': Icons.local_fire_department_rounded,
+  },
+  {
+    'title': '新歌榜',
+    'desc': '全球华语精选新锐单曲首发',
+    'update': '每日更新 · 100首',
+    'badge': 'NEW',
+    'gradient': const [Color(0xFF00C6FF), Color(0xFF0072FF)],
+    'icon': Icons.auto_awesome_rounded,
+  },
+  {
+    'title': '原创榜',
+    'desc': '独立音乐人先锋代表作',
+    'update': '每周五更新 · 50首',
+    'badge': 'ORIGIN',
+    'gradient': const [Color(0xFF8A2387), Color(0xFFE94057)],
+    'icon': Icons.album_rounded,
+  },
+];
 
 /// 3. 官方巅峰榜 (ToplistView - 接入全网实时动态榜单)
 class DesktopToplistView extends StatefulWidget {
@@ -560,40 +770,7 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
 
-    final coreCharts = [
-      {
-        'title': '飙升榜',
-        'desc': '近24小时全网播放量暴涨',
-        'update': '每日09:00更新 · 100首',
-        'badge': 'HOT',
-        'gradient': const [Color(0xFFFF3366), Color(0xFFFF655B)],
-        'icon': Icons.trending_up_rounded,
-      },
-      {
-        'title': '热歌榜',
-        'desc': '全平台亿级收听总榜单',
-        'update': '每周四更新 · 200首',
-        'badge': 'TOP',
-        'gradient': const [Color(0xFFFF7A00), Color(0xFFFFB800)],
-        'icon': Icons.local_fire_department_rounded,
-      },
-      {
-        'title': '新歌榜',
-        'desc': '全球华语精选新锐单曲首发',
-        'update': '每日更新 · 100首',
-        'badge': 'NEW',
-        'gradient': const [Color(0xFF00C6FF), Color(0xFF0072FF)],
-        'icon': Icons.auto_awesome_rounded,
-      },
-      {
-        'title': '原创榜',
-        'desc': '独立音乐人先锋代表作',
-        'update': '每周五更新 · 50首',
-        'badge': 'ORIGIN',
-        'gradient': const [Color(0xFF8A2387), Color(0xFFE94057)],
-        'icon': Icons.album_rounded,
-      },
-    ];
+    final coreCharts = desktopCoreCharts;
 
     final filteredList = _filteredToplists;
 
@@ -637,14 +814,14 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
         ),
         const SizedBox(height: 20),
 
-        // 1. 四大核心官方权威榜单 (响应式自适应：超宽屏4列并行，常规屏2列，紧凑屏1列)
+        // 1. 四大核心官方权威榜单 (现代 1:1 正方形封套 + 固定质感高度，彻底根除拉伸变形)
         LayoutBuilder(
           builder: (context, constraints) {
-            final isUltraWide = constraints.maxWidth >= 1440;
-            final isNarrow = constraints.maxWidth < 720;
-            final crossAxisCount = isUltraWide ? 4 : (isNarrow ? 1 : 2);
-            final childAspectRatio = isUltraWide ? 1.55 : (isNarrow ? 2.8 : 2.3);
-            final bannerWidth = isUltraWide ? 118.0 : 138.0;
+            final crossAxisCount = constraints.maxWidth >= 1400
+                ? 4
+                : (constraints.maxWidth >= 760 ? 2 : 1);
+            const cardHeight = 180.0;
+            const coverSize = 156.0;
 
             return GridView.builder(
               shrinkWrap: true,
@@ -653,7 +830,7 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
                 crossAxisCount: crossAxisCount,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
-                childAspectRatio: childAspectRatio,
+                mainAxisExtent: cardHeight,
               ),
               itemCount: coreCharts.length,
               itemBuilder: (context, idx) {
@@ -667,15 +844,14 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
               padding: const EdgeInsets.all(12),
               borderRadius: MellowRadii.borderR20,
               onTap: () {
-                if (chartTracks.isNotEmpty) {
-                  player.playPlaylist(chartTracks, startIndex: 0);
-                }
+                widget.onNavigate('toplist_detail', chartTitle);
               },
               child: Row(
                 children: [
+                  // 1:1 正方形 Squircle 榜单精美封套 (尺寸 156x156，永不变形)
                   Container(
-                    width: bannerWidth,
-                    height: double.infinity,
+                    width: coverSize,
+                    height: coverSize,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: gradientColors,
@@ -694,9 +870,9 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
                     child: Stack(
                       children: [
                         Positioned(
-                          right: -10,
-                          bottom: -10,
-                          child: Icon(iconData, size: isUltraWide ? 64 : 76, color: Colors.white.withValues(alpha: 0.16)),
+                          right: -8,
+                          bottom: -8,
+                          child: Icon(iconData, size: 76, color: Colors.white.withValues(alpha: 0.16)),
                         ),
                         Padding(
                           padding: const EdgeInsets.all(12),
@@ -720,8 +896,8 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
                                 children: [
                                   Text(
                                     c['title'] as String,
-                                    style: TextStyle(
-                                      fontSize: isUltraWide ? 18 : 20,
+                                    style: const TextStyle(
+                                      fontSize: 19,
                                       fontWeight: FontWeight.w900,
                                       color: Colors.white,
                                       letterSpacing: 1,
@@ -730,27 +906,34 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
                                   const SizedBox(height: 2),
                                   Text(
                                     c['update'] as String,
-                                    style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.82)),
+                                    style: TextStyle(fontSize: 10.5, color: Colors.white.withValues(alpha: 0.85)),
                                   ),
                                 ],
                               ),
                               Align(
                                 alignment: Alignment.bottomRight,
-                                child: Container(
-                                  width: 30,
-                                  height: 30,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.white.withValues(alpha: 0.92),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.18),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
+                                child: GestureDetector(
+                                  onTap: () {
+                                    if (chartTracks.isNotEmpty) {
+                                      player.playPlaylist(chartTracks, startIndex: 0);
+                                    }
+                                  },
+                                  child: Container(
+                                    width: 32,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white.withValues(alpha: 0.95),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.2),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Icon(Icons.play_arrow_rounded, color: gradientColors[0], size: 20),
                                   ),
-                                  child: Icon(Icons.play_arrow_rounded, color: gradientColors[0], size: 20),
                                 ),
                               ),
                             ],
@@ -909,7 +1092,10 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
               return SoftCard(
                 padding: const EdgeInsets.all(10),
                 borderRadius: MellowRadii.borderR16,
-                onTap: () => _playChart(c),
+                onTap: () {
+                  final id = c['id']?.toString() ?? '';
+                  widget.onNavigate('toplist_detail', '$id:::$name:::$cover:::$freq');
+                },
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -945,25 +1131,28 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
                           Positioned(
                             bottom: 6,
                             right: 6,
-                            child: Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: theme.accentColor,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.25),
-                                    blurRadius: 6,
-                                  ),
-                                ],
+                            child: GestureDetector(
+                              onTap: () => _playChart(c),
+                              child: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: theme.accentColor,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.25),
+                                      blurRadius: 6,
+                                    ),
+                                  ],
+                                ),
+                                child: isCurrentLoading
+                                    ? const Padding(
+                                        padding: EdgeInsets.all(8),
+                                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                      )
+                                    : const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 20),
                               ),
-                              child: isCurrentLoading
-                                  ? const Padding(
-                                      padding: EdgeInsets.all(8),
-                                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                                    )
-                                  : const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 20),
                             ),
                           ),
                         ],
@@ -988,6 +1177,635 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
               );
             },
           ),
+      ],
+    );
+  }
+}
+
+/// 3.5. 巅峰排行榜详情页 (DesktopToplistDetailView - 呈现该榜单下 100~200 首全量歌曲)
+class DesktopToplistDetailView extends StatefulWidget {
+  final String chartName;
+  final Function(String viewId, [String? extra]) onNavigate;
+
+  const DesktopToplistDetailView({
+    super.key,
+    required this.chartName,
+    required this.onNavigate,
+  });
+
+  @override
+  State<DesktopToplistDetailView> createState() => _DesktopToplistDetailViewState();
+}
+
+class _DesktopToplistDetailViewState extends State<DesktopToplistDetailView> {
+  String _chartId = '';
+  String _chartTitle = '官方榜单';
+  String _coverUrl = '';
+  String _updateFreq = '每日更新';
+  List<Color>? _gradient;
+  IconData? _iconData;
+  List<Track> _tracks = [];
+  bool _isLoading = false;
+  String _searchFilter = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _parseParamsAndLoad();
+  }
+
+  @override
+  void didUpdateWidget(DesktopToplistDetailView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.chartName != widget.chartName) {
+      _parseParamsAndLoad();
+    }
+  }
+
+  void _parseParamsAndLoad() {
+    final raw = widget.chartName;
+    if (raw.contains(':::')) {
+      final parts = raw.split(':::');
+      _chartId = parts[0];
+      _chartTitle = parts.length > 1 ? parts[1] : '官方榜单';
+      _coverUrl = parts.length > 2 ? parts[2] : '';
+      _updateFreq = parts.length > 3 ? parts[3] : '每日更新';
+    } else {
+      _chartTitle = raw;
+      _chartId = '';
+    }
+
+    final match = desktopCoreCharts.firstWhere(
+      (c) => c['title'] == _chartTitle,
+      orElse: () => <String, Object>{},
+    );
+    if (match.isNotEmpty) {
+      _gradient = match['gradient'] as List<Color>?;
+      _iconData = match['icon'] as IconData?;
+      _updateFreq = match['update'] as String? ?? _updateFreq;
+    } else {
+      _gradient = const [Color(0xFF6366F1), Color(0xFF4F46E5)];
+      _iconData = Icons.leaderboard_rounded;
+    }
+
+    final initial = toplistTracksMap[_chartTitle];
+    if (initial != null && initial.isNotEmpty) {
+      _tracks = List.from(initial);
+    } else {
+      _tracks = [];
+    }
+
+    _loadTracks();
+  }
+
+  Future<void> _loadTracks() async {
+    setState(() => _isLoading = _tracks.isEmpty);
+    try {
+      final fetched = await OnlineMusicService.fetchToplistTracks(_chartId.isNotEmpty ? _chartId : _chartTitle, limit: 100);
+      if (mounted) {
+        setState(() {
+          if (fetched.isNotEmpty) {
+            _tracks = fetched;
+          }
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.watch<ThemeProvider>();
+    final player = context.watch<AudioPlayerService>();
+    final isDark = theme.isDarkMode;
+
+    final displayTracks = _searchFilter.trim().isEmpty
+        ? _tracks
+        : _tracks.where((t) {
+            final q = _searchFilter.trim().toLowerCase();
+            return t.title.toLowerCase().contains(q) || t.artist.toLowerCase().contains(q) || t.album.toLowerCase().contains(q);
+          }).toList();
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(32, 20, 32, 128),
+      children: [
+        // 顶部返回按钮与层级导航
+        InkWell(
+          onTap: () => widget.onNavigate('toplist'),
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SoftButton(
+                  icon: Icons.arrow_back_rounded,
+                  isCircle: true,
+                  onTap: () => widget.onNavigate('toplist'),
+                ),
+                const SizedBox(width: 12),
+                Text('返回巅峰榜单', style: TextStyle(color: theme.textSecondary, fontSize: 14, fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 18),
+
+        // 榜单 Header Banner
+        SoftCard(
+          padding: const EdgeInsets.all(24),
+          borderRadius: MellowRadii.borderR24,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // 1:1 Squircle 封面封套
+              Container(
+                width: 156,
+                height: 156,
+                decoration: BoxDecoration(
+                  gradient: _coverUrl.isEmpty && _gradient != null
+                      ? LinearGradient(
+                          colors: _gradient!,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : null,
+                  borderRadius: MellowRadii.borderR20,
+                  boxShadow: [
+                    BoxShadow(
+                      color: (_gradient != null ? _gradient![0] : theme.accentColor).withValues(alpha: 0.35),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: MellowRadii.borderR20,
+                  child: _coverUrl.isNotEmpty
+                      ? MellowImage(
+                          url: _coverUrl,
+                          width: 156,
+                          height: 156,
+                          fit: BoxFit.cover,
+                        )
+                      : Stack(
+                          children: [
+                            Positioned(
+                              right: -10,
+                              bottom: -10,
+                              child: Icon(_iconData ?? Icons.leaderboard_rounded, size: 84, color: Colors.white.withValues(alpha: 0.18)),
+                            ),
+                            Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(_iconData ?? Icons.leaderboard_rounded, size: 40, color: Colors.white),
+                                  const SizedBox(height: 6),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                                    child: Text(
+                                      _chartTitle,
+                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
+              const SizedBox(width: 24),
+
+              // 榜单详情信息
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                          decoration: BoxDecoration(
+                            color: theme.accentColor.withValues(alpha: 0.14),
+                            borderRadius: MellowRadii.borderPill,
+                          ),
+                          child: Text(
+                            '官方权威排行榜',
+                            style: TextStyle(color: theme.accentColor, fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _updateFreq,
+                          style: TextStyle(fontSize: 12, color: theme.textMuted),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      _chartTitle,
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w900,
+                        color: theme.textPrimary,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '权威大数据实时聚合，收录全量 ${_tracks.length} 首榜单精选好歌 · 每日同步刷新',
+                      style: TextStyle(fontSize: 13, color: theme.textSecondary),
+                    ),
+                    const SizedBox(height: 18),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 10,
+                      children: [
+                        SoftButton(
+                          label: '播放全部 (${_tracks.length}首)',
+                          icon: Icons.play_arrow_rounded,
+                          isActive: true,
+                          isPill: true,
+                          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                          onTap: () {
+                            if (_tracks.isNotEmpty) {
+                              player.playPlaylist(_tracks, startIndex: 0);
+                            }
+                          },
+                        ),
+                        SoftButton(
+                          label: '添加到播放列表',
+                          icon: Icons.playlist_add_rounded,
+                          isPill: true,
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                          onTap: () {
+                            if (_tracks.isNotEmpty) {
+                              player.appendPlaylist(_tracks);
+                              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                                SnackBar(
+                                  content: Text('已添加 ${_tracks.length} 首歌曲到播放列表'),
+                                  behavior: SnackBarBehavior.floating,
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                        if (_isLoading)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // 歌曲列表区域与榜内快速搜索
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '榜单歌曲列表 (${displayTracks.length})',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary),
+            ),
+            SizedBox(
+              width: 220,
+              height: 36,
+              child: TextField(
+                controller: _searchController,
+                onChanged: (val) => setState(() => _searchFilter = val),
+                style: TextStyle(fontSize: 12, color: theme.textPrimary),
+                decoration: InputDecoration(
+                  hintText: '在榜单内筛选歌曲/歌手...',
+                  hintStyle: TextStyle(fontSize: 12, color: theme.textMuted),
+                  prefixIcon: Icon(Icons.search_rounded, size: 16, color: theme.textMuted),
+                  suffixIcon: _searchFilter.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(Icons.close_rounded, size: 14, color: theme.textMuted),
+                          tooltip: '清空筛选',
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchFilter = '');
+                          },
+                        )
+                      : null,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  filled: true,
+                  fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03),
+                  border: OutlineInputBorder(
+                    borderRadius: MellowRadii.borderPill,
+                    borderSide: BorderSide(
+                      color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: MellowRadii.borderPill,
+                    borderSide: BorderSide(
+                      color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: MellowRadii.borderPill,
+                    borderSide: BorderSide(color: theme.accentColor, width: 1.2),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        // 高密度歌曲列表 (支持榜单前三名金银铜冠亚季军高亮)
+        DesktopSongTableView(
+          tracks: displayTracks,
+          isToplistRank: true,
+          onIndexTap: (idx) {
+            player.playPlaylist(displayTracks, startIndex: idx);
+          },
+          emptyMessage: _isLoading ? '正在加载榜单全量歌曲...' : '未找到相关榜单曲目',
+        ),
+      ],
+    );
+  }
+}
+
+/// 3.6. 每日推荐歌单详情页 (DesktopDailyRecommendView - 专属声学日推全量 28 首高保真曲库)
+class DesktopDailyRecommendView extends StatelessWidget {
+  final Function(String viewId, [String? extra]) onNavigate;
+
+  const DesktopDailyRecommendView({
+    super.key,
+    required this.onNavigate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.watch<ThemeProvider>();
+    final player = context.watch<AudioPlayerService>();
+    final isDark = theme.isDarkMode;
+
+    final service = DailyRecommendService.instance;
+    final tracks = service.getDailyRecommendTracks();
+    final greeting = service.getGreeting();
+    final dayStr = service.getFormattedDay();
+    final weekdayStr = service.getFormattedWeekday();
+    final monthYearStr = service.getFormattedMonthYear();
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(32, 20, 32, 128),
+      children: [
+        // 顶部返回按钮与层级导航
+        InkWell(
+          onTap: () => onNavigate('discover'),
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SoftButton(
+                  icon: Icons.arrow_back_rounded,
+                  isCircle: true,
+                  onTap: () => onNavigate('discover'),
+                ),
+                const SizedBox(width: 12),
+                Text('发现音乐', style: TextStyle(color: theme.textSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
+                const SizedBox(width: 8),
+                Icon(Icons.chevron_right_rounded, size: 16, color: theme.textMuted),
+                const SizedBox(width: 8),
+                Text('每日推荐', style: TextStyle(color: theme.accentColor, fontSize: 13, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 18),
+
+        // 拟物日历便签头大卡片 Banner
+        SoftCard(
+          padding: const EdgeInsets.all(24),
+          borderRadius: MellowRadii.borderR24,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // 拟物日历撕页卡片
+              Container(
+                width: 156,
+                height: 156,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E2028) : Colors.white,
+                  borderRadius: MellowRadii.borderR20,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFF3366).withValues(alpha: 0.28),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
+                    width: 0.8,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    // 日历头部
+                    Container(
+                      height: 40,
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFFFF3366), Color(0xFFFF655B)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(19),
+                          topRight: Radius.circular(19),
+                        ),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '$monthYearStr · $weekdayStr',
+                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            dayStr,
+                            style: TextStyle(
+                              fontSize: 54,
+                              fontWeight: FontWeight.w900,
+                              height: 1.0,
+                              color: isDark ? Colors.white : const Color(0xFF1F2937),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF3366).withValues(alpha: 0.12),
+                              borderRadius: MellowRadii.borderPill,
+                            ),
+                            child: const Text(
+                              '每日06:00更新',
+                              style: TextStyle(fontSize: 10, color: Color(0xFFFF3366), fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 24),
+
+              // 详细文案与操作区
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFF3366), Color(0xFFFF655B)],
+                            ),
+                            borderRadius: MellowRadii.borderPill,
+                          ),
+                          child: const Text(
+                            '每日推荐',
+                            style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF3366).withValues(alpha: 0.14),
+                            borderRadius: MellowRadii.borderPill,
+                          ),
+                          child: const Text(
+                            '专属声学算法推荐',
+                            style: TextStyle(color: Color(0xFFFF3366), fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        Text(
+                          '契合度 99.8%',
+                          style: TextStyle(fontSize: 12, color: theme.textMuted),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      greeting,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: theme.textPrimary,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '根据你的近期听歌偏好与时光节律，为你精选 ${tracks.length} 首高保真温润纯音',
+                      style: TextStyle(fontSize: 13, color: theme.textSecondary),
+                    ),
+                    const SizedBox(height: 18),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 10,
+                      children: [
+                        SoftButton(
+                          label: '播放全部 (${tracks.length}首)',
+                          icon: Icons.play_arrow_rounded,
+                          isActive: true,
+                          isPill: true,
+                          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                          onTap: () {
+                            if (tracks.isNotEmpty) {
+                              player.playPlaylist(tracks, startIndex: 0);
+                            }
+                          },
+                        ),
+                        SoftButton(
+                          label: '添加到播放列表',
+                          icon: Icons.playlist_add_rounded,
+                          isPill: true,
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                          onTap: () {
+                            if (tracks.isNotEmpty) {
+                              player.appendPlaylist(tracks);
+                              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                                SnackBar(
+                                  content: Text('已添加 ${tracks.length} 首每日推荐歌曲到播放列表'),
+                                  behavior: SnackBarBehavior.floating,
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // 歌曲列表区
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '今日专属曲目列表 (${tracks.length})',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary),
+            ),
+            Text('每日 06:00 自动刷新', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        DesktopSongTableView(
+          tracks: tracks,
+          onIndexTap: (idx) {
+            player.playPlaylist(tracks, startIndex: idx);
+          },
+        ),
       ],
     );
   }
@@ -1928,13 +2746,17 @@ class DesktopFavoriteView extends StatelessWidget {
 class DesktopSongTableView extends StatelessWidget {
   final List<Track> tracks;
   final Function(Track)? onTrackTap;
+  final Function(int index)? onIndexTap;
   final String? emptyMessage;
+  final bool isToplistRank;
 
   const DesktopSongTableView({
     super.key,
     required this.tracks,
     this.onTrackTap,
+    this.onIndexTap,
     this.emptyMessage,
+    this.isToplistRank = false,
   });
 
   @override
@@ -2014,7 +2836,16 @@ class DesktopSongTableView extends StatelessWidget {
                   track: t,
                   isPlaying: isPlaying,
                   showAlbum: showAlbum,
-                  onTap: () => onTrackTap != null ? onTrackTap!(t) : player.playTrack(t),
+                  isToplistRank: isToplistRank,
+                  onTap: () {
+                    if (onIndexTap != null) {
+                      onIndexTap!(entry.key);
+                    } else if (onTrackTap != null) {
+                      onTrackTap!(t);
+                    } else {
+                      player.playTrack(t);
+                    }
+                  },
                   onFavoriteToggle: () => player.toggleFavorite(t.id, t),
                   isFavorite: player.isFavorite(t.id),
                 );
@@ -2032,6 +2863,7 @@ class _DesktopSongTableRow extends StatefulWidget {
   final Track track;
   final bool isPlaying;
   final bool showAlbum;
+  final bool isToplistRank;
   final VoidCallback onTap;
   final VoidCallback onFavoriteToggle;
   final bool isFavorite;
@@ -2041,6 +2873,7 @@ class _DesktopSongTableRow extends StatefulWidget {
     required this.track,
     required this.isPlaying,
     this.showAlbum = true,
+    this.isToplistRank = false,
     required this.onTap,
     required this.onFavoriteToggle,
     required this.isFavorite,
@@ -2085,14 +2918,31 @@ class _DesktopSongTableRowState extends State<_DesktopSongTableRow> {
                     ? Icon(Icons.volume_up_rounded, size: 16, color: theme.accentColor)
                     : (_isHovered
                         ? Icon(Icons.play_arrow_rounded, size: 18, color: theme.accentColor)
-                        : Text(
-                            widget.index.toString().padLeft(2, '0'),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: theme.textMuted,
-                              fontFeatures: const [FontFeature.tabularFigures()],
-                            ),
-                          )),
+                        : (widget.isToplistRank && widget.index <= 3
+                            ? Container(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  widget.index.toString().padLeft(2, '0'),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w900,
+                                    color: widget.index == 1
+                                        ? const Color(0xFFFFB800)
+                                        : widget.index == 2
+                                            ? const Color(0xFF94A3B8)
+                                            : const Color(0xFFCD7F32),
+                                    fontFeatures: const [FontFeature.tabularFigures()],
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                widget.index.toString().padLeft(2, '0'),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: theme.textMuted,
+                                  fontFeatures: const [FontFeature.tabularFigures()],
+                                ),
+                              ))),
               ),
               const SizedBox(width: 8),
               MellowImage(
@@ -3157,7 +4007,7 @@ class _DesktopSettingsViewState extends State<DesktopSettingsView> {
         ),
         const SizedBox(height: 16),
 
-        // 4. 系统托盘与常驻设置 (Windows & Desktop 特性)
+        // 4. 系统托盘与常驻设置 (macOS & Windows 桌面特性)
         SoftCard(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -3173,7 +4023,7 @@ class _DesktopSettingsViewState extends State<DesktopSettingsView> {
                       color: theme.accentColor.withValues(alpha: 0.15),
                       borderRadius: MellowRadii.borderPill,
                     ),
-                    child: Text('Windows 原生集成', style: TextStyle(color: theme.accentColor, fontSize: 11, fontWeight: FontWeight.bold)),
+                    child: Text('桌面原生集成', style: TextStyle(color: theme.accentColor, fontSize: 11, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
@@ -3184,9 +4034,9 @@ class _DesktopSettingsViewState extends State<DesktopSettingsView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('关闭主窗口时最小化至托盘${Platform.isWindows ? '' : ' (Windows 专享)'}', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: theme.textPrimary)),
+                        Text('关闭主窗口时最小化至系统托盘', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: theme.textPrimary)),
                         const SizedBox(height: 4),
-                        Text(Platform.isWindows ? '点击窗口右上角关闭按钮时不退出程序，在系统托盘保持后台静默播放与快捷菜单控制' : 'Windows 平台专用后台驻留特性（macOS 平台由 Dock 管理应用生命周期）', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                        Text('关闭主窗口时不退出程序，在系统状态栏/任务栏托盘保持后台静默播放与快捷播控菜单', style: TextStyle(fontSize: 12, color: theme.textMuted)),
                       ],
                     ),
                   ),

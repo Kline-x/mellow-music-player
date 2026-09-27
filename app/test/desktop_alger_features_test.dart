@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:mellow_music/design_system/theme_provider.dart';
+import 'package:mellow_music/design_system/mellow_logo.dart';
 import 'package:mellow_music/core/audio/audio_player_service.dart';
 import 'package:mellow_music/core/audio/equalizer_manager.dart';
 import 'package:mellow_music/core/sources/online_music_service.dart';
@@ -57,7 +58,7 @@ void main() {
 
       // 3. 验证存在现代桌面沉浸品牌 Logo 与名称
       expect(find.text('Mellow Music · 润音'), findsOneWidget);
-      expect(find.byIcon(Icons.graphic_eq_rounded), findsOneWidget);
+      expect(find.byType(MellowBrandLogo), findsOneWidget);
 
       audioPlayerService.pause();
       await tester.pump(const Duration(milliseconds: 100));

@@ -8,6 +8,7 @@ import 'core/audio/equalizer_manager.dart';
 import 'core/storage/storage_service.dart';
 import 'core/sources/lx_script_sandbox.dart';
 import 'core/window/desktop_floating_lyric_service.dart';
+import 'core/audio/windows_tray_service.dart';
 import 'navigation/adaptive_scaffold.dart';
 
 /// 全局 HTTP 覆盖器：强制所有底层连接（含 Image.network）附带桌面浏览器 User-Agent，
@@ -36,8 +37,9 @@ void main() async {
   // ignore: avoid_print
   print('>>> [STEP 4] LxSourceEngine initialized');
   await DesktopFloatingLyricService.instance.init();
+  await DesktopTrayService.instance.init();
   // ignore: avoid_print
-  print('>>> [STEP 5] DesktopFloatingLyricService initialized, calling runApp');
+  print('>>> [STEP 5] Desktop services initialized, calling runApp');
   runApp(
     MultiProvider(
       providers: [

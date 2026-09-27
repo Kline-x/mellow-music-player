@@ -17,6 +17,8 @@ scratch/
 test_*.png
 *.png
 !public/*.png
+!app/assets/**
+!app/**/Assets.xcassets/**
 docs/evidence/
 evidence/
 .system_generated/
@@ -27,4 +29,5 @@ __pycache__/
 *.pyc
 docs/tools/state.json
 *.py
+!app/scripts/**
 app/docs/

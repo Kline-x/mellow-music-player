@@ -401,7 +401,15 @@ class _MobileScaffoldState extends State<MobileScaffold> {
       case 'playlists':
         return MobilePlaylistSquarePage(onBack: _popSubPage);
       case 'toplist':
-        return MobileToplistPage(onBack: _popSubPage);
+        return MobileToplistPage(
+          onBack: _popSubPage,
+          onSelectToplist: (chart) => _navigateToPage('toplist_detail', chart),
+        );
+      case 'toplist_detail':
+        return MobileToplistDetailPage(
+          chartName: _subPageParam ?? '飙升榜',
+          onBack: _popSubPage,
+        );
       case 'radio':
         return MobileRadioPage(onBack: _popSubPage);
       case 'artists':

@@ -50,7 +50,7 @@ jobs:
           path: Mellow-Music-Windows-x64.zip
 
   # ---------------------------------------------------------------------------
-  # 2. macOS 桌面原生安装包编译 (Apple Silicon / Intel)
+  # 2. macOS 桌面原生安装包编译 (Apple Silicon / Intel Universal)
   # ---------------------------------------------------------------------------
   build-macos:
     name: Build macOS Universal
@@ -102,7 +102,7 @@ jobs:
       - name: Install Linux Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -173,7 +173,50 @@ jobs:
           path: Mellow-Music-Android.apk
 
   # ---------------------------------------------------------------------------
-  # 5. Web / PWA 生产产物编译与打包
+  # 5. iOS 移动端免签安装包 (IPA / Payload) 编译与打包
+  # ---------------------------------------------------------------------------
+  build-ios:
+    name: Build iOS IPA & Payload
+    runs-on: macos-14
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        working-directory: app
+        run: flutter pub get
+
+      - name: Build iOS Release (Unsigned)
+        working-directory: app
+        run: flutter build ios --release --no-codesign
+
+      - name: Package iOS IPA & Payload
+        run: |
+          mkdir -p Payload
+          cp -r app/build/ios/iphoneos/Runner.app Payload/
+          zip -r Mellow-Music-iOS.ipa Payload
+          ditto -c -k --sequesterRsrc --keepParent app/build/ios/iphoneos/Runner.app Mellow-Music-iOS-App.zip
+
+      - name: Upload iOS IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mellow-Music-iOS
+          path: Mellow-Music-iOS.ipa
+
+      - name: Upload iOS App Zip Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mellow-Music-iOS-App
+          path: Mellow-Music-iOS-App.zip
+
+  # ---------------------------------------------------------------------------
+  # 6. Web / PWA 生产产物编译与打包
   # ---------------------------------------------------------------------------
   build-web:
     name: Build Web & PWA
@@ -207,11 +250,11 @@ jobs:
           path: Mellow-Music-Web.tar.gz
 
   # ---------------------------------------------------------------------------
-  # 6. 全平台发布聚合 (Publish GitHub Release)
+  # 7. 全平台发布聚合 (Publish GitHub Release)
   # ---------------------------------------------------------------------------
   publish-release:
     name: Publish GitHub Multiplatform Release
-    needs: [build-windows, build-macos, build-linux, build-android, build-web]
+    needs: [build-windows, build-macos, build-linux, build-android, build-ios, build-web]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -238,6 +281,8 @@ jobs:
             release-assets/Mellow-Music-macOS.zip
             release-assets/Mellow-Music-Linux-x64.tar.gz
             release-assets/Mellow-Music-Android.apk
+            release-assets/Mellow-Music-iOS.ipa
+            release-assets/Mellow-Music-iOS-App.zip
             release-assets/Mellow-Music-Web.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
