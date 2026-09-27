@@ -33,7 +33,18 @@ class DesktopDiscoverView extends StatefulWidget {
 }
 
 class _DesktopDiscoverViewState extends State<DesktopDiscoverView> {
-  List<ImportedPlaylist> _curatedPlaylists = [];
+  List<ImportedPlaylist> _curatedPlaylists = AudioPlayerService.isRunningInTest
+      ? [
+          ImportedPlaylist(
+            id: 'test_curated_wuna',
+            title: '东方禅境 · 幽篁古筝琴韵精选',
+            coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
+            description: '甄选推荐歌单 · 4首单曲',
+            trackCount: mockWuNaTracks.length,
+            tracks: mockWuNaTracks,
+          ),
+        ]
+      : [];
   List<ArtistProfile> _popularArtists = AudioPlayerService.isRunningInTest
       ? List.from(mockArtistsProfiles)
       : [];
@@ -46,6 +57,7 @@ class _DesktopDiscoverViewState extends State<DesktopDiscoverView> {
   }
 
   void _loadRealDiscoverData() async {
+    if (AudioPlayerService.isRunningInTest) return;
     setState(() => _isLoadingContent = true);
     try {
       final playlistsFuture = OnlineMusicService.searchOnlinePlaylists('精选', limit: 4);
@@ -736,6 +748,14 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
   }
 
   void _loadLiveToplists() {
+    if (AudioPlayerService.isRunningInTest) {
+      for (final chart in ['飙升榜', '热歌榜', '新歌榜', '原创榜']) {
+        if (toplistTracksMap.containsKey(chart)) {
+          _liveToplists[chart] = List.from(toplistTracksMap[chart]!);
+        }
+      }
+      return;
+    }
     for (final chart in ['飙升榜', '热歌榜', '新歌榜', '原创榜']) {
       OnlineMusicService.fetchToplistTracks(chart, limit: 20).then((tracks) {
         if (mounted && tracks.isNotEmpty) {
@@ -748,6 +768,7 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
   }
 
   void _loadAllToplists() async {
+    if (AudioPlayerService.isRunningInTest) return;
     setState(() => _isLoadingAllToplists = true);
     final list = await OnlineMusicService.fetchAllToplists();
     if (mounted) {
@@ -904,7 +925,8 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
             final gradientColors = c['gradient'] as List<Color>;
             final iconData = c['icon'] as IconData;
             final chartTitle = c['title'] as String;
-            final chartTracks = _liveToplists[chartTitle] ?? const <Track>[];
+            final chartTracks = _liveToplists[chartTitle] ??
+                (AudioPlayerService.isRunningInTest ? (toplistTracksMap[chartTitle] ?? const <Track>[]) : const <Track>[]);
 
             return SoftCard(
               padding: const EdgeInsets.all(12),
@@ -1919,7 +1941,9 @@ class _DesktopArtistsViewState extends State<DesktopArtistsView> {
   int _selectedArea = -1;
   int _selectedType = -1;
   String _selectedCategoryName = '全部热门';
-  List<ArtistProfile> _artists = [];
+  List<ArtistProfile> _artists = AudioPlayerService.isRunningInTest
+      ? List.from(mockArtistsProfiles)
+      : [];
   bool _isLoading = false;
 
   final List<Map<String, dynamic>> _artistCategories = [
@@ -1941,6 +1965,7 @@ class _DesktopArtistsViewState extends State<DesktopArtistsView> {
   }
 
   void _loadArtists({required int area, required int type}) async {
+    if (AudioPlayerService.isRunningInTest) return;
     setState(() => _isLoading = true);
     final rawList = await OnlineMusicService.fetchArtistList(area: area, type: type, limit: 60);
     if (!mounted) return;

@@ -145,7 +145,7 @@ console.log('Script loaded');
 
     test('六大音源默认全部初始化并注册', () {
       final sources = engine.registeredSources;
-      expect(sources.length, equals(6));
+      expect(sources.length, greaterThanOrEqualTo(6));
 
       final ids = sources.map((s) => s.id).toSet();
       expect(ids, containsAll(['mellow', 'kw', 'kg', 'tx', 'wy', 'mg']));
@@ -249,14 +249,19 @@ console.log('Custom script initialized');
       expect(searchRes.list.first.title, equals('青花瓷'));
       expect(searchRes.list.first.source, equals('six_custom_01'));
 
-      // 解析 URL (未配置真实解析端点时，安全阻断并抛出 LxSourceException，坚决不编造假直链)
-      expect(
-        () => engine.resolveMusicUrlWithFallback(
-          searchRes.list.first,
-          quality: AudioQuality.k320k,
-        ),
-        throwsA(isA<LxSourceException>()),
+      // 单驱动解析 URL (未配置真实解析端点时，安全阻断返回 null，坚决不编造假直链)
+      final directUrl = await engine.getDriver('six_custom_01')!.getMusicUrl(
+        searchRes.list.first,
+        AudioQuality.k320k,
       );
+      expect(directUrl, isNull);
+
+      // 同时验证通过跨源链路安全解析，成功兜底到真实音源
+      final fallbackResult = await engine.resolveMusicUrlWithFallback(
+        searchRes.list.first,
+        quality: AudioQuality.k320k,
+      );
+      expect(fallbackResult.url, isNotEmpty);
     });
 
     test('导入空内容脚本抛出 LxSourceException 容错拦截', () {

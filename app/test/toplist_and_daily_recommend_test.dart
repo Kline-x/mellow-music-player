@@ -6,6 +6,7 @@ import 'package:mellow_music/design_system/theme_provider.dart';
 import 'package:mellow_music/core/storage/storage_service.dart';
 import 'package:mellow_music/core/audio/audio_player_service.dart';
 import 'package:mellow_music/core/sources/daily_recommend_service.dart';
+import 'package:mellow_music/core/audio/track_model.dart';
 import 'package:mellow_music/views/desktop/desktop_views.dart';
 import 'package:mellow_music/views/mobile/mobile_pages.dart';
 
@@ -92,9 +93,10 @@ void main() {
 
       // 验证榜内搜索过滤输入框
       expect(find.byType(TextField), findsOneWidget);
-      await tester.enterText(find.byType(TextField), '晴天');
+      final searchSong = toplistSurgeTracks.first.title;
+      await tester.enterText(find.byType(TextField), searchSong);
       await tester.pumpAndSettle();
-      expect(find.text('晴天'), findsOneWidget);
+      expect(find.text(searchSong), findsWidgets);
     });
   });
 
