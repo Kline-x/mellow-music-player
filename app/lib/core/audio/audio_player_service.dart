@@ -56,6 +56,14 @@ class AudioPlayerService extends ChangeNotifier {
   Timer? _playbackNoticeTimer;
   Timer? _autoSkipTimer;
   int _consecutiveFailures = 0;
+  bool _isDisposed = false;
+  bool get isDisposed => _isDisposed;
+
+  @override
+  void notifyListeners() {
+    if (_isDisposed) return;
+    super.notifyListeners();
+  }
 
   // Getters
   List<Track> get playlist => List.unmodifiable(_playlist);
@@ -973,6 +981,8 @@ class AudioPlayerService extends ChangeNotifier {
 
   @override
   void dispose() {
+    if (_isDisposed) return;
+    _isDisposed = true;
     _positionSub?.cancel();
     _durationSub?.cancel();
     _playingSub?.cancel();
