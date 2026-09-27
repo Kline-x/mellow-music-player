@@ -549,10 +549,23 @@ class AudioPlayerService extends ChangeNotifier {
       if (track.localPath != null && track.localPath!.isNotEmpty) {
         await _backend.play(track.localPath!);
         if (session != _playSessionId) return;
-      } else {
         String? playUrl = track.audioUrl;
 
-        // 1. 如果是网易云外链，先物理展开重定向；若非 404 则直接作为真实物理直链秒播
+        // 1. 若为网易云真实曲目，直接优先提取原生 320k 高品质 HTTPS 直链，秒开播放
+        final pureNeId = NeteaseMusicService.pureSongId(track.id);
+        if (pureNeId != null && (playUrl == null || playUrl.isEmpty || playUrl.contains('music.163.com/song/media/outer/url'))) {
+          final directResolved = await OnlineMusicService.resolvePlayableAudioUrl(
+            track.title,
+            track.artist,
+            trackId: track.id,
+          );
+          if (session != _playSessionId) return;
+          if (directResolved != null && directResolved.isNotEmpty) {
+            playUrl = directResolved;
+          }
+        }
+
+        // 2. 如果包含外链重定向，物理轻量展开并升级为 HTTPS 安全链接
         if (playUrl != null && playUrl.contains('music.163.com/song/media/outer/url')) {
           final unwrapped = await OnlineMusicService.unwrapRedirects(playUrl);
           if (unwrapped.isNotEmpty && !unwrapped.contains('/404')) {
@@ -562,7 +575,7 @@ class AudioPlayerService extends ChangeNotifier {
           }
         }
 
-        // 2. 如果没有有效播放流或为假/受限链接，优先调用当前激活的落雪社区源
+        // 3. 如果没有有效播放流或为假/受限链接，优先调用当前激活的落雪社区源或全网智能转搜
         if (playUrl == null ||
             playUrl.isEmpty ||
             playUrl.contains('soundhelix.com') ||
@@ -585,7 +598,7 @@ class AudioPlayerService extends ChangeNotifier {
                 .timeout(const Duration(milliseconds: 1800), onTimeout: () => null);
             if (session != _playSessionId) return;
             if (lxUrl != null && lxUrl.isNotEmpty && lxUrl.startsWith('http')) {
-              playUrl = lxUrl;
+              playUrl = OnlineMusicService.upgradeToSecureUrl(lxUrl);
             }
           } catch (_) {}
 
@@ -618,7 +631,8 @@ class AudioPlayerService extends ChangeNotifier {
         if (session != _playSessionId) return;
 
         if (playUrl != null && playUrl.isNotEmpty) {
-          await _backend.play(playUrl);
+          final safePlayUrl = OnlineMusicService.upgradeToSecureUrl(playUrl);
+          await _backend.play(safePlayUrl);
           if (session != _playSessionId) return;
           _consecutiveFailures = 0;
         } else {
@@ -648,7 +662,8 @@ class AudioPlayerService extends ChangeNotifier {
         );
         if (session != _playSessionId) return;
         if (fallbackUrl != null && fallbackUrl.isNotEmpty) {
-          await _backend.play(fallbackUrl);
+          final safeFallbackUrl = OnlineMusicService.upgradeToSecureUrl(fallbackUrl);
+          await _backend.play(safeFallbackUrl);
           if (session != _playSessionId) return;
           _consecutiveFailures = 0;
           final idx = _playlist.indexWhere((t) => t.id == track.id);

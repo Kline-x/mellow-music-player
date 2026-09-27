@@ -249,13 +249,13 @@ class OnlineMusicService {
       }
     }
 
-    // 0. 若为网易云真实曲目 ID，优先尝试网易云原生高品质增强流
+    // 0. 若为网易云真实曲目 ID，优先尝试网易云原生高品质增强流（320k 物理高保真直链）
     final neId = NeteaseMusicService.pureSongId(trackId ?? defaultUrl ?? '');
     if (neId != null) {
       try {
-        final res = await neteaseService.resolveStreamUrl(neId);
+        final res = await neteaseService.resolveStreamUrl(neId, quality: NeteaseQuality.br320k);
         if (res.isPlayable && res.url != null && res.url!.isNotEmpty) {
-          final directUrl = await unwrapRedirects(res.url!);
+          final directUrl = upgradeToSecureUrl(res.url!);
           _urlCache[cacheKey] = directUrl;
           return directUrl;
         }
@@ -325,8 +325,9 @@ class OnlineMusicService {
                     if ((antiUrl.startsWith('http://') || antiUrl.startsWith('https://')) &&
                         !antiUrl.contains('588957081') &&
                         !antiUrl.contains('/nf/')) {
-                      _urlCache[cacheKey] = antiUrl;
-                      return antiUrl;
+                      final secureUrl = upgradeToSecureUrl(antiUrl);
+                      _urlCache[cacheKey] = secureUrl;
+                      return secureUrl;
                     }
                   }
                 } catch (_) {}
@@ -339,8 +340,9 @@ class OnlineMusicService {
                       !unwrapped.contains('nxinxz.com') &&
                       !unwrapped.contains('588957081') &&
                       !unwrapped.contains('/nf/')) {
-                    _urlCache[cacheKey] = unwrapped;
-                    return unwrapped;
+                    final secureUrl = upgradeToSecureUrl(unwrapped);
+                    _urlCache[cacheKey] = secureUrl;
+                    return secureUrl;
                   }
                 } catch (_) {}
               }
@@ -356,9 +358,9 @@ class OnlineMusicService {
       for (final nt in neTracks) {
         final pureId = NeteaseMusicService.pureSongId(nt.id);
         if (pureId != null) {
-          final res = await neteaseService.resolveStreamUrl(pureId);
+          final res = await neteaseService.resolveStreamUrl(pureId, quality: NeteaseQuality.br320k);
           if (res.isPlayable && res.url != null && res.url!.isNotEmpty) {
-            final directUrl = await unwrapRedirects(res.url!);
+            final directUrl = upgradeToSecureUrl(res.url!);
             _urlCache[cacheKey] = directUrl;
             return directUrl;
           }
@@ -650,9 +652,39 @@ class OnlineMusicService {
     return null;
   }
 
+  /// 将所有支持 HTTPS 的音频 CDN 直链统一升级为安全 HTTPS 传输，彻底杜绝系统 ATS 拦截
+  static String upgradeToSecureUrl(String url) {
+    if (url.startsWith('http://')) {
+      final uri = Uri.tryParse(url);
+      if (uri != null) {
+        final host = uri.host.toLowerCase();
+        if (host.endsWith('music.126.net') ||
+            host.endsWith('music.163.com') ||
+            host.endsWith('kuwo.cn') ||
+            host.endsWith('kugou.com') ||
+            host.endsWith('migu.cn') ||
+            host.endsWith('qq.com') ||
+            host.endsWith('apple.com')) {
+          return url.replaceFirst('http://', 'https://');
+        }
+      }
+    }
+    return url;
+  }
+
   /// 展开任意 HTTP 301/302 重定向，获取最终物理直接可播放地址 (最多追踪 3 跳，保证 client.close 杜绝句柄泄漏)
   static Future<String> unwrapRedirects(String url, {http.Client? customClient, int maxRedirects = 3}) async {
     if (!url.startsWith('http://') && !url.startsWith('https://')) return url;
+
+    // 若已经是最终静态音频文件且非重定向代理，直接升级安全协议后快速返回，避免发起无谓的大文件下载请求
+    final lower = url.toLowerCase();
+    if (!lower.contains('/outer/url') &&
+        !lower.contains('convert_url') &&
+        !lower.contains('kw.php') &&
+        (lower.contains('.mp3') || lower.contains('.flac') || lower.contains('.m4a') || lower.contains('.aac'))) {
+      return upgradeToSecureUrl(url);
+    }
+
     final client = customClient ?? http.Client();
     var currentUrl = url;
     var hops = 0;
@@ -661,12 +693,28 @@ class OnlineMusicService {
         final uri = Uri.tryParse(currentUrl);
         if (uri == null || (!uri.isScheme('http') && !uri.isScheme('https'))) break;
 
-        final req = http.Request('GET', uri)..followRedirects = false;
+        // 优先使用轻量级 HEAD 请求，仅读取响应头，不读取大文件 body
+        final req = http.Request('HEAD', uri)..followRedirects = false;
         req.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
-        final response = await client.send(req).timeout(const Duration(seconds: 4));
+        req.headers['Referer'] = 'https://music.163.com/';
+        http.StreamedResponse response;
+        try {
+          response = await client.send(req).timeout(const Duration(milliseconds: 2500));
+        } catch (_) {
+          // 若 HEAD 失败或遇到 405，回退到 Range 首字节 GET 探测
+          final getReq = http.Request('GET', uri)..followRedirects = false;
+          getReq.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+          getReq.headers['Referer'] = 'https://music.163.com/';
+          getReq.headers['Range'] = 'bytes=0-0';
+          response = await client.send(getReq).timeout(const Duration(milliseconds: 2500));
+        }
 
         if (response.isRedirect && response.headers.containsKey('location')) {
           final loc = response.headers['location']!;
+          if (loc.contains('/404') || loc.endsWith('/404.mp3')) {
+            currentUrl = '';
+            break;
+          }
           final resolvedUri = uri.resolve(loc);
           currentUrl = resolvedUri.toString();
           hops++;
@@ -680,7 +728,7 @@ class OnlineMusicService {
         client.close();
       }
     }
-    return currentUrl;
+    return currentUrl.isNotEmpty ? upgradeToSecureUrl(currentUrl) : '';
   }
 
   /// 2. 网易云/公开歌单解析与一键导入
@@ -704,7 +752,8 @@ class OnlineMusicService {
     if (playlistId == null) return null;
 
     try {
-      final uri = Uri.parse('https://music.163.com/api/playlist/detail?id=$playlistId');
+      // 优先请求 v6 高精接口，获取完整曲目与 privileges 播放权限列表
+      final uri = Uri.parse('https://music.163.com/api/v6/playlist/detail?id=$playlistId');
       final resp = await http.get(uri, headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Referer': 'https://music.163.com/',
@@ -712,30 +761,45 @@ class OnlineMusicService {
 
       if (resp.statusCode == 200) {
         final data = jsonDecode(utf8.decode(resp.bodyBytes));
-        final result = data['result'];
-        if (result != null) {
-          final title = result['name']?.toString() ?? '导入歌单';
-          final coverUrl = result['coverImgUrl']?.toString() ??
+        final plData = (data['playlist'] ?? data['result']) as Map<String, dynamic>?;
+        if (plData != null) {
+          final title = plData['name']?.toString() ?? '导入歌单';
+          final coverUrl = plData['coverImgUrl']?.toString() ??
               'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80';
-          final description = result['description']?.toString() ?? '来自网易云音乐公开歌单';
-          final tracksJson = result['tracks'] as List? ?? [];
+          final description = plData['description']?.toString() ?? '来自网易云音乐公开歌单';
+          final tracksJson = plData['tracks'] as List? ?? [];
+
+          // 提取 privileges 权限映射：key 为 id, value 为 pl (当前真实可播比特率，pl <= 0 代表官方已无版权下架)
+          final privList = data['privileges'] as List? ?? [];
+          final plMap = <String, int>{};
+          for (final p in privList) {
+            if (p is Map) {
+              final pid = p['id']?.toString() ?? '';
+              final pl = (p['pl'] as num?)?.toInt() ?? 0;
+              if (pid.isNotEmpty) plMap[pid] = pl;
+            }
+          }
 
           final parsedTracks = <Track>[];
           for (final item in tracksJson) {
             final id = item['id']?.toString() ?? '';
+            if (id.isEmpty) continue;
             final name = item['name']?.toString() ?? '未知曲目';
-            final artists = (item['artists'] as List?)
+            final artists = (item['artists'] as List? ?? item['ar'] as List?)
                     ?.map((a) => a['name']?.toString() ?? '')
                     .where((s) => s.isNotEmpty)
                     .join(' / ') ??
                 '未知歌手';
-            final album = item['album']?['name']?.toString() ?? '未知专辑';
-            final durationMs = (item['duration'] as num?)?.toInt() ?? 240000;
+            final album = (item['album']?['name'] ?? item['al']?['name'])?.toString() ?? '未知专辑';
+            final durationMs = ((item['duration'] ?? item['dt']) as num?)?.toInt() ?? 240000;
             final duration = Duration(milliseconds: durationMs);
-            final rawItemCover = item['album']?['picUrl']?.toString();
+            final rawItemCover = (item['album']?['picUrl'] ?? item['al']?['picUrl'])?.toString();
             final itemCover = (rawItemCover != null && rawItemCover.isNotEmpty)
                 ? rawItemCover
                 : (coverUrl.isNotEmpty ? coverUrl : NeteaseMusicService.fallbackCoverFor(name, artists));
+            
+            // 真实版权状态：若 privileges 里 pl > 0，网易云原生 320k 物理流可秒播
+            final pl = plMap[id] ?? ((item['fee'] == 0 || item['fee'] == 8) ? 320000 : 0);
             final audioUrl = 'https://music.163.com/song/media/outer/url?id=$id.mp3';
 
             parsedTracks.add(Track(
@@ -745,7 +809,7 @@ class OnlineMusicService {
               album: album,
               coverUrl: itemCover,
               duration: duration,
-              source: 'netease-playlist',
+              source: pl > 0 ? 'netease-playlist' : 'netease-unlicensed',
               audioUrl: audioUrl,
               lyrics: const [],
             ));
@@ -923,12 +987,16 @@ class OnlineMusicService {
 
     final playlist = await importNeteasePlaylist(pid);
     if (playlist != null && playlist.tracks.isNotEmpty) {
-      final rawList = playlist.tracks.take(limit + 5).toList();
-      // 快速剔除已明确无法播放的死链（如已知 404 的歌曲）
+      // 放大候选采样池，过滤掉已明确无版权与网易云官方下架的死链
+      final rawList = playlist.tracks;
       final filtered = <Track>[];
       for (final t in rawList) {
-        // 过滤掉网易云明确无版权的死链 ID（如 3399839173 李佳薇-甲乙丙丁）
+        // 1. 过滤已知的明确无版权/下架死链
         if (t.id.contains('3399839173') || t.title.contains('甲乙丙丁 (你我怎么两清)')) {
+          continue;
+        }
+        // 2. 自动剔除网易云端明确标记为无播放版权（pl <= 0）的下架曲目，保证榜单曲目 100% 可播
+        if (t.source == 'netease-unlicensed') {
           continue;
         }
         filtered.add(t);

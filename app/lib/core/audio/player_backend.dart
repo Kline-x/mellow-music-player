@@ -46,7 +46,8 @@ class RealAudioPlayerBackend implements AudioPlayerBackend {
         uri.contains('custom-cdn')) {
       throw ArgumentError('非法音频直链: 拦截到测试占位或捏造直链，物理声卡拒绝输出: $uri');
     }
-    final direct = await OnlineMusicService.unwrapRedirects(uri);
+    final unwrapped = await OnlineMusicService.unwrapRedirects(uri);
+    final direct = OnlineMusicService.upgradeToSecureUrl(unwrapped.isNotEmpty ? unwrapped : uri);
     try {
       if (direct.startsWith('http://') || direct.startsWith('https://')) {
         await _player.play(UrlSource(direct));
