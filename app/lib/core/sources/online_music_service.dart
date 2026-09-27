@@ -991,11 +991,7 @@ class OnlineMusicService {
       final rawList = playlist.tracks;
       final filtered = <Track>[];
       for (final t in rawList) {
-        // 1. 过滤已知的明确无版权/下架死链
-        if (t.id.contains('3399839173') || t.title.contains('甲乙丙丁 (你我怎么两清)')) {
-          continue;
-        }
-        // 2. 自动剔除网易云端明确标记为无播放版权（pl <= 0）的下架曲目，保证榜单曲目 100% 可播
+        // 自动剔除网易云端明确标记为无播放版权（pl <= 0）的下架曲目
         if (t.source == 'netease-unlicensed') {
           continue;
         }
