@@ -248,7 +248,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
-    final player = context.watch<AudioPlayerService>();
+    final player = context.read<AudioPlayerService>();
 
     final shortcuts = <ShortcutActivator, VoidCallback>{
       // 1. 空格播放 / 暂停
@@ -945,6 +945,33 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                                     ),
                                   ),
                                 ),
+                                if (screenWidth >= 860) ...[
+                                  const SizedBox(width: 5),
+                                  // 真实音质徽章
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(
+                                        color: isDark ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.12),
+                                        width: 0.5,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      player.actualQualityLabel,
+                                      style: TextStyle(
+                                        fontSize: 9.0,
+                                        fontWeight: FontWeight.w600,
+                                        color: player.actualQualityLabel.contains('Hi-Res')
+                                            ? const Color(0xFFF59E0B)
+                                            : (player.actualQualityLabel.contains('SQ')
+                                                ? const Color(0xFF10B981)
+                                                : theme.textMuted),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ],

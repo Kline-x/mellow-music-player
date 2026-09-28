@@ -300,7 +300,58 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
                             color: theme.textSecondary,
                           ),
                         ),
-                        const SizedBox(height: 18),
+                        const SizedBox(height: 8),
+                        // 真实音质徽章与音源指示
+                        if (track != null)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                                decoration: BoxDecoration(
+                                  color: theme.accentColor.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: theme.accentColor.withValues(alpha: 0.3),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Text(
+                                  AudioPlayerService.formatSourceDisplayName(track.source),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.accentColor,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                                decoration: BoxDecoration(
+                                  color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: isDark ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.12),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Text(
+                                  player.actualQualityLabel,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: player.actualQualityLabel.contains('Hi-Res')
+                                        ? const Color(0xFFF59E0B)
+                                        : (player.actualQualityLabel.contains('SQ')
+                                            ? const Color(0xFF10B981)
+                                            : theme.textSecondary),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        const SizedBox(height: 14),
                         // 进度条行 (带两端时间)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,

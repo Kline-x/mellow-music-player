@@ -826,11 +826,12 @@ class OnlineMusicService {
             ));
           }
 
-          // 若服务端返回的 tracks 被截断且 trackIds 充足，首屏全量/足量拉取（<=100首一次性拉齐，超出则拉取前100首填满屏幕并支持继续懒加载）
-          if (allTrackIds.length > parsedTracks.length) {
-            final takeCount = allTrackIds.length <= 100 ? allTrackIds.length : 100;
-            final firstBatchIds = allTrackIds.take(takeCount).toList();
-            final enriched = await fetchTracksByIds(firstBatchIds, defaultCover: coverUrl);
+          // 极致性能：首屏 0 延迟秒开机制！
+          // 服务端自带的前 10~20 首曲目已具备完整元数据，直接返回秒开上屏；
+          // 全量 trackIds 携带在 allTrackIds 中，由详情页在后台无感流式增量补齐，彻底消灭进入歌单的白屏等待！
+          if (parsedTracks.isEmpty && allTrackIds.isNotEmpty) {
+            final initialBatchIds = allTrackIds.take(25).toList();
+            final enriched = await fetchTracksByIds(initialBatchIds, defaultCover: coverUrl);
             if (enriched.isNotEmpty) {
               parsedTracks = enriched;
             }

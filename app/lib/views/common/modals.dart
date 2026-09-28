@@ -2368,7 +2368,7 @@ on(EVENT_NAMES.request, async ({ source, action, info }) => {
                         children: [
                           Text('导入外部自定义音源脚本',
                               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                          Text('仅解析脚本注释头元数据用于登记音源；无 JS 运行时，脚本代码不会被执行',
+                          Text('支持落雪社区脚本与 Alger API 配置，自动挂载远程音频调度端点',
                               style: TextStyle(fontSize: 12, color: theme.textMuted)),
                         ],
                       ),
@@ -2440,7 +2440,7 @@ on(EVENT_NAMES.request, async ({ source, action, info }) => {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  '诚实说明：导入脚本仅做危险模式正则扫描与注释头解析，脚本代码不会被加载或执行；真实播放由平台直连音源（酷我/网易云/QQ/酷狗/咪咕/iTunes）提供。',
+                                  '架构说明：导入脚本将自动解析 API_URL 调度端点及元数据，在播放时通过原生沙箱请求各大平台音频直链；若无远程端点将平滑转搜。',
                                   style: TextStyle(fontSize: 12, color: theme.textSecondary, height: 1.4),
                                 ),
                               ),
@@ -2457,7 +2457,7 @@ on(EVENT_NAMES.request, async ({ source, action, info }) => {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('音源脚本源码（仅登记元数据，不执行）:',
+                            Text('音源脚本源码 (支持标准 LX 脚本与 API_URL):',
                                 style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: theme.textPrimary)),
                             InkWell(
                               onTap: _pasteFromClipboard,
@@ -2487,7 +2487,7 @@ on(EVENT_NAMES.request, async ({ source, action, info }) => {
                               height: 1.4,
                             ),
                             decoration: InputDecoration(
-                              hintText: '粘贴音源脚本源码（仅解析注释头，不执行）...',
+                              hintText: '粘贴音源脚本源码 (包含 API_URL 端点或 Alger 格式配置)...',
                               hintStyle: TextStyle(fontSize: 12, color: theme.textMuted),
                               filled: true,
                               fillColor: isDark ? const Color(0xFF1E1E24) : const Color(0xFFF8FAFC),

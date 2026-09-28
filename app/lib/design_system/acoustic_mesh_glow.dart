@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'theme_provider.dart';
@@ -58,36 +57,30 @@ class _AcousticMeshGlowState extends State<AcousticMeshGlow>
           const Color(0xFFEC4899).withValues(alpha: 0.30 * intensity),
         ];
 
-    return Stack(
-      children: [
-        // 动态光晕层
-        Positioned.fill(
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (context, _) {
-              final t = _controller.value;
-              return CustomPaint(
-                painter: _MeshGlowPainter(
-                  colors: baseColors,
-                  progress: t,
-                  intensity: intensity,
-                ),
-              );
-            },
+    return RepaintBoundary(
+      child: Stack(
+        children: [
+          // 动态光晕层：自带 MaskFilter 80-100px 软弥散，零 GPU 额外滤镜损耗
+          Positioned.fill(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, _) {
+                final t = _controller.value;
+                return CustomPaint(
+                  painter: _MeshGlowPainter(
+                    colors: baseColors,
+                    progress: t,
+                    intensity: intensity,
+                  ),
+                );
+              },
+            ),
           ),
-        ),
 
-        // 高斯模糊层
-        Positioned.fill(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 70, sigmaY: 70),
-            child: const SizedBox.expand(),
-          ),
-        ),
-
-        // 内容
-        if (widget.child != null) widget.child!,
-      ],
+          // 内容
+          if (widget.child != null) widget.child!,
+        ],
+      ),
     );
   }
 }

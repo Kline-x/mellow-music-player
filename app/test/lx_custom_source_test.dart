@@ -285,8 +285,8 @@ proc.exec('calc.exe');
       expect(find.text('QQ音乐'), findsOneWidget);
       expect(find.text('网易云音乐'), findsOneWidget);
       expect(find.text('默认落雪聚合音源'), findsNWidgets(2)); // 当前主音源指示器与扩展音源卡片
-      // 诚实化标注：脚本仅解析元数据，不执行 JS
-      expect(find.text('仅解析注释头元数据 · 不执行 JS 代码'), findsOneWidget);
+      // 诚实化标注：落雪社区 API 协议驱动 · 原生沙箱安全调度
+      expect(find.text('落雪社区 API 协议驱动 · 原生沙箱安全调度'), findsOneWidget);
 
       // 点击切换全局音质偏好至 320K
       final chip320 = find.text('320K · 高品质');

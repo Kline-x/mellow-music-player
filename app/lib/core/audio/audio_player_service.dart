@@ -81,6 +81,34 @@ class AudioPlayerService extends ChangeNotifier {
   bool get pauseAfterCurrent => _pauseAfterCurrent;
   String? get playbackNotice => _playbackNotice;
 
+  AudioQuality? _actualQuality;
+  AudioQuality? get actualQuality => _actualQuality;
+  String get actualQualityLabel {
+    if (_actualQuality != null) {
+      switch (_actualQuality!) {
+        case AudioQuality.flac24bit:
+          return 'Hi-Res · 24bit';
+        case AudioQuality.flac:
+          return 'SQ · FLAC';
+        case AudioQuality.k320k:
+          return 'HQ · 320K';
+        case AudioQuality.k128k:
+          return '标准 · 128K';
+      }
+    }
+    final url = currentTrack?.audioUrl?.toLowerCase() ?? '';
+    if (url.contains('flac24bit') || url.contains('24bit') || url.contains('hires')) {
+      return 'Hi-Res · 24bit';
+    }
+    if (url.contains('flac') || url.contains('ape') || url.contains('sq')) {
+      return 'SQ · FLAC';
+    }
+    if (url.contains('320k') || url.contains('hq')) {
+      return 'HQ · 320K';
+    }
+    return '标准 · 128K';
+  }
+
   void _setPlaybackNotice(String message, {int autoDismissSeconds = 4}) {
     _playbackNoticeTimer?.cancel();
     _playbackNotice = message;
@@ -553,8 +581,15 @@ class AudioPlayerService extends ChangeNotifier {
     _autoSkipTimer?.cancel();
     try {
       _playbackNotice = null;
+      _actualQuality = null;
       // 0. 本地文件优先直接播放，不经过网络音源解析
       if (track.localPath != null && track.localPath!.isNotEmpty) {
+        final path = track.localPath!.toLowerCase();
+        if (path.endsWith('.flac') || path.endsWith('.wav')) {
+          _actualQuality = AudioQuality.flac;
+        } else {
+          _actualQuality = AudioQuality.k320k;
+        }
         await _backend.play(track.localPath!);
         if (session != _playSessionId) return;
       } else {
@@ -603,11 +638,13 @@ class AudioPlayerService extends ChangeNotifier {
               duration: track.duration,
               coverUrl: track.coverUrl,
             );
-            final lxUrl = await activeDriver.getMusicUrl(lxSong, LxSourceEngine.instance.preferredQuality)
+            final requestedQuality = LxSourceEngine.instance.preferredQuality;
+            final lxUrl = await activeDriver.getMusicUrl(lxSong, requestedQuality)
                 .timeout(const Duration(milliseconds: 1800), onTimeout: () => null);
             if (session != _playSessionId) return;
             if (lxUrl != null && lxUrl.isNotEmpty && lxUrl.startsWith('http')) {
               playUrl = OnlineMusicService.upgradeToSecureUrl(lxUrl);
+              _actualQuality = requestedQuality;
             }
           } catch (_) {}
 
@@ -623,6 +660,16 @@ class AudioPlayerService extends ChangeNotifier {
             if (session != _playSessionId) return;
             if (resolved != null && resolved.isNotEmpty) {
               playUrl = resolved;
+              // 探测降级后的真实码率
+              if (resolved.contains('flac24bit') || resolved.contains('24bit')) {
+                _actualQuality = AudioQuality.flac24bit;
+              } else if (resolved.contains('flac') || resolved.contains('sq')) {
+                _actualQuality = AudioQuality.flac;
+              } else if (resolved.contains('320k') || resolved.contains('hq')) {
+                _actualQuality = AudioQuality.k320k;
+              } else {
+                _actualQuality = AudioQuality.k128k;
+              }
             }
           }
 
@@ -641,6 +688,18 @@ class AudioPlayerService extends ChangeNotifier {
 
         if (playUrl != null && playUrl.isNotEmpty) {
           final safePlayUrl = OnlineMusicService.upgradeToSecureUrl(playUrl);
+          if (_actualQuality == null) {
+            final lower = safePlayUrl.toLowerCase();
+            if (lower.contains('flac24bit') || lower.contains('24bit') || lower.contains('hires')) {
+              _actualQuality = AudioQuality.flac24bit;
+            } else if (lower.contains('flac') || lower.contains('ape') || lower.contains('sq')) {
+              _actualQuality = AudioQuality.flac;
+            } else if (lower.contains('320k') || lower.contains('hq')) {
+              _actualQuality = AudioQuality.k320k;
+            } else {
+              _actualQuality = LxSourceEngine.instance.preferredQuality;
+            }
+          }
           await _backend.play(safePlayUrl);
           if (session != _playSessionId) return;
           _consecutiveFailures = 0;
@@ -655,6 +714,7 @@ class AudioPlayerService extends ChangeNotifier {
       WindowsSmtcService.instance.updatePlaybackState(true);
       WindowsSmtcService.instance.updateTimeline(_position, duration);
       WindowsTrayService.instance.updateTooltip(track);
+      notifyListeners();
     } catch (e) {
       if (session != _playSessionId) return;
       debugPrint('[AudioPlayerService] 初始音频播放失败，尝试静默换源: $e');

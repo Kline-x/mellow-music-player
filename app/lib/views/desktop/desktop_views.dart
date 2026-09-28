@@ -1763,7 +1763,7 @@ class _DesktopToplistDetailViewState extends State<DesktopToplistDetailView> {
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
-    final player = context.watch<AudioPlayerService>();
+    final player = context.read<AudioPlayerService>();
     final isDark = theme.isDarkMode;
 
     final displayTracks = _searchFilter.trim().isEmpty
@@ -3357,7 +3357,8 @@ class DesktopSongTableView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
-    final player = context.watch<AudioPlayerService>();
+    final currentPlayingId = context.select<AudioPlayerService, String?>((p) => p.currentTrack?.id);
+    final player = context.read<AudioPlayerService>();
     final isDark = theme.isDarkMode;
 
     if (tracks.isEmpty) {
@@ -3420,29 +3421,32 @@ class DesktopSongTableView extends StatelessWidget {
                 height: 1,
                 color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
               ),
-              // 数据行
+              // 数据行 (每个条目包裹 RepaintBoundary 彻底隔绝重绘)
               ...tracks.asMap().entries.map((entry) {
                 final idx = entry.key + 1;
                 final t = entry.value;
-                final isPlaying = player.currentTrack?.id == t.id;
+                final isPlaying = currentPlayingId == t.id;
 
-                return _DesktopSongTableRow(
-                  index: idx,
-                  track: t,
-                  isPlaying: isPlaying,
-                  showAlbum: showAlbum,
-                  isToplistRank: isToplistRank,
-                  onTap: () {
-                    if (onIndexTap != null) {
-                      onIndexTap!(entry.key);
-                    } else if (onTrackTap != null) {
-                      onTrackTap!(t);
-                    } else {
-                      player.playTrack(t);
-                    }
-                  },
-                  onFavoriteToggle: () => player.toggleFavorite(t.id, t),
-                  isFavorite: player.isFavorite(t.id),
+                return RepaintBoundary(
+                  key: ValueKey('song_row_${t.id}'),
+                  child: _DesktopSongTableRow(
+                    index: idx,
+                    track: t,
+                    isPlaying: isPlaying,
+                    showAlbum: showAlbum,
+                    isToplistRank: isToplistRank,
+                    onTap: () {
+                      if (onIndexTap != null) {
+                        onIndexTap!(entry.key);
+                      } else if (onTrackTap != null) {
+                        onTrackTap!(t);
+                      } else {
+                        player.playTrack(t);
+                      }
+                    },
+                    onFavoriteToggle: () => player.toggleFavorite(t.id, t),
+                    isFavorite: player.isFavorite(t.id),
+                  ),
                 );
               }),
             ],
@@ -5048,7 +5052,7 @@ class DesktopSourceManagerView extends StatelessWidget {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                '导入脚本仅做危险模式正则扫描与注释头解析，脚本代码不会被加载或执行。',
+                                '支持落雪规范脚本与 Alger 声明式音源配置，自动解析 API 端点进行全网音频流调度。',
                                 style: TextStyle(fontSize: 11.5, color: theme.textMuted),
                               ),
                               const Divider(height: 18),
@@ -5102,7 +5106,7 @@ class DesktopSourceManagerView extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  '仅解析注释头元数据 · 不执行 JS 代码',
+                  '落雪社区 API 协议驱动 · 原生沙箱安全调度',
                   style: TextStyle(fontSize: 12, color: theme.textMuted),
                 ),
               ],
@@ -5129,7 +5133,7 @@ class DesktopSourceManagerView extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        '点击右上角「导入自定义脚本」可订阅 URL 或粘贴脚本：仅登记注释头元数据，脚本代码不会被执行',
+                        '点击右上角「导入自定义脚本」可订阅远程 URL 或直接粘贴脚本代码，支持落雪与 Alger API 端点解析。',
                         style: TextStyle(fontSize: 12.5, color: theme.textMuted),
                       ),
                       const SizedBox(height: 16),
@@ -5277,7 +5281,7 @@ class DesktopSourceManagerView extends StatelessWidget {
                             borderRadius: MellowRadii.borderPill,
                           ),
                           child: const Text(
-                            '元数据挂载',
+                            '原生协议驱动',
                             style: TextStyle(fontSize: 10.5, color: Colors.green, fontWeight: FontWeight.bold),
                           ),
                         ),
@@ -5337,6 +5341,29 @@ class DesktopSourceManagerView extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // 连通性测速按钮
+                SoftButton(
+                  icon: Icons.network_ping_rounded,
+                  label: '测速',
+                  isPill: true,
+                  onTap: () async {
+                    final sw = Stopwatch()..start();
+                    final ok = await engine.testSourceHealth(meta.id);
+                    sw.stop();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(ok
+                              ? '「${meta.name}」连通正常，响应耗时: ${sw.elapsedMilliseconds}ms'
+                              : '「${meta.name}」检测超时或端点未就绪'),
+                          backgroundColor: ok ? Colors.teal.shade700 : Colors.redAccent.shade400,
+                        ),
+                      );
+                    }
+                  },
+                ),
+                const SizedBox(width: 8),
+
                 // 设为主音源按钮
                 if (!isActive)
                   SoftButton(
