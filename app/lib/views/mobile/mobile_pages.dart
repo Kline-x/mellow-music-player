@@ -919,7 +919,7 @@ class _MobileToplistDetailPageState extends State<MobileToplistDetailPage> {
   Future<void> _loadMoreTracks() async {
     if (_isLoadingMore) return;
     final start = _tracks.length;
-    final end = (start + 25 < _allTrackIds.length) ? start + 25 : _allTrackIds.length;
+    final end = (start + 50 < _allTrackIds.length) ? start + 50 : _allTrackIds.length;
     if (start >= end) return;
     setState(() => _isLoadingMore = true);
     try {
@@ -937,6 +937,53 @@ class _MobileToplistDetailPageState extends State<MobileToplistDetailPage> {
     } catch (_) {
       if (mounted) setState(() => _isLoadingMore = false);
     }
+  }
+
+  Future<void> _loadAllRemainingTracks() async {
+    if (_isLoadingMore || _tracks.length >= _allTrackIds.length) return;
+    setState(() => _isLoadingMore = true);
+    try {
+      while (_tracks.length < _allTrackIds.length && mounted) {
+        final start = _tracks.length;
+        final end = (start + 50 < _allTrackIds.length) ? start + 50 : _allTrackIds.length;
+        if (start >= end) break;
+        final batchIds = _allTrackIds.sublist(start, end);
+        final newTracks = await OnlineMusicService.fetchTracksByIds(batchIds, defaultCover: _coverUrl);
+        if (!mounted) break;
+        final existingIds = _tracks.map((t) => t.id).toSet();
+        final uniqueNew = newTracks.where((t) => !existingIds.contains(t.id)).toList();
+        setState(() {
+          _tracks.addAll(uniqueNew);
+        });
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _isLoadingMore = false);
+  }
+
+  void _loadAllRemainingTracksToPlayer(AudioPlayerService player) {
+    Future.microtask(() async {
+      try {
+        var currentOffset = _tracks.length;
+        while (currentOffset < _allTrackIds.length) {
+          final end = (currentOffset + 50 < _allTrackIds.length) ? currentOffset + 50 : _allTrackIds.length;
+          final batchIds = _allTrackIds.sublist(currentOffset, end);
+          final newTracks = await OnlineMusicService.fetchTracksByIds(batchIds, defaultCover: _coverUrl);
+          if (newTracks.isNotEmpty) {
+            player.appendPlaylist(newTracks);
+            currentOffset += newTracks.length;
+            if (mounted) {
+              final existingIds = _tracks.map((t) => t.id).toSet();
+              final uniqueNew = newTracks.where((t) => !existingIds.contains(t.id)).toList();
+              if (uniqueNew.isNotEmpty) {
+                setState(() => _tracks.addAll(uniqueNew));
+              }
+            }
+          } else {
+            break;
+          }
+        }
+      } catch (_) {}
+    });
   }
 
   void _parseParamsAndLoad() {
@@ -1166,6 +1213,9 @@ class _MobileToplistDetailPageState extends State<MobileToplistDetailPage> {
                 onTap: () {
                   if (_tracks.isNotEmpty) {
                     player.playPlaylist(_tracks, startIndex: 0);
+                    if (_allTrackIds.isNotEmpty && _tracks.length < _allTrackIds.length) {
+                      _loadAllRemainingTracksToPlayer(player);
+                    }
                   }
                 },
               ),
@@ -1260,6 +1310,26 @@ class _MobileToplistDetailPageState extends State<MobileToplistDetailPage> {
                     SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: theme.accentColor)),
                     const SizedBox(width: 8),
                     Text('正在加载更多曲目 (${_tracks.length}/$totalDisplay)...', style: TextStyle(fontSize: 11.5, color: theme.textMuted)),
+                  ],
+                ),
+              ),
+            ),
+          ] else if (!_isLoadingMore && _tracks.isNotEmpty && _tracks.length < totalDisplay) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              child: Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('已呈现 ${_tracks.length} 首 · 剩余 ${totalDisplay - _tracks.length} 首', style: TextStyle(fontSize: 11.5, color: theme.textMuted)),
+                    const SizedBox(width: 10),
+                    SoftButton(
+                      label: '加载全部',
+                      icon: Icons.download_rounded,
+                      isPill: true,
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      onTap: _loadAllRemainingTracks,
+                    ),
                   ],
                 ),
               ),

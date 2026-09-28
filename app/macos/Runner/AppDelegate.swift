@@ -29,6 +29,7 @@ class AppDelegate: FlutterAppDelegate, NSWindowDelegate {
 
     setupTray()
     setupChannels()
+    showMainWindow()
   }
 
   // 点击 Dock 栏图标时若窗口隐藏则重新唤醒并居前
@@ -49,7 +50,7 @@ class AppDelegate: FlutterAppDelegate, NSWindowDelegate {
   }
 
   override func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
-    return true
+    return false
   }
 
   // 拦截 macOS 窗口关闭按钮 (红灯)，转为隐藏到托盘

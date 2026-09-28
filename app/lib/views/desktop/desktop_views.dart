@@ -1563,7 +1563,7 @@ class _DesktopToplistDetailViewState extends State<DesktopToplistDetailView> {
   Future<void> _loadMoreTracks() async {
     if (_isLoadingMore) return;
     final start = _tracks.length;
-    final end = (start + 30 < _allTrackIds.length) ? start + 30 : _allTrackIds.length;
+    final end = (start + 50 < _allTrackIds.length) ? start + 50 : _allTrackIds.length;
     if (start >= end) return;
     setState(() => _isLoadingMore = true);
     try {
@@ -1581,6 +1581,53 @@ class _DesktopToplistDetailViewState extends State<DesktopToplistDetailView> {
     } catch (_) {
       if (mounted) setState(() => _isLoadingMore = false);
     }
+  }
+
+  Future<void> _loadAllRemainingTracks() async {
+    if (_isLoadingMore || _tracks.length >= _allTrackIds.length) return;
+    setState(() => _isLoadingMore = true);
+    try {
+      while (_tracks.length < _allTrackIds.length && mounted) {
+        final start = _tracks.length;
+        final end = (start + 50 < _allTrackIds.length) ? start + 50 : _allTrackIds.length;
+        if (start >= end) break;
+        final batchIds = _allTrackIds.sublist(start, end);
+        final newTracks = await OnlineMusicService.fetchTracksByIds(batchIds, defaultCover: _coverUrl);
+        if (!mounted) break;
+        final existingIds = _tracks.map((t) => t.id).toSet();
+        final uniqueNew = newTracks.where((t) => !existingIds.contains(t.id)).toList();
+        setState(() {
+          _tracks.addAll(uniqueNew);
+        });
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _isLoadingMore = false);
+  }
+
+  void _loadAllRemainingTracksToPlayer(AudioPlayerService player) {
+    Future.microtask(() async {
+      try {
+        var currentOffset = _tracks.length;
+        while (currentOffset < _allTrackIds.length) {
+          final end = (currentOffset + 50 < _allTrackIds.length) ? currentOffset + 50 : _allTrackIds.length;
+          final batchIds = _allTrackIds.sublist(currentOffset, end);
+          final newTracks = await OnlineMusicService.fetchTracksByIds(batchIds, defaultCover: _coverUrl);
+          if (newTracks.isNotEmpty) {
+            player.appendPlaylist(newTracks);
+            currentOffset += newTracks.length;
+            if (mounted) {
+              final existingIds = _tracks.map((t) => t.id).toSet();
+              final uniqueNew = newTracks.where((t) => !existingIds.contains(t.id)).toList();
+              if (uniqueNew.isNotEmpty) {
+                setState(() => _tracks.addAll(uniqueNew));
+              }
+            }
+          } else {
+            break;
+          }
+        }
+      } catch (_) {}
+    });
   }
 
   @override
@@ -1893,6 +1940,9 @@ class _DesktopToplistDetailViewState extends State<DesktopToplistDetailView> {
                           onTap: () {
                             if (_tracks.isNotEmpty) {
                               player.playPlaylist(_tracks, startIndex: 0);
+                              if (_allTrackIds.isNotEmpty && _tracks.length < _allTrackIds.length) {
+                                _loadAllRemainingTracksToPlayer(player);
+                              }
                             }
                           },
                         ),
@@ -1904,6 +1954,9 @@ class _DesktopToplistDetailViewState extends State<DesktopToplistDetailView> {
                           onTap: () {
                             if (_tracks.isNotEmpty) {
                               player.appendPlaylist(_tracks);
+                              if (_allTrackIds.isNotEmpty && _tracks.length < _allTrackIds.length) {
+                                _loadAllRemainingTracksToPlayer(player);
+                              }
                               ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                                 SnackBar(
                                   content: Text('已添加 ${_tracks.length} 首歌曲到播放列表'),
@@ -1939,7 +1992,7 @@ class _DesktopToplistDetailViewState extends State<DesktopToplistDetailView> {
           children: [
             Text(
               _searchFilter.isEmpty
-                  ? (_isPlaylist ? '歌曲列表 (${_tracks.length}/$totalDisplay)' : '榜单歌曲列表 (${displayTracks.length})')
+                  ? (_isPlaylist ? '歌曲列表 (已呈现 ${_tracks.length} 首 · 共 $totalDisplay 首)' : '榜单歌曲列表 (${displayTracks.length})')
                   : '筛选结果 (${displayTracks.length})',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary),
             ),
@@ -2020,6 +2073,29 @@ class _DesktopToplistDetailViewState extends State<DesktopToplistDetailView> {
                   Text(
                     '正在懒加载更多曲目... (已呈现 ${_tracks.length} / $totalDisplay 首)',
                     style: TextStyle(fontSize: 12, color: theme.textMuted),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ] else if (!_isLoadingMore && _tracks.isNotEmpty && _tracks.length < totalDisplay) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '已加载 ${_tracks.length} 首 · 剩余 ${totalDisplay - _tracks.length} 首未呈现',
+                    style: TextStyle(fontSize: 12, color: theme.textMuted),
+                  ),
+                  const SizedBox(width: 14),
+                  SoftButton(
+                    label: '立即加载全部',
+                    icon: Icons.download_rounded,
+                    isPill: true,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    onTap: _loadAllRemainingTracks,
                   ),
                 ],
               ),

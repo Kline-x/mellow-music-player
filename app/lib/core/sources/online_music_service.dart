@@ -740,11 +740,6 @@ class OnlineMusicService {
     final cleanInput = input.trim();
     if (cleanInput.isEmpty) return null;
 
-    try {
-      final result = await neteaseService.importPlaylist(cleanInput);
-      if (result != null) return result;
-    } catch (_) {}
-
     String? playlistId;
     final idMatch = RegExp(r'id=(\d+)').firstMatch(cleanInput);
     if (idMatch != null) {
@@ -814,7 +809,8 @@ class OnlineMusicService {
                 ? rawItemCover
                 : (coverUrl.isNotEmpty ? coverUrl : NeteaseMusicService.fallbackCoverFor(name, artists));
 
-            final pl = plMap[id] ?? ((item['fee'] == 0 || item['fee'] == 8) ? 320000 : 0);
+            final isExplicitlyBanned = plMap[id] != null && plMap[id]! <= 0 && ((item['st'] as num?)?.toInt() ?? 0) < 0;
+            final pl = isExplicitlyBanned ? 0 : 320000;
             final audioUrl = 'https://music.163.com/song/media/outer/url?id=$id.mp3';
 
             parsedTracks.add(Track(
@@ -830,9 +826,9 @@ class OnlineMusicService {
             ));
           }
 
-          // 若服务端返回的 tracks 被截断且 trackIds 充足，首屏全量/足量拉取（<=100首一次性拉齐，超出则拉取前60首填满屏幕并支持继续懒加载）
+          // 若服务端返回的 tracks 被截断且 trackIds 充足，首屏全量/足量拉取（<=100首一次性拉齐，超出则拉取前100首填满屏幕并支持继续懒加载）
           if (allTrackIds.length > parsedTracks.length) {
-            final takeCount = allTrackIds.length <= 100 ? allTrackIds.length : 60;
+            final takeCount = allTrackIds.length <= 100 ? allTrackIds.length : 100;
             final firstBatchIds = allTrackIds.take(takeCount).toList();
             final enriched = await fetchTracksByIds(firstBatchIds, defaultCover: coverUrl);
             if (enriched.isNotEmpty) {
@@ -855,6 +851,12 @@ class OnlineMusicService {
           );
         }
       }
+    } catch (_) {}
+
+    // 兜底降级：若 v6 请求异常，尝试通过 neteaseService.importPlaylist 进行应急解析
+    try {
+      final fallbackResult = await neteaseService.importPlaylist(cleanInput);
+      if (fallbackResult != null) return fallbackResult;
     } catch (_) {}
     return null;
   }
@@ -914,7 +916,8 @@ class OnlineMusicService {
             final itemCover = (rawItemCover != null && rawItemCover.isNotEmpty)
                 ? rawItemCover
                 : (defaultCover ?? NeteaseMusicService.fallbackCoverFor(name, artists));
-            final pl = plMap[id] ?? ((item['fee'] == 0 || item['fee'] == 8) ? 320000 : 0);
+            final isExplicitlyBanned = plMap[id] != null && plMap[id]! <= 0 && ((item['st'] as num?)?.toInt() ?? 0) < 0;
+            final pl = isExplicitlyBanned ? 0 : 320000;
             final audioUrl = 'https://music.163.com/song/media/outer/url?id=$id.mp3';
 
             parsedTracks.add(Track(
