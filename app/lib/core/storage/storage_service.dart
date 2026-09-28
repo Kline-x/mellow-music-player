@@ -79,6 +79,27 @@ class StorageService {
     await _prefs?.remove(_keySearchHistory);
   }
 
+  // --- 场景歌单搜索历史记录持久化 ---
+  static const _keyScenarioSearchHistory = 'mellow_scenario_search_history';
+  List<String> getScenarioSearchHistory() => _prefs?.getStringList(_keyScenarioSearchHistory) ?? [];
+  Future<bool> saveScenarioSearchHistory(List<String> history) async =>
+      (await _prefs?.setStringList(_keyScenarioSearchHistory, history)) ?? false;
+  Future<void> addScenarioSearchHistory(String keyword) async {
+    final clean = keyword.trim();
+    if (clean.isEmpty) return;
+    final list = getScenarioSearchHistory().where((k) => k != clean).toList();
+    list.insert(0, clean);
+    if (list.length > 30) list.removeRange(30, list.length);
+    await saveScenarioSearchHistory(list);
+  }
+  Future<void> removeScenarioSearchHistory(String keyword) async {
+    final list = getScenarioSearchHistory().where((k) => k != keyword).toList();
+    await saveScenarioSearchHistory(list);
+  }
+  Future<void> clearScenarioSearchHistory() async {
+    await _prefs?.remove(_keyScenarioSearchHistory);
+  }
+
   // --- 系统托盘与常驻偏好 ---
   bool getMinimizeToTray() => _prefs?.getBool(_keyMinimizeToTray) ?? true;
   Future<bool> saveMinimizeToTray(bool value) async =>

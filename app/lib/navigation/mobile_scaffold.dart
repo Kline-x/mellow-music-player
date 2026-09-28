@@ -7,6 +7,7 @@ import '../design_system/mellow_image.dart';
 import '../core/audio/audio_player_service.dart';
 import '../views/mobile/mobile_tabs.dart';
 import '../views/mobile/mobile_pages.dart';
+import '../views/mobile/mobile_scenario_page.dart';
 import '../views/mobile/mobile_sheets.dart';
 
 /// 移动端应用脚手架 (MobileScaffold)
@@ -402,13 +403,22 @@ class _MobileScaffoldState extends State<MobileScaffold> {
       case 'fm':
         return MobilePersonalFMPage(onBack: _popSubPage);
       case 'playlists':
-        return MobilePlaylistSquarePage(onBack: _popSubPage);
+        return MobilePlaylistSquarePage(
+          onBack: _popSubPage,
+          onOpenScenarios: () => _navigateToPage('scenarios'),
+        );
+      case 'scenarios':
+        return MobileScenarioPlaylistPage(
+          onBack: _popSubPage,
+          onNavigatePage: _navigateToPage,
+        );
       case 'toplist':
         return MobileToplistPage(
           onBack: _popSubPage,
           onSelectToplist: (chart) => _navigateToPage('toplist_detail', chart),
         );
       case 'toplist_detail':
+      case 'playlist_detail':
         return MobileToplistDetailPage(
           chartName: _subPageParam ?? '飙升榜',
           onBack: _popSubPage,

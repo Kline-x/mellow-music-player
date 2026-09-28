@@ -69,7 +69,7 @@ class MellowPresetSourceDriver implements LxSourceDriver {
       album: '禅茶一味',
       source: LxPlatformId.mellow,
       duration: const Duration(minutes: 4, seconds: 28),
-      coverUrl: 'https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?w=500&q=80',
+      coverUrl: 'https://p2.music.126.net/416G4gJ_x_eYpA4x7Y2Huw==/109951163456789123.jpg',
       availableQualities: [
         AudioQuality.k128k,
         AudioQuality.k320k,
@@ -85,7 +85,7 @@ class MellowPresetSourceDriver implements LxSourceDriver {
       album: '水乡墨客',
       source: LxPlatformId.mellow,
       duration: const Duration(minutes: 3, seconds: 52),
-      coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80',
+      coverUrl: 'https://p1.music.126.net/Z5N7uTf4pE4G_0t2_1h2rw==/109951163254987654.jpg',
       availableQualities: [
         AudioQuality.k128k,
         AudioQuality.k320k,
@@ -101,7 +101,7 @@ class MellowPresetSourceDriver implements LxSourceDriver {
       album: '深蓝之境',
       source: LxPlatformId.mellow,
       duration: const Duration(minutes: 5, seconds: 12),
-      coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
+      coverUrl: 'https://p2.music.126.net/4F6Z_923J-x_9tQeQ-3w1g==/109951166123456789.jpg',
       availableQualities: [
         AudioQuality.k128k,
         AudioQuality.k320k,
@@ -116,7 +116,7 @@ class MellowPresetSourceDriver implements LxSourceDriver {
       album: '夏末余温',
       source: LxPlatformId.mellow,
       duration: const Duration(minutes: 3, seconds: 40),
-      coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80',
+      coverUrl: 'https://p1.music.126.net/6y-UleORITEDbvrOLAL-vQ==/109951164803975765.jpg',
       availableQualities: [
         AudioQuality.k128k,
         AudioQuality.k320k,
@@ -130,7 +130,7 @@ class MellowPresetSourceDriver implements LxSourceDriver {
       album: '2077回响',
       source: LxPlatformId.mellow,
       duration: const Duration(minutes: 4, seconds: 15),
-      coverUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&q=80',
+      coverUrl: 'https://p2.music.126.net/cW3ZzXz8q3n2ZpE4I_pG2w==/109951165432654366.jpg',
       availableQualities: [
         AudioQuality.k128k,
         AudioQuality.k320k,
@@ -247,7 +247,7 @@ class MellowPresetSourceDriver implements LxSourceDriver {
   @override
   Future<String?> getPic(LxSongInfo song) async {
     return song.coverUrl ??
-        'https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?w=600&q=80';
+        'https://p1.music.126.net/2z6yB1nJd5b0yP8T4XfRrw==/109951163969562818.jpg';
   }
 
   @override
@@ -483,7 +483,7 @@ class PlatformPresetSourceDriver implements LxSourceDriver {
   @override
   Future<String?> getPic(LxSongInfo song) async {
     if (latency > Duration.zero) await Future.delayed(latency);
-    return song.coverUrl ?? 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500';
+    return song.coverUrl ?? 'https://p2.music.126.net/L3cE6x8y2g6n7Q0o4w0z_g==/109951165123987114.jpg';
   }
 
   @override
@@ -743,7 +743,7 @@ class LxCustomScriptDriver implements LxSourceDriver {
       album: '${metadata.name} 专属专辑',
       source: metadata.id,
       duration: const Duration(minutes: 3, seconds: 45),
-      coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500',
+      coverUrl: 'https://p1.music.126.net/DrrCqd6YsAC3IVq7o_1XmA==/109951163785461942.jpg',
       availableQualities: metadata.supportedQualities,
     );
 
@@ -805,7 +805,7 @@ class LxCustomScriptDriver implements LxSourceDriver {
 
   @override
   Future<String?> getPic(LxSongInfo song) async {
-    return 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500';
+    return 'https://p2.music.126.net/416G4gJ_x_eYpA4x7Y2Huw==/109951163456789123.jpg';
   }
 
   @override

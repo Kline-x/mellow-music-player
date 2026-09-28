@@ -20,6 +20,8 @@ class MainFlutterWindow: NSWindow {
     self.titleVisibility = .hidden
     self.styleMask.insert(.fullSizeContentView)
     self.isMovableByWindowBackground = true
+    // 设置原生窗口背景色为 Mellow 主题白瓷色 (0xF5F7FB)，彻底杜绝 Flutter 首帧绘制前的黑屏闪现
+    self.backgroundColor = NSColor(srgbRed: 245.0 / 255.0, green: 247.0 / 255.0, blue: 251.0 / 255.0, alpha: 1.0)
     RegisterGeneratedPlugins(registry: flutterViewController)
 
     super.awakeFromNib()

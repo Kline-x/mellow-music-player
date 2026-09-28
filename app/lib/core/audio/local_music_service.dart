@@ -112,7 +112,7 @@ class LocalMusicService {
       artist: artist.isNotEmpty ? artist : '本地音乐人',
       album: '本地 $ext 离线曲库',
       duration: const Duration(minutes: 3, seconds: 40),
-      coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80',
+      coverUrl: 'https://p1.music.126.net/DrrCqd6YsAC3IVq7o_1XmA==/109951163785461942.jpg',
       localPath: file.path,
       audioUrl: null,
       lyrics: [

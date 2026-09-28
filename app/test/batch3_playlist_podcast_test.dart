@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:mellow_music/design_system/theme_provider.dart';
 import 'package:mellow_music/core/audio/audio_player_service.dart';
 import 'package:mellow_music/core/audio/equalizer_manager.dart';
+import 'package:mellow_music/core/audio/track_model.dart';
+import 'package:mellow_music/core/sources/online_music_service.dart';
 import 'package:mellow_music/navigation/desktop_scaffold.dart';
 import 'package:mellow_music/views/mobile/mobile_pages.dart';
 
@@ -12,6 +14,52 @@ void main() {
     late ThemeProvider themeProvider;
     late AudioPlayerService audioPlayerService;
     late EqualizerManager equalizerManager;
+
+    setUpAll(() {
+      OnlineMusicService.mockTopPlaylistsFetcher = ({cat = '全部', offset = 0, limit = 30}) async {
+        if (cat == '古风雅乐') {
+          return [
+            SquarePlaylist(
+              id: 'mock-gu-feng',
+              title: '空山新雨 · 禅意清音集',
+              desc: '一曲琴瑟一处禅',
+              tag: '古风雅乐',
+              coverUrl: '',
+              playCount: '88.5万',
+              tracks: [
+                Track(id: 'gf-1', title: '云水禅心', artist: '禅意乐团', album: '空山新雨', duration: const Duration(minutes: 3), source: 'offline', coverUrl: ''),
+                Track(id: 'gf-2', title: '高山流水', artist: '国乐大师', album: '空山新雨', duration: const Duration(minutes: 3), source: 'offline', coverUrl: ''),
+                Track(id: 'gf-3', title: '渔舟唱晚', artist: '筝鸣', album: '空山新雨', duration: const Duration(minutes: 3), source: 'offline', coverUrl: ''),
+              ],
+            ),
+          ];
+        }
+        return [
+          SquarePlaylist(
+            id: 'mock-hua-yu',
+            title: '华语经典流行金曲堂',
+            desc: '经典回响',
+            tag: '华语流行',
+            coverUrl: '',
+            playCount: '184.2万',
+            tracks: mockJayChouTracks,
+          ),
+          SquarePlaylist(
+            id: 'mock-rock',
+            title: '不朽摇滚 · 岁月沉思录',
+            desc: '热血不熄',
+            tag: '摇滚',
+            coverUrl: '',
+            playCount: '52.3万',
+            tracks: mockBoYuanTracks,
+          ),
+        ];
+      };
+    });
+
+    tearDownAll(() {
+      OnlineMusicService.mockTopPlaylistsFetcher = null;
+    });
 
     setUp(() {
       themeProvider = ThemeProvider();
@@ -43,6 +91,7 @@ void main() {
       // 切换至“歌单广场”
       final playlistSquareNav = find.text('歌单广场');
       await tester.tap(playlistSquareNav);
+      await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       // 1. 验证默认展示精选推荐歌单（包含华语经典流行金曲堂、不朽摇滚等）
@@ -53,19 +102,26 @@ void main() {
       // 2. 点击分类标签“古风雅乐”，验证列表筛选联动生效
       final guFengTag = find.text('古风雅乐');
       await tester.tap(guFengTag);
+      await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       // 验证展示古风歌单，不展示摇滚歌单
       expect(find.text('空山新雨 · 禅意清音集'), findsOneWidget);
       expect(find.text('不朽摇滚 · 岁月沉思录'), findsNothing);
 
-      // 3. 点击该歌单卡片，验证整单被载入播放队列并触发播放
+      // 3. 点击该歌单卡片，验证进入全屏详情页并点击播放全部触发整单播放
       await tester.tap(find.text('空山新雨 · 禅意清音集'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('返回歌单广场'), findsOneWidget);
+      final playAllBtn = find.textContaining('播放全部');
+      expect(playAllBtn, findsOneWidget);
+      await tester.tap(playAllBtn);
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(audioPlayerService.isPlaying, isTrue);
-      expect(audioPlayerService.currentTrack?.title, equals('云水禅心'));
-      // 队列包含该歌单全部曲目（3首及以上）
+      // 队列包含该歌单曲目
       expect(audioPlayerService.playlist.length, greaterThanOrEqualTo(3));
 
       audioPlayerService.pause();

@@ -150,7 +150,7 @@ class LxOfficialSourceDriver implements LxSourceDriver {
     if (cover != null && cover.isNotEmpty && cover.startsWith('http')) {
       return cover;
     }
-    return 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500';
+    return 'https://p1.music.126.net/Z5N7uTf4pE4G_0t2_1h2rw==/109951163254987654.jpg';
   }
 
   @override

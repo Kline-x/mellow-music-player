@@ -22,8 +22,6 @@ class AppDelegate: FlutterAppDelegate, NSWindowDelegate {
   }
 
   override func applicationDidFinishLaunching(_ notification: Notification) {
-    super.applicationDidFinishLaunching(notification)
-
     if let window = targetWindow {
       self.mainWindow = window
       window.delegate = self
@@ -40,7 +38,6 @@ class AppDelegate: FlutterAppDelegate, NSWindowDelegate {
   }
 
   override func applicationDidBecomeActive(_ notification: Notification) {
-    super.applicationDidBecomeActive(notification)
     if let window = targetWindow, !window.isVisible {
       showMainWindow()
     }

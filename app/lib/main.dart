@@ -32,14 +32,8 @@ void main() async {
   print('>>> [STEP 2] WidgetsFlutterBinding ensured');
   await StorageService.instance.init();
   // ignore: avoid_print
-  print('>>> [STEP 3] StorageService initialized');
-  await LxSourceEngine.instance.initFromStorage();
-  // ignore: avoid_print
-  print('>>> [STEP 4] LxSourceEngine initialized');
-  await DesktopFloatingLyricService.instance.init();
-  await DesktopTrayService.instance.init();
-  // ignore: avoid_print
-  print('>>> [STEP 5] Desktop services initialized, calling runApp');
+  print('>>> [STEP 3] StorageService initialized, immediate runApp');
+
   runApp(
     MultiProvider(
       providers: [
@@ -51,7 +45,27 @@ void main() async {
     ),
   );
   // ignore: avoid_print
-  print('>>> [STEP 6] runApp called successfully');
+  print('>>> [STEP 4] runApp called successfully');
+
+  // 首帧立即上屏后，后台异步非阻塞并行初始化非核心重量级服务，根除启动黑屏与卡顿
+  Future.microtask(() async {
+    try {
+      await LxSourceEngine.instance.initFromStorage();
+      // ignore: avoid_print
+      print('>>> [STEP 5] LxSourceEngine initialized in background');
+    } catch (e) {
+      debugPrint('[Init] LxSourceEngine 初始化异常: $e');
+    }
+
+    try {
+      await DesktopFloatingLyricService.instance.init();
+      await DesktopTrayService.instance.init();
+      // ignore: avoid_print
+      print('>>> [STEP 6] Desktop services initialized in background');
+    } catch (e) {
+      debugPrint('[Init] 桌面辅助服务初始化异常: $e');
+    }
+  });
 }
 
 class MellowMusicApp extends StatelessWidget {

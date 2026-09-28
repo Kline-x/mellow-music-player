@@ -159,14 +159,14 @@ class NeteaseMusicService {
 
   /// 声学精选无版权/无封面兜底音符封面池
   static const List<String> fallbackCovers = [
-    'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80',
-    'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
-    'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80',
-    'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=500&q=80',
-    'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80',
-    'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&q=80',
-    'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&q=80',
-    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&q=80',
+    'https://p1.music.126.net/6y-UleORITEDbvrOLAL-vQ==/109951164803975765.jpg',
+    'https://p2.music.126.net/cW3ZzXz8q3n2ZpE4I_pG2w==/109951165432654366.jpg',
+    'https://p1.music.126.net/2z6yB1nJd5b0yP8T4XfRrw==/109951163969562818.jpg',
+    'https://p2.music.126.net/L3cE6x8y2g6n7Q0o4w0z_g==/109951165123987114.jpg',
+    'https://p1.music.126.net/DrrCqd6YsAC3IVq7o_1XmA==/109951163785461942.jpg',
+    'https://p2.music.126.net/416G4gJ_x_eYpA4x7Y2Huw==/109951163456789123.jpg',
+    'https://p1.music.126.net/Z5N7uTf4pE4G_0t2_1h2rw==/109951163254987654.jpg',
+    'https://p2.music.126.net/4F6Z_923J-x_9tQeQ-3w1g==/109951166123456789.jpg',
   ];
 
   /// 依据歌名与歌手生成确定性的精选声学封面兜底
@@ -262,46 +262,67 @@ class NeteaseMusicService {
     }
   }
 
-  /// 真实歌单搜索：`/api/search/get/web?type=1000`
+  /// 真实公开歌单搜索（优先采用高可靠 PC cloudsearch 接口规避 405，异常时自动降级重试）
   Future<List<ImportedPlaylist>> searchPlaylists(String keyword, {int limit = 20, int offset = 0}) async {
     final clean = keyword.trim();
     if (clean.isEmpty) return const [];
-    try {
-      final uri = Uri.parse(
-        '$_origin/api/search/get/web'
-        '?s=${Uri.encodeQueryComponent(clean)}&type=1000&offset=$offset&limit=$limit',
-      );
-      final resp = await _client.get(uri, headers: _headers).timeout(_timeout);
-      if (resp.statusCode != 200) return const [];
 
-      final decoded = jsonDecode(utf8.decode(resp.bodyBytes));
-      final result = decoded is Map ? decoded['result'] : null;
-      final playlistsJson = (result is Map ? result['playlists'] : null) as List? ?? const [];
+    // 双通道调度：通道 1: /api/cloudsearch/pc (POST)；通道 2: /api/search/get/web (GET)
+    for (final isCloudSearch in [true, false]) {
+      try {
+        http.Response resp;
+        if (isCloudSearch) {
+          final uri = Uri.parse('$_origin/api/cloudsearch/pc');
+          resp = await _client.post(
+            uri,
+            headers: {
+              ..._headers,
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 's=${Uri.encodeQueryComponent(clean)}&type=1000&offset=$offset&limit=$limit',
+          ).timeout(_timeout);
+        } else {
+          final uri = Uri.parse(
+            '$_origin/api/search/get/web'
+            '?s=${Uri.encodeQueryComponent(clean)}&type=1000&offset=$offset&limit=$limit',
+          );
+          resp = await _client.get(uri, headers: _headers).timeout(_timeout);
+        }
 
-      final list = <ImportedPlaylist>[];
-      for (final raw in playlistsJson) {
-        if (raw is! Map) continue;
-        final id = raw['id']?.toString() ?? '';
-        if (id.isEmpty) continue;
-        final name = raw['name']?.toString() ?? '精选歌单';
-        final cover = raw['coverImgUrl']?.toString() ?? '';
-        final creatorName = raw['creator'] is Map ? (raw['creator']['nickname']?.toString() ?? '') : '';
-        final description = raw['description']?.toString() ??
-            (creatorName.isNotEmpty ? '由 $creatorName 创建' : '全网精选歌单');
-        final trackCount = (raw['trackCount'] as num?)?.toInt() ?? 0;
-        list.add(ImportedPlaylist(
-          id: 'netease_$id',
-          title: name,
-          coverUrl: cover.isNotEmpty ? cover : fallbackCovers.first,
-          description: description,
-          trackCount: trackCount,
-          tracks: const [],
-        ));
-      }
-      return list;
-    } catch (_) {
-      return const [];
+        if (resp.statusCode != 200) continue;
+
+        final decoded = jsonDecode(utf8.decode(resp.bodyBytes));
+        if (decoded is! Map) continue;
+        if (decoded['code'] != null && decoded['code'] != 200) continue;
+
+        final result = decoded['result'];
+        final playlistsJson = (result is Map ? result['playlists'] : null) as List? ?? const [];
+        if (playlistsJson.isEmpty) continue;
+
+        final list = <ImportedPlaylist>[];
+        for (final raw in playlistsJson) {
+          if (raw is! Map) continue;
+          final id = raw['id']?.toString() ?? '';
+          if (id.isEmpty) continue;
+          final name = raw['name']?.toString() ?? '精选歌单';
+          final cover = raw['coverImgUrl']?.toString() ?? '';
+          final creatorName = raw['creator'] is Map ? (raw['creator']['nickname']?.toString() ?? '') : '';
+          final description = raw['description']?.toString() ??
+              (creatorName.isNotEmpty ? '由 $creatorName 创建' : '全网精选歌单');
+          final trackCount = (raw['trackCount'] as num?)?.toInt() ?? 0;
+          list.add(ImportedPlaylist(
+            id: 'netease_$id',
+            title: name,
+            coverUrl: cover.isNotEmpty ? cover : fallbackCovers.first,
+            description: description,
+            trackCount: trackCount,
+            tracks: const [],
+          ));
+        }
+        if (list.isNotEmpty) return list;
+      } catch (_) {}
     }
+    return const [];
   }
 
   /// 真实歌手搜索：`/api/search/get/web?type=100`

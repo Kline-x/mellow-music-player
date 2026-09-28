@@ -360,7 +360,7 @@ class AudioPlayerService extends ChangeNotifier {
     final tracks = List<Track>.from(initialTracks ?? []);
     final defaultCover = tracks.isNotEmpty
         ? tracks.first.coverUrl
-        : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80';
+        : 'https://p2.music.126.net/L3cE6x8y2g6n7Q0o4w0z_g==/109951165123987114.jpg';
 
     final pl = ImportedPlaylist(
       id: 'custom-$now',

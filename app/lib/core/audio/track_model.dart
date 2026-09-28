@@ -298,7 +298,7 @@ final List<Track> mockJayChouTracks = [
     title: '晴天',
     artist: '周杰伦',
     album: '叶惠美',
-    coverUrl: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&q=80',
+    coverUrl: 'https://p1.music.126.net/6y-UleORITEDbvrOLAL-vQ==/109951164803975765.jpg',
     duration: const Duration(minutes: 4, seconds: 29),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=228908&level=standard&type=mp3',
@@ -316,7 +316,7 @@ final List<Track> mockJayChouTracks = [
     title: '花海',
     artist: '周杰伦',
     album: '魔杰座',
-    coverUrl: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=500&q=80',
+    coverUrl: 'https://p2.music.126.net/cW3ZzXz8q3n2ZpE4I_pG2w==/109951165432654366.jpg',
     duration: const Duration(minutes: 4, seconds: 24),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=260908&level=standard&type=mp3',
@@ -333,7 +333,7 @@ final List<Track> mockJayChouTracks = [
     title: '爱在西元前',
     artist: '周杰伦',
     album: '范特西',
-    coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
+    coverUrl: 'https://p1.music.126.net/2z6yB1nJd5b0yP8T4XfRrw==/109951163969562818.jpg',
     duration: const Duration(minutes: 3, seconds: 54),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=125208&level=standard&type=mp3',
@@ -355,7 +355,7 @@ final List<Track> mockBeyondTracks = [
     title: '光辉岁月',
     artist: 'Beyond',
     album: '命运派对',
-    coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80',
+    coverUrl: 'https://p2.music.126.net/L3cE6x8y2g6n7Q0o4w0z_g==/109951165123987114.jpg',
     duration: const Duration(minutes: 5, seconds: 3),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=5886675&level=standard&type=mp3',
@@ -373,7 +373,7 @@ final List<Track> mockBeyondTracks = [
     title: '真的爱你',
     artist: 'Beyond',
     album: 'Beyond IV',
-    coverUrl: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=500&q=80',
+    coverUrl: 'https://p1.music.126.net/DrrCqd6YsAC3IVq7o_1XmA==/109951163785461942.jpg',
     duration: const Duration(minutes: 4, seconds: 36),
     source: 'preset-320k',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=5886681&level=standard&type=mp3',
@@ -390,7 +390,7 @@ final List<Track> mockBeyondTracks = [
     title: '喜欢你',
     artist: 'Beyond',
     album: '秘密警察',
-    coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80',
+    coverUrl: 'https://p2.music.126.net/416G4gJ_x_eYpA4x7Y2Huw==/109951163456789123.jpg',
     duration: const Duration(minutes: 4, seconds: 34),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=5886676&level=standard&type=mp3',
@@ -412,7 +412,7 @@ final List<Track> mockWuNaTracks = [
     title: '七弦清音',
     artist: '巫娜',
     album: '琴意禅心',
-    coverUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80',
+    coverUrl: 'https://p1.music.126.net/Z5N7uTf4pE4G_0t2_1h2rw==/109951163254987654.jpg',
     duration: const Duration(minutes: 5, seconds: 8),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=383024&level=standard&type=mp3',
@@ -428,7 +428,7 @@ final List<Track> mockWuNaTracks = [
     title: '流水行云',
     artist: '巫娜',
     album: '静水深流',
-    coverUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&q=80',
+    coverUrl: 'https://p2.music.126.net/4F6Z_923J-x_9tQeQ-3w1g==/109951166123456789.jpg',
     duration: const Duration(minutes: 4, seconds: 45),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=383025&level=standard&type=mp3',
@@ -444,7 +444,7 @@ final List<Track> mockWuNaTracks = [
     title: '秋江夜泊',
     artist: '巫娜',
     album: '秋水长天',
-    coverUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=500&q=80',
+    coverUrl: 'https://p1.music.126.net/6y-UleORITEDbvrOLAL-vQ==/109951164803975765.jpg',
     duration: const Duration(minutes: 5, seconds: 32),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=383026&level=standard&type=mp3',
@@ -464,7 +464,7 @@ final List<Track> mockBoYuanTracks = [
     title: '起跑线',
     artist: '伯远',
     album: '青春巡光',
-    coverUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&q=80',
+    coverUrl: 'https://p2.music.126.net/cW3ZzXz8q3n2ZpE4I_pG2w==/109951165432654366.jpg',
     duration: const Duration(minutes: 3, seconds: 38),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=233481231&level=standard&type=mp3',
@@ -480,7 +480,7 @@ final List<Track> mockBoYuanTracks = [
     title: '冬日之光',
     artist: '伯远',
     album: '初光如昨',
-    coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
+    coverUrl: 'https://p1.music.126.net/2z6yB1nJd5b0yP8T4XfRrw==/109951163969562818.jpg',
     duration: const Duration(minutes: 4, seconds: 15),
     source: 'preset-320k',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=233481232&level=standard&type=mp3',
@@ -495,7 +495,7 @@ final List<Track> mockBoYuanTracks = [
     title: '巡光之旅',
     artist: '伯远',
     album: '巡光之旅',
-    coverUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=500&q=80',
+    coverUrl: 'https://p2.music.126.net/L3cE6x8y2g6n7Q0o4w0z_g==/109951165123987114.jpg',
     duration: const Duration(minutes: 3, seconds: 50),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=233481233&level=standard&type=mp3',
@@ -670,7 +670,7 @@ final List<Track> toplistSurgeTracks = [
     title: '乌梅子酱',
     artist: '李荣浩',
     album: '纵横四海',
-    coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
+    coverUrl: 'https://p1.music.126.net/DrrCqd6YsAC3IVq7o_1XmA==/109951163785461942.jpg',
     duration: const Duration(minutes: 3, seconds: 35),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=247291122&level=standard&type=mp3',
@@ -687,7 +687,7 @@ final List<Track> toplistSurgeTracks = [
     title: '如果呢',
     artist: '郑润泽',
     album: '绚烂 枯萎 以后',
-    coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80',
+    coverUrl: 'https://p2.music.126.net/416G4gJ_x_eYpA4x7Y2Huw==/109951163456789123.jpg',
     duration: const Duration(minutes: 3, seconds: 48),
     source: 'preset-320k',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=208399583&level=standard&type=mp3',
@@ -703,7 +703,7 @@ final List<Track> toplistSurgeTracks = [
     title: '想去海边',
     artist: '夏日入侵企画',
     album: '想去海边',
-    coverUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&q=80',
+    coverUrl: 'https://p1.music.126.net/Z5N7uTf4pE4G_0t2_1h2rw==/109951163254987654.jpg',
     duration: const Duration(minutes: 4, seconds: 12),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=7149583&level=standard&type=mp3',
@@ -726,7 +726,7 @@ final List<Track> toplistHotTracks = [
     title: '十年',
     artist: '陈奕迅',
     album: '黑·白·灰',
-    coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80',
+    coverUrl: 'https://p2.music.126.net/4F6Z_923J-x_9tQeQ-3w1g==/109951166123456789.jpg',
     duration: const Duration(minutes: 3, seconds: 25),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=63216&level=standard&type=mp3',
@@ -747,7 +747,7 @@ final List<Track> toplistNewTracks = [
     title: '瞬',
     artist: '郑润泽',
     album: '瞬',
-    coverUrl: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=500&q=80',
+    coverUrl: 'https://p1.music.126.net/6y-UleORITEDbvrOLAL-vQ==/109951164803975765.jpg',
     duration: const Duration(minutes: 3, seconds: 58),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=208399583&level=standard&type=mp3',
@@ -762,7 +762,7 @@ final List<Track> toplistNewTracks = [
     title: '漠河舞厅',
     artist: '柳爽',
     album: '1st . 漠河舞厅',
-    coverUrl: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&q=80',
+    coverUrl: 'https://p2.music.126.net/cW3ZzXz8q3n2ZpE4I_pG2w==/109951165432654366.jpg',
     duration: const Duration(minutes: 4, seconds: 28),
     source: 'preset-320k',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=208399583&level=standard&type=mp3',
@@ -780,7 +780,7 @@ final List<Track> toplistNewTracks = [
     title: '海底',
     artist: '一支榴莲',
     album: '独白',
-    coverUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&q=80',
+    coverUrl: 'https://p1.music.126.net/2z6yB1nJd5b0yP8T4XfRrw==/109951163969562818.jpg',
     duration: const Duration(minutes: 4, seconds: 16),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=7149583&level=standard&type=mp3',
@@ -801,7 +801,7 @@ final List<Track> toplistOriginTracks = [
     title: '米店',
     artist: '张玮玮',
     album: '白银饭店',
-    coverUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=500&q=80',
+    coverUrl: 'https://p2.music.126.net/L3cE6x8y2g6n7Q0o4w0z_g==/109951165123987114.jpg',
     duration: const Duration(minutes: 4, seconds: 35),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=383023&level=standard&type=mp3',
@@ -818,7 +818,7 @@ final List<Track> toplistOriginTracks = [
     title: '安和桥',
     artist: '宋冬野',
     album: '安和桥北',
-    coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80',
+    coverUrl: 'https://p1.music.126.net/DrrCqd6YsAC3IVq7o_1XmA==/109951163785461942.jpg',
     duration: const Duration(minutes: 4, seconds: 12),
     source: 'preset-320k',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=383023&level=standard&type=mp3',
@@ -835,7 +835,7 @@ final List<Track> toplistOriginTracks = [
     title: '理想三旬',
     artist: '陈鸿宇',
     album: '浓烟下的诗歌电台',
-    coverUrl: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=500&q=80',
+    coverUrl: 'https://p2.music.126.net/416G4gJ_x_eYpA4x7Y2Huw==/109951163456789123.jpg',
     duration: const Duration(minutes: 3, seconds: 46),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=7149583&level=standard&type=mp3',
@@ -851,7 +851,7 @@ final List<Track> toplistOriginTracks = [
     title: '南山南',
     artist: '马頔',
     album: '孤岛',
-    coverUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80',
+    coverUrl: 'https://p1.music.126.net/Z5N7uTf4pE4G_0t2_1h2rw==/109951163254987654.jpg',
     duration: const Duration(minutes: 5, seconds: 24),
     source: 'preset-flac',
     audioUrl: 'http://music.nxinxz.com/kw.php?id=5886682&level=standard&type=mp3',
@@ -911,14 +911,14 @@ final List<RadioStation> presetRadioStations = [
     id: 'radio-1',
     title: '深夜治愈故事馆',
     sub: '伴你入眠的温暖声音',
-    coverUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80',
+    coverUrl: 'https://p2.music.126.net/4F6Z_923J-x_9tQeQ-3w1g==/109951166123456789.jpg',
     listeners: '24.8万在听',
     track: Track(
       id: 'radio-track-1',
       title: '伴月入眠 · 晚安夜读',
       artist: '深夜治愈故事馆',
       album: '月光下的人文陪伴',
-      coverUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80',
+      coverUrl: 'https://p1.music.126.net/6y-UleORITEDbvrOLAL-vQ==/109951164803975765.jpg',
       duration: const Duration(minutes: 6, seconds: 12),
       source: 'podcast-station',
       audioUrl: 'http://music.nxinxz.com/kw.php?id=383023&level=standard&type=mp3',
@@ -935,14 +935,14 @@ final List<RadioStation> presetRadioStations = [
     id: 'radio-2',
     title: '助眠白噪音与雨声',
     sub: '大自然沉浸式深度放松',
-    coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
+    coverUrl: 'https://p2.music.126.net/cW3ZzXz8q3n2ZpE4I_pG2w==/109951165432654366.jpg',
     listeners: '58.2万在听',
     track: Track(
       id: 'radio-track-2',
       title: '松针夜雨 · 深林空溪',
       artist: '自然声学实验室',
       album: '大自然立体声场白噪音',
-      coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
+      coverUrl: 'https://p1.music.126.net/2z6yB1nJd5b0yP8T4XfRrw==/109951163969562818.jpg',
       duration: const Duration(minutes: 8, seconds: 20),
       source: 'podcast-station',
       audioUrl: 'http://music.nxinxz.com/kw.php?id=383024&level=standard&type=mp3',
@@ -958,14 +958,14 @@ final List<RadioStation> presetRadioStations = [
     id: 'radio-3',
     title: '音乐背后的人文故事',
     sub: '解码华语流行四十年',
-    coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80',
+    coverUrl: 'https://p2.music.126.net/cW3ZzXz8q3n2ZpE4I_pG2w==/109951165432654366.jpg',
     listeners: '36.5万在听',
     track: Track(
       id: 'radio-track-3',
       title: '时代的回响 · 殿堂级摇滚溯源',
       artist: '乐话人文专栏',
       album: '解码华语流行四十年',
-      coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80',
+      coverUrl: 'https://p2.music.126.net/cW3ZzXz8q3n2ZpE4I_pG2w==/109951165432654366.jpg',
       duration: const Duration(minutes: 7, seconds: 15),
       source: 'podcast-station',
       audioUrl: 'http://music.nxinxz.com/kw.php?id=5886682&level=standard&type=mp3',
@@ -981,14 +981,14 @@ final List<RadioStation> presetRadioStations = [
     id: 'radio-4',
     title: '科技前沿早知道',
     sub: 'AI 时代的智识声音',
-    coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80',
+    coverUrl: 'https://p1.music.126.net/DrrCqd6YsAC3IVq7o_1XmA==/109951163785461942.jpg',
     listeners: '19.4万在听',
     track: Track(
       id: 'radio-track-4',
       title: '先锋访谈 · 声学算法与智能重塑',
       artist: '未来声音播客',
       album: 'AI 时代的智识前沿',
-      coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80',
+      coverUrl: 'https://p1.music.126.net/DrrCqd6YsAC3IVq7o_1XmA==/109951163785461942.jpg',
       duration: const Duration(minutes: 6, seconds: 45),
       source: 'podcast-station',
       audioUrl: 'http://music.nxinxz.com/kw.php?id=228913&level=standard&type=mp3',
@@ -1011,6 +1011,7 @@ class SquarePlaylist {
   final String coverUrl;
   final String playCount;
   final List<Track> tracks;
+  final int trackCount;
 
   const SquarePlaylist({
     required this.id,
@@ -1020,84 +1021,14 @@ class SquarePlaylist {
     required this.coverUrl,
     required this.playCount,
     required this.tracks,
+    this.trackCount = 0,
   });
 }
 
-/// 歌单广场多分类预设歌单库
-final List<SquarePlaylist> mockSquarePlaylists = [
-  SquarePlaylist(
-    id: 'sq-pl-1',
-    title: '华语经典流行金曲堂',
-    desc: '从千禧年代到黄金世代，听懂已非少年',
-    tag: '华语流行',
-    coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
-    playCount: '184.2万',
-    tracks: mockJayChouTracks,
-  ),
-  SquarePlaylist(
-    id: 'sq-pl-2',
-    title: '不朽摇滚 · 岁月沉思录',
-    desc: '超越时光的呐喊与感动，致敬不朽传奇',
-    tag: '经典粤语',
-    coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80',
-    playCount: '92.6万',
-    tracks: mockBeyondTracks,
-  ),
-  SquarePlaylist(
-    id: 'sq-pl-3',
-    title: '空山新雨 · 禅意清音集',
-    desc: '古筝与古琴清越合鸣，洗涤世间纷扰',
-    tag: '古风雅乐',
-    coverUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80',
-    playCount: '63.8万',
-    tracks: mockWuNaTracks,
-  ),
-  SquarePlaylist(
-    id: 'sq-pl-4',
-    title: '温润声线 · 晚风与少年',
-    desc: '治愈系都市抒情曲，温暖每一个孤单夜晚',
-    tag: '沉静治愈',
-    coverUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&q=80',
-    playCount: '78.5万',
-    tracks: mockBoYuanTracks,
-  ),
-  SquarePlaylist(
-    id: 'sq-pl-5',
-    title: '原创独立音乐先锋榜',
-    desc: '民谣诗意与独立声线，唱出真实灵魂',
-    tag: '沉静治愈',
-    coverUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=500&q=80',
-    playCount: '45.1万',
-    tracks: toplistOriginTracks,
-  ),
-  SquarePlaylist(
-    id: 'sq-pl-6',
-    title: '爵士迷情 · 深夜微醺特调',
-    desc: '萨克斯风与低音提琴，流淌午夜浪漫',
-    tag: '深夜爵士',
-    coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80',
-    playCount: '31.2万',
-    tracks: [
-      mockPresetTracks[4], // City of Stars
-      mockPresetTracks[3], // 夜的第七章
-    ],
-  ),
-  SquarePlaylist(
-    id: 'sq-pl-7',
-    title: '纯音天籁 · 专注与深度思考',
-    desc: '不被打扰的纯净旋律，伴你高效专注',
-    tag: '纯音乐',
-    coverUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&q=80',
-    playCount: '52.7万',
-    tracks: [
-      mockWuNaTracks[0],
-      mockWuNaTracks[1],
-      mockWuNaTracks[2],
-    ],
-  ),
-];
+/// 歌单广场预设歌单库（已全面迁移至 OnlineMusicService.fetchTopPlaylists 全网真实动态实时流）
+@Deprecated('已全面迁移至 OnlineMusicService.fetchTopPlaylists 真实全网动态流')
+final List<SquarePlaylist> mockSquarePlaylists = const [];
 
-/// 根据分类标签筛选歌单（“精选推荐”返回全部）
 List<SquarePlaylist> getPlaylistsByTag(String tag) {
   if (tag == '精选推荐') {
     return mockSquarePlaylists;
@@ -1125,11 +1056,6 @@ List<Track> getAllKnownTracks() {
   }
   for (final r in presetRadioStations) {
     map[r.track.id] = r.track;
-  }
-  for (final pl in mockSquarePlaylists) {
-    for (final t in pl.tracks) {
-      map[t.id] = t;
-    }
   }
   return map.values.toList();
 }

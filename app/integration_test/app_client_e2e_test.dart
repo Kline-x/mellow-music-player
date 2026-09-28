@@ -15,9 +15,24 @@ import 'package:mellow_music/core/sync/lan_sync_service.dart';
 import 'package:mellow_music/navigation/desktop_scaffold.dart';
 import 'package:mellow_music/navigation/mobile_scaffold.dart';
 
+import 'package:mellow_music/core/sources/online_music_service.dart';
+
 void main() {
   setUpAll(() {
     MellowImage.isInTest = true;
+    final samplePlaylists = [
+      SquarePlaylist(
+        id: 'sample-pl-1',
+        title: '华语经典流行金曲堂',
+        desc: '从千禧年代到黄金世代，听懂已非少年',
+        tag: '华语流行',
+        coverUrl: 'https://p1.music.126.net/6y-UleORITEDbvrOLAL-vQ==/109951164803975765.jpg',
+        playCount: '184.2万',
+        trackCount: 65,
+        tracks: mockJayChouTracks,
+      ),
+    ];
+    OnlineMusicService.mockTopPlaylistsFetcher = ({cat = '全部', offset = 0, limit = 30}) async => samplePlaylists;
   });
 
   group('Mellow Music · 客户端原生端到端 (Client E2E) 真实用户全链路验收套件', () {
@@ -338,5 +353,92 @@ void main() {
       // 2. 验证主音源已激活
       expect(sourceEngine.activeSourceId.isNotEmpty, isTrue);
     });
+
+    testWidgets('E2E-10: 歌单全屏详情页下钻、触底全量懒加载、即时曲目过滤与国内 CDN 图源端到端闭环验收', (tester) async {
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(buildTestClientApp(child: const DesktopScaffold()));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // 1. 切换到歌单广场 (Playlists)
+      final playlistNav = find.text('歌单广场');
+      expect(playlistNav, findsOneWidget);
+      await tester.tap(playlistNav);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // 2. 验证预设歌单卡片展示且非空
+      final chinesePopCard = find.text('华语经典流行金曲堂');
+      expect(chinesePopCard, findsOneWidget);
+
+      // 3. 点击卡片下钻进入全屏歌单详情页
+      await tester.tap(chinesePopCard);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      // 4. 验证全屏详情页标题、一键播放全部、实时搜索栏已挂载
+      expect(find.text('华语经典流行金曲堂'), findsAtLeastNWidgets(1));
+      expect(find.textContaining('播放全部'), findsOneWidget);
+      expect(find.byType(TextField), findsOneWidget);
+
+      // 5. 验证曲目列表已充实 (至少包含 10 首经典歌曲)
+      expect(find.text('晴天'), findsOneWidget);
+      expect(find.text('周杰伦'), findsAtLeastNWidgets(1));
+
+      // 6. 即时搜索过滤测试
+      await tester.enterText(find.byType(TextField), '晴天');
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.textContaining('筛选结果'), findsOneWidget);
+
+      // 清空搜索
+      await tester.enterText(find.byType(TextField), '');
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.textContaining('歌曲列表'), findsOneWidget);
+
+      // 7. 点击播放全部
+      await tester.tap(find.textContaining('播放全部'));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(audioService.currentTrack, isNotNull);
+      expect(audioService.playlist.length, greaterThanOrEqualTo(5));
+    });
+
+    testWidgets('E2E-11: 搜索智能联想点击上屏搜索与即点即播解耦交互闭环验证', (tester) async {
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(buildTestClientApp(child: const DesktopScaffold()));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // 1. 切换到全网搜索
+      await tester.tap(find.text('全网搜索'));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // 2. 找到搜索输入框并输入触发智能联想
+      final searchFields = find.byType(TextField);
+      expect(searchFields, findsWidgets);
+      final searchInput = searchFields.first;
+      await tester.enterText(searchInput, '晴天');
+      await tester.pump(const Duration(milliseconds: 400));
+
+      // 3. 验证联想列表中包含曲目且有即点即播按钮
+      final playNowTooltips = find.byTooltip('即点即播');
+      expect(playNowTooltips, findsWidgets);
+
+      // 4. 点击联想项主体（文字或卡片），验证文字正确填入搜索框且触发了搜索
+      final suggestionText = find.text('晴天').first;
+      await tester.tap(suggestionText);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // 验证搜索框内容已上屏
+      final updatedTextField = tester.widget<TextField>(searchInput);
+      expect(updatedTextField.controller?.text, equals('晴天'));
+    });
   });
 }
+

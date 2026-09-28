@@ -56,14 +56,14 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
 
   final List<Map<String, String>> _hotSearches = [
     {'title': '周杰伦', 'badge': 'HOT 1'},
-    {'title': '告五人', 'badge': 'HOT 2'},
-    {'title': '布拉格广场', 'badge': 'HOT 3'},
-    {'title': '陈奕迅', 'badge': '4'},
-    {'title': '林俊杰', 'badge': '5'},
-    {'title': '晴天', 'badge': '6'},
-    {'title': '海阔天空', 'badge': '7'},
-    {'title': '邓紫棋', 'badge': '8'},
-    {'title': '粤语经典', 'badge': '9'},
+    {'title': '结婚', 'badge': '场景 2'},
+    {'title': '国庆', 'badge': '场景 3'},
+    {'title': '新年', 'badge': '场景 4'},
+    {'title': '告五人', 'badge': '5'},
+    {'title': '布拉格广场', 'badge': '6'},
+    {'title': '陈奕迅', 'badge': '7'},
+    {'title': '林俊杰', 'badge': '8'},
+    {'title': '晴天', 'badge': '9'},
     {'title': '纯音白噪', 'badge': '10'},
   ];
 
@@ -498,7 +498,9 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
     final query = _searchController.text.trim();
     return InkWell(
       onTap: () {
-        player.playPlaylist([track, ..._suggestedTracks]);
+        _searchController.text = track.title;
+        _searchController.selection = TextSelection.fromPosition(TextPosition(offset: track.title.length));
+        _executeSearch(track.title);
       },
       borderRadius: BorderRadius.circular(10),
       child: Padding(
@@ -1293,20 +1295,11 @@ class _DesktopSearchViewState extends State<DesktopSearchView> {
               child: SoftCard(
                 padding: const EdgeInsets.all(12),
                 borderRadius: MellowRadii.borderR16,
-                onTap: () async {
-                  final messenger = ScaffoldMessenger.of(context);
-                  messenger.showSnackBar(
-                    SnackBar(content: Text('正在解析导入歌单「${pl.title}」...'), duration: const Duration(seconds: 1)),
+                onTap: () {
+                  widget.onNavigate(
+                    'playlist_detail',
+                    'playlist:::${pl.id}:::${pl.title}:::${pl.coverUrl}:::${pl.description}:::search',
                   );
-                  final imported = await OnlineMusicService.importNeteasePlaylist(pl.id.replaceAll('netease_', ''));
-                  if (!mounted) return;
-                  if (imported != null && imported.tracks.isNotEmpty) {
-                    player.addImportedPlaylist(imported);
-                    player.playPlaylist(imported.tracks, startIndex: 0);
-                    messenger.showSnackBar(
-                      SnackBar(content: Text('已导入并开始播放歌单「${pl.title}」（共 ${imported.tracks.length} 首）')),
-                    );
-                  }
                 },
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

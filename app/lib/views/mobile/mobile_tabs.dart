@@ -134,7 +134,7 @@ class MobileDiscoverTab extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const MellowImage(
-                    url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
+                    url: 'https://p2.music.126.net/cW3ZzXz8q3n2ZpE4I_pG2w==/109951165432654366.jpg',
                     width: 36,
                     height: 36,
                   ),
@@ -332,7 +332,7 @@ class MobileDiscoverTab extends StatelessWidget {
                   context,
                   title: '落日微风 · 私人漫游',
                   subtitle: '周杰伦 / 告五人 / M83',
-                  coverUrl: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&q=80',
+                  coverUrl: 'https://p1.music.126.net/2z6yB1nJd5b0yP8T4XfRrw==/109951163969562818.jpg',
                   onPlay: () {
                     if (player.playlist.isNotEmpty) {
                       player.playTrack(player.playlist[0]);
@@ -354,7 +354,7 @@ class MobileDiscoverTab extends StatelessWidget {
                               context,
                               title: '午夜霓虹',
                               artist: 'M83',
-                              coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&q=80',
+                              coverUrl: 'https://p2.music.126.net/L3cE6x8y2g6n7Q0o4w0z_g==/109951165123987114.jpg',
                               onPlay: () async {
                                 final t = player.playlist.where(
                                   (x) => x.title.contains('Midnight') || x.artist.contains('M83'),
@@ -374,7 +374,7 @@ class MobileDiscoverTab extends StatelessWidget {
                               context,
                               title: '慢冷治愈',
                               artist: '梁静茹',
-                              coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&q=80',
+                              coverUrl: 'https://p1.music.126.net/DrrCqd6YsAC3IVq7o_1XmA==/109951163785461942.jpg',
                               onPlay: () {
                                 if (player.playlist.length > 1) {
                                   player.playTrack(player.playlist[1]);
@@ -394,7 +394,7 @@ class MobileDiscoverTab extends StatelessWidget {
                               context,
                               title: 'Golden Hour',
                               artist: 'JVKE',
-                              coverUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&q=80',
+                              coverUrl: 'https://p2.music.126.net/416G4gJ_x_eYpA4x7Y2Huw==/109951163456789123.jpg',
                               onPlay: () {
                                 if (player.playlist.length > 2) {
                                   player.playTrack(player.playlist[2]);
@@ -408,7 +408,7 @@ class MobileDiscoverTab extends StatelessWidget {
                               context,
                               title: '爱在西元前',
                               artist: '周杰伦',
-                              coverUrl: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=300&q=80',
+                              coverUrl: 'https://p1.music.126.net/Z5N7uTf4pE4G_0t2_1h2rw==/109951163254987654.jpg',
                               onPlay: () {
                                 if (player.playlist.length > 3) {
                                   player.playTrack(player.playlist[3]);
@@ -641,25 +641,25 @@ class MobileDiscoverTab extends StatelessWidget {
         'title': 'Hurry Up, Dreaming',
         'artist': 'M83',
         'year': '2011 · 电子梦幻',
-        'cover': 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&q=80',
+        'cover': 'https://p2.music.126.net/4F6Z_923J-x_9tQeQ-3w1g==/109951166123456789.jpg',
       },
       {
         'title': '范特西 Fantasy',
         'artist': '周杰伦',
         'year': '2001 · 华语经典',
-        'cover': 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&q=80',
+        'cover': 'https://p1.music.126.net/6y-UleORITEDbvrOLAL-vQ==/109951164803975765.jpg',
       },
       {
         'title': '爱人错过',
         'artist': '告五人',
         'year': '2019 · 独立摇滚',
-        'cover': 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=400&q=80',
+        'cover': 'https://p2.music.126.net/cW3ZzXz8q3n2ZpE4I_pG2w==/109951165432654366.jpg',
       },
       {
         'title': '静夜琴思',
         'artist': '巫娜',
         'year': '2020 · 东方禅意',
-        'cover': 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&q=80',
+        'cover': 'https://p1.music.126.net/2z6yB1nJd5b0yP8T4XfRrw==/109951163969562818.jpg',
       },
     ];
 
@@ -1171,7 +1171,7 @@ class MobileProfileTab extends StatelessWidget {
             children: [
               const MellowAvatar(
                 radius: 28,
-                url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
+                url: 'https://p2.music.126.net/L3cE6x8y2g6n7Q0o4w0z_g==/109951165123987114.jpg',
               ),
               const SizedBox(width: 14),
               Expanded(

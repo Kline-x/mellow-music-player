@@ -15,6 +15,7 @@ import '../core/storage/storage_service.dart';
 import '../core/window/desktop_floating_lyric_service.dart';
 import '../views/desktop/desktop_views.dart';
 import '../views/desktop/desktop_search_view.dart';
+import '../views/desktop/desktop_scenario_view.dart';
 import '../views/desktop/fullscreen_lyrics_view.dart';
 import '../views/desktop/desktop_floating_lyric_bar.dart';
 import '../views/common/modals.dart';
@@ -199,7 +200,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
       _activeView = viewId;
       if (viewId == 'artist_detail') {
         _artistDetailParam = extra ?? '周杰伦';
-      } else if (viewId == 'toplist_detail') {
+      } else if (viewId == 'toplist_detail' || viewId == 'playlist_detail') {
         _toplistDetailParam = extra ?? '飙升榜';
       }
     });
@@ -216,7 +217,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
         _activeView = item['view']!;
         if (item['view'] == 'artist_detail') {
           _artistDetailParam = item['extra'];
-        } else if (item['view'] == 'toplist_detail') {
+        } else if (item['view'] == 'toplist_detail' || item['view'] == 'playlist_detail') {
           _toplistDetailParam = item['extra'];
         }
       });
@@ -234,7 +235,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
         _activeView = item['view']!;
         if (item['view'] == 'artist_detail') {
           _artistDetailParam = item['extra'];
-        } else if (item['view'] == 'toplist_detail') {
+        } else if (item['view'] == 'toplist_detail' || item['view'] == 'playlist_detail') {
           _toplistDetailParam = item['extra'];
         }
       });
@@ -489,8 +490,8 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
               ),
               const SizedBox(width: 10),
 
-              // 居中/全局全网即时搜索栏 (如果在搜索页则不重复展示，其余页面点击直达搜索页)
-              if (_activeView != 'search')
+              // 居中/全局全网即时搜索栏 (如果在搜索页或场景歌单页则不重复展示，其余页面点击直达搜索页)
+              if (_activeView != 'search' && _activeView != 'scenarios')
                 Expanded(
                   child: Center(
                     child: ConstrainedBox(
@@ -653,6 +654,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
           _buildNavItem('discover', '发现音乐', Icons.explore_rounded, isCompact: isCompact),
           _buildNavItem('search', '全网搜索', Icons.search_rounded, isCompact: isCompact),
           _buildNavItem('playlists', '歌单广场', Icons.queue_music_rounded, isCompact: isCompact),
+          _buildNavItem('scenarios', '场景歌单', Icons.auto_awesome_motion_rounded, isCompact: isCompact),
           _buildNavItem('toplist', '巅峰榜单', Icons.leaderboard_rounded, isCompact: isCompact),
           _buildNavItem('artists', '热门歌手', Icons.people_alt_rounded, isCompact: isCompact),
           _buildNavItem('podcast', '声音电台', Icons.radio_rounded, isCompact: isCompact),
@@ -712,9 +714,12 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
         return DesktopSearchView(onNavigate: _navigateTo);
       case 'playlists':
         return DesktopPlaylistSquareView(onNavigate: _navigateTo);
+      case 'scenarios':
+        return DesktopScenarioPlaylistView(onNavigate: _navigateTo);
       case 'toplist':
         return DesktopToplistView(onNavigate: _navigateTo);
       case 'toplist_detail':
+      case 'playlist_detail':
         return DesktopToplistDetailView(
           key: ValueKey(_toplistDetailParam),
           chartName: _toplistDetailParam ?? '飙升榜',
