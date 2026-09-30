@@ -6287,7 +6287,7 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
             children: [
               LayoutBuilder(
                 builder: (context, constraints) {
-                  final isCompact = constraints.maxWidth < 840;
+                  final isCompact = constraints.maxWidth < 1020;
                   final titleWidget = Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -6331,6 +6331,8 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                             Text(
                               '本机 · ${_lanService.localOsName} (${_lanService.localDeviceTypeName}) : ${_lanLocalIp ?? '127.0.0.1'}:$_lanLocalPort',
                               style: const TextStyle(color: Colors.teal, fontSize: 11.5, fontWeight: FontWeight.bold),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
