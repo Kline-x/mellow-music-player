@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mellow_music/core/sources/online_music_service.dart';
 
