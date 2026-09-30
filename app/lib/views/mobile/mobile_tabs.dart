@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../design_system/mellow_image.dart';
 import '../../design_system/mellow_logo.dart';
@@ -9,6 +10,8 @@ import '../../design_system/soft_button.dart';
 import '../../core/audio/audio_player_service.dart';
 import '../../core/audio/track_model.dart';
 import '../../core/sources/online_music_service.dart';
+import '../../core/sources/scenario_playlist_service.dart';
+import '../../core/sources/explore_deduplicator.dart';
 import '../common/modals.dart';
 import '../common/update_dialog.dart';
 import '../../core/services/version_check_service.dart';
@@ -782,31 +785,88 @@ class MobileExploreTab extends StatefulWidget {
   State<MobileExploreTab> createState() => _MobileExploreTabState();
 }
 
-class _MobileExploreTabState extends State<MobileExploreTab> {
+class _MobileExploreTabState extends State<MobileExploreTab> with SingleTickerProviderStateMixin {
   String _currentTag = '全部';
   final List<String> _tags = ['全部', '华语', '流行', '摇滚', '民谣', '电子', '古典'];
   List<Track> _tracks = [];
   bool _isLoading = true;
+  bool _isRefreshing = false;
+  late AnimationController _refreshAnimController;
 
   @override
   void initState() {
     super.initState();
+    _refreshAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
     _loadExploreTracks(_currentTag);
   }
 
-  void _loadExploreTracks(String tag) async {
-    setState(() => _isLoading = true);
+  @override
+  void dispose() {
+    _refreshAnimController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadExploreTracks(String tag, {bool refresh = false}) async {
+    if (!mounted) return;
+    if (refresh) {
+      setState(() => _isRefreshing = true);
+      _refreshAnimController.repeat();
+    } else {
+      setState(() {
+        _isLoading = true;
+        _tracks = [];
+      });
+    }
+
     try {
-      final query = tag == '全部' ? '精选热歌' : '$tag 精选';
-      final res = await OnlineMusicService.searchOnlineTracks(query, limit: 20);
+      final subQueries = List<String>.from(ExploreDeduplicator.genreKeywords[tag] ?? [tag]);
+      subQueries.shuffle(Random());
+      // 选取前 2~3 个子关键词并发拉取以保证曲库广度
+      final selectedQueries = subQueries.take(3).toList();
+
+      final futures = selectedQueries.map((q) => OnlineMusicService.searchOnlineTracks(q, limit: 16));
+      final nestedResults = await Future.wait(futures);
+
+      // 交错洗牌合并结果池
+      final List<Track> combined = [];
+      int maxLen = 0;
+      for (final list in nestedResults) {
+        if (list.length > maxLen) maxLen = list.length;
+      }
+      for (int i = 0; i < maxLen; i++) {
+        for (final list in nestedResults) {
+          if (i < list.length) {
+            combined.add(list[i]);
+          }
+        }
+      }
+
+      // 执行多维度去重：同封面过滤、同歌手频次限制1首、标题主干去重
+      final deduped = ExploreDeduplicator.filterDiverseTracks(
+        combined,
+        maxCount: 22,
+        maxPerArtist: 1,
+      );
+
       if (mounted) {
         setState(() {
-          _tracks = res;
+          _tracks = deduped;
           _isLoading = false;
+          _isRefreshing = false;
         });
+        _refreshAnimController.reset();
       }
     } catch (_) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isRefreshing = false;
+        });
+        _refreshAnimController.reset();
+      }
     }
   }
 
@@ -815,85 +875,364 @@ class _MobileExploreTabState extends State<MobileExploreTab> {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 160),
-      children: [
-        Text('探索音乐全库', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-        const SizedBox(height: 14),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: _tags.map((tag) {
-              final isSel = _currentTag == tag;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: SoftButton(
-                  label: tag,
-                  isActive: isSel,
-                  isPill: true,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  onTap: () {
-                    setState(() => _currentTag = tag);
-                    _loadExploreTracks(tag);
-                  },
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-        const SizedBox(height: 20),
-        if (_isLoading && _tracks.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 40),
-            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-          )
-        else
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.78,
-            ),
-            itemCount: _tracks.length,
-            itemBuilder: (context, idx) {
-              final t = _tracks[idx];
-              return SoftCard(
-                padding: const EdgeInsets.all(10),
-                onTap: () => player.playTrack(t),
+    return RefreshIndicator(
+      onRefresh: () => _loadExploreTracks(_currentTag, refresh: true),
+      color: theme.accentColor,
+      backgroundColor: theme.cardColor,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 160),
+        children: [
+          // 1. 顶部 Header 与换一批按键
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: MellowImage(
-                        url: t.coverUrl,
-                        width: double.infinity,
-                        height: double.infinity,
-                        borderRadius: MellowRadii.borderR12,
-                      ),
+                    Text(
+                      '探索音乐全库',
+                      style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold, color: theme.textPrimary, letterSpacing: -0.2),
                     ),
-                  const SizedBox(height: 8),
-                  Text(
-                    t.title,
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.textPrimary),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    const SizedBox(height: 2),
+                    Text(
+                      '多元声学流派 · 场景精选与风格雷达',
+                      style: TextStyle(fontSize: 11.5, color: theme.textMuted),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // 换一批按键
+              GestureDetector(
+                onTap: _isRefreshing ? null : () => _loadExploreTracks(_currentTag, refresh: true),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: theme.cardColor,
+                    borderRadius: MellowRadii.borderPill,
+                    border: Border.all(color: theme.borderColor.withValues(alpha: 0.6), width: 0.8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: theme.isDarkMode ? 0.25 : 0.04),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      RotationTransition(
+                        turns: _refreshAnimController,
+                        child: Icon(Icons.refresh_rounded, size: 14, color: theme.accentColor),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '换一批',
+                        style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: theme.textPrimary),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // 2. 风格流派横向选择器
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: _tags.map((tag) {
+                final isSel = _currentTag == tag;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: SoftButton(
+                    label: tag,
+                    isActive: isSel,
+                    isPill: true,
+                    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                    onTap: () {
+                      if (_currentTag == tag) return;
+                      setState(() => _currentTag = tag);
+                      _loadExploreTracks(tag);
+                    },
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // 3. 精选场景歌单推荐专区 (横向滑动卡片)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 3.5,
+                    height: 13,
+                    decoration: BoxDecoration(
+                      color: theme.accentColor,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
                   Text(
-                    t.artist,
-                    style: TextStyle(fontSize: 11, color: theme.textMuted),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    '场景歌单推荐',
+                    style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: theme.textPrimary),
                   ),
                 ],
               ),
-            );
-          },
-        ),
-      ],
+              GestureDetector(
+                onTap: () => widget.onNavigatePage('scenarios'),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '全部场景',
+                      style: TextStyle(fontSize: 11.5, color: theme.accentColor, fontWeight: FontWeight.w600),
+                    ),
+                    Icon(Icons.chevron_right_rounded, size: 16, color: theme.accentColor),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 98,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: ScenarioPlaylistService.presetScenarios.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (context, idx) {
+                final scenario = ScenarioPlaylistService.presetScenarios[idx];
+                return GestureDetector(
+                  onTap: () => widget.onNavigatePage('scenarios'),
+                  child: Container(
+                    width: 142,
+                    padding: const EdgeInsets.all(11),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: scenario.gradient.map((c) => c.withValues(alpha: theme.isDarkMode ? 0.78 : 0.88)).toList(),
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: MellowRadii.borderR16,
+                      boxShadow: [
+                        BoxShadow(
+                          color: scenario.gradient.first.withValues(alpha: 0.22),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.22),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(scenario.icon, color: Colors.white, size: 16),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              scenario.title,
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 1.5),
+                            Text(
+                              scenario.description,
+                              style: TextStyle(color: Colors.white.withValues(alpha: 0.88), fontSize: 9.5),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 22),
+
+          // 4. 流派精选单曲网格标题与状态
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 3.5,
+                    height: 13,
+                    decoration: BoxDecoration(
+                      color: theme.accentColor,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '$_currentTag 精选风格单曲',
+                    style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                  ),
+                ],
+              ),
+              if (_tracks.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                  decoration: BoxDecoration(
+                    color: theme.accentColor.withValues(alpha: 0.12),
+                    borderRadius: MellowRadii.borderPill,
+                  ),
+                  child: Text(
+                    '多样性精选 · ${_tracks.length} 首',
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: theme.accentColor),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // 5. 单曲网格列表或加载中
+          if (_isLoading && _tracks.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 50),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(strokeWidth: 2.2, valueColor: AlwaysStoppedAnimation<Color>(theme.accentColor)),
+                    const SizedBox(height: 12),
+                    Text(
+                      '正在汇集多元声学曲目...',
+                      style: TextStyle(fontSize: 12, color: theme.textMuted),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else if (_tracks.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.music_off_rounded, size: 40, color: theme.textMuted),
+                    const SizedBox(height: 8),
+                    Text('暂无推荐曲目', style: TextStyle(fontSize: 13, color: theme.textMuted)),
+                    const SizedBox(height: 10),
+                    SoftButton(
+                      label: '重试刷新',
+                      onTap: () => _loadExploreTracks(_currentTag),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.77,
+              ),
+              itemCount: _tracks.length,
+              itemBuilder: (context, idx) {
+                final t = _tracks[idx];
+                final isCurrent = player.currentTrack?.id == t.id;
+
+                return SoftCard(
+                  padding: const EdgeInsets.all(9),
+                  onTap: () => player.playTrack(t),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
+                              child: MellowImage(
+                                url: t.coverUrl,
+                                width: double.infinity,
+                                height: double.infinity,
+                                borderRadius: MellowRadii.borderR12,
+                              ),
+                            ),
+                            // 当前正在播放微标签或悬浮播放按钮
+                            Positioned(
+                              right: 6,
+                              bottom: 6,
+                              child: Container(
+                                width: 26,
+                                height: 26,
+                                decoration: BoxDecoration(
+                                  color: isCurrent ? theme.accentColor : Colors.black.withValues(alpha: 0.5),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.3),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 1.5),
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  isCurrent && player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        t.title,
+                        style: TextStyle(
+                          fontWeight: isCurrent ? FontWeight.bold : FontWeight.w600,
+                          fontSize: 12.5,
+                          color: isCurrent ? theme.accentColor : theme.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        t.artist,
+                        style: TextStyle(fontSize: 11, color: theme.textMuted),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
     );
   }
 }
