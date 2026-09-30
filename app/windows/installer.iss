@@ -1,7 +1,7 @@
 ; Inno Setup Script for Mellow Music Windows x64 Installer
 #define MyAppName "Mellow Music"
 #define MyAppChineseName "润音"
-#define MyAppVersion "1.1.0"
+#define MyAppVersion "1.1.1"
 #define MyAppPublisher "Mellow Music Team"
 #define MyAppURL "https://github.com/Kline-x/mellow-music-player"
 #define MyAppExeName "mellow_music.exe"
