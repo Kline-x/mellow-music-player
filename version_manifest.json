@@ -1,19 +1,19 @@
 {
   "versionCode": 4,
-  "versionName": "1.2.0",
+  "versionName": "1.1.2",
   "publishDate": "2026-09-30",
   "isForceUpdate": false,
-  "releaseNotes": "1. 【近场设备协同升级】：支持局域网免密极速直传与双端曲库无缝合流；\n2. 【全新在线更新体系】：对标专业级多镜像加速，支持全国 CDN 节点测速择优与 Windows/macOS 无损静默升级；\n3. 【Windows 播放稳定性加固】：彻底根治播放历史页切歌与音源切换闪退，高频交互稳如磐石；\n4. 【全景音质引擎】：优化六大音源解析与无损 FLAC 直链自适应播放。",
+  "releaseNotes": "1. 【Windows播放稳定性加固】：彻底根治播放历史页连续切歌与音源切换闪退，引入渲染语义隔离，高频交互稳如磐石；\n2. 【近场设备协同升级】：探针协议原生精准识别Windows/macOS/Linux/移动端，支持专属品牌徽章与形态分类，彻底消除自扫自身缺陷；\n3. 【弹性自适应排版】：优化局域网协同状态栏断点与自适应布局，消除15px溢出；\n4. 【工程与规范固化】：确立资产干净度与全中文真机E2E铁律，全量260项自动化测试全绿。",
   "platforms": {
     "windows": {
-      "downloadUrl": "https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.1/mellow-music-windows-setup.exe",
-      "backupUrl": "https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.1/mellow-music-windows-setup.exe",
+      "downloadUrl": "https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.2/Mellow-Music-Windows-x64-Setup.exe",
+      "backupUrl": "https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.2/Mellow-Music-Windows-x64-Setup.exe",
       "fileSize": 42100000,
       "installMode": "in_app_download"
     },
     "macos": {
-      "downloadUrl": "https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.1/mellow-music-macos.dmg",
-      "backupUrl": "https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.1/mellow-music-macos.dmg",
+      "downloadUrl": "https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.2/Mellow-Music-macOS.dmg",
+      "backupUrl": "https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.2/Mellow-Music-macOS.dmg",
       "fileSize": 38200000,
       "installMode": "in_app_download"
     }

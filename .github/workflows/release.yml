@@ -310,6 +310,8 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
+          body_path: CHANGELOG_LATEST.md
+
           files: |
             release-assets/Mellow-Music-Windows-x64-Setup.exe
             release-assets/Mellow-Music-Windows-x64-Portable.zip
