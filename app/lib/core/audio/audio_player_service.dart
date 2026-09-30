@@ -56,6 +56,7 @@ class AudioPlayerService extends ChangeNotifier {
   Timer? _playbackNoticeTimer;
   Timer? _autoSkipTimer;
   int _consecutiveFailures = 0;
+  bool _isSwitchingSource = false;
   bool _isDisposed = false;
   bool get isDisposed => _isDisposed;
 
@@ -788,6 +789,11 @@ class AudioPlayerService extends ChangeNotifier {
 
   /// 主动为当前歌曲或指定歌曲切换音源 (酷我/网易云/QQ/酷狗/咪咕/润音官方/iTunes/落雪脚本)
   Future<bool> switchSource(Track track, String newSource) async {
+    if (_isSwitchingSource) {
+      debugPrint('[AudioPlayerService] 音源切换中，忽略高频重复触发');
+      return false;
+    }
+    _isSwitchingSource = true;
     final currentPos = _position;
     final isCurrent = currentTrack?.id == track.id;
     try {
@@ -831,6 +837,8 @@ class AudioPlayerService extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('[AudioPlayerService] 主动切换音源失败: $e');
+    } finally {
+      _isSwitchingSource = false;
     }
     _setPlaybackNotice('切换音源失败，【${formatSourceDisplayName(newSource)}】暂未收录该歌曲', autoDismissSeconds: 4);
     notifyListeners();
@@ -1031,6 +1039,7 @@ class AudioPlayerService extends ChangeNotifier {
   }
 
   void _recordHistory(Track track) {
+    if (_isDisposed) return;
     _playHistory.removeWhere((t) => t.id == track.id);
     _playHistory.insert(0, track);
     if (_playHistory.length > 50) {

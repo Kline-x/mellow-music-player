@@ -33,3 +33,4 @@ docs/tools/state.json
 *.py
 !app/scripts/**
 app/docs/
+*.dmp

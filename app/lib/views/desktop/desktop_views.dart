@@ -22,6 +22,8 @@ import '../../core/sync/lan_sync_service.dart';
 import '../../core/storage/storage_service.dart';
 import '../../core/window/desktop_floating_lyric_service.dart';
 import '../common/modals.dart';
+import '../../core/services/version_check_service.dart';
+import '../common/update_dialog.dart';
 
 /// 1. 发现音乐主页 (DiscoverView - Bento Grid 仪表盘)
 class DesktopDiscoverView extends StatefulWidget {
@@ -3436,13 +3438,15 @@ class DesktopSongTableView extends StatelessWidget {
                     showAlbum: showAlbum,
                     isToplistRank: isToplistRank,
                     onTap: () {
-                      if (onIndexTap != null) {
-                        onIndexTap!(entry.key);
-                      } else if (onTrackTap != null) {
-                        onTrackTap!(t);
-                      } else {
-                        player.playTrack(t);
-                      }
+                      Future.microtask(() {
+                        if (onIndexTap != null) {
+                          onIndexTap!(entry.key);
+                        } else if (onTrackTap != null) {
+                          onTrackTap!(t);
+                        } else {
+                          player.playTrack(t);
+                        }
+                      });
                     },
                     onFavoriteToggle: () => player.toggleFavorite(t.id, t),
                     isFavorite: player.isFavorite(t.id),
@@ -4101,7 +4105,10 @@ class DesktopHistoryView extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         DesktopSongTableView(
-          tracks: player.playHistory,
+          tracks: List.of(player.playHistory),
+          onTrackTap: (track) {
+            Future.microtask(() => player.playTrack(track));
+          },
           emptyMessage: '暂无播放历史，在发现页、榜单或搜索播放音乐，足迹将自动安全记录在此',
         ),
       ],
@@ -4485,6 +4492,44 @@ class DesktopSettingsView extends StatefulWidget {
 
 class _DesktopSettingsViewState extends State<DesktopSettingsView> {
   late bool _minimizeToTray;
+  bool _isCheckingUpdate = false;
+
+  Future<void> _checkUpdate({bool forceMock = false}) async {
+    if (_isCheckingUpdate) return;
+    setState(() => _isCheckingUpdate = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final service = VersionCheckService();
+      final newVersion = await service.checkLatestVersion(forceMock: forceMock);
+      if (!mounted) return;
+      if (newVersion != null) {
+        await UpdateDialog.show(context, newVersion);
+      } else {
+        messenger.hideCurrentSnackBar();
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('已是最新版本 (v${service.currentVersionName})'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        messenger.hideCurrentSnackBar();
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('检查更新失败: $e'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isCheckingUpdate = false);
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -4824,7 +4869,54 @@ class _DesktopSettingsViewState extends State<DesktopSettingsView> {
                   _buildShortcutChip('M', '一键静音切换', theme),
                   _buildShortcutChip('L', '巨幕动效歌词', theme),
                   _buildShortcutChip('Q', '待播队列抽屉', theme),
-                  _buildShortcutChip('ESC', '退出全屏 / 关闭抽屉', theme),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // 7. 软件版本与在线更新 (Online Update)
+        SoftCard(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('软件版本与在线更新', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: theme.accentColor.withValues(alpha: 0.15),
+                      borderRadius: MellowRadii.borderPill,
+                    ),
+                    child: Text('v1.1.1 稳定版', style: TextStyle(color: theme.accentColor, fontSize: 11, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Mellow Music (润音) - Modern Soft UI 音乐播放器', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: theme.textPrimary)),
+                        const SizedBox(height: 4),
+                        Text('支持多镜像加速、SHA256 完整性校验与无损覆盖升级', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  SoftButton(
+                    label: _isCheckingUpdate ? '正在检查...' : '检查新版本',
+                    icon: _isCheckingUpdate ? Icons.hourglass_top_rounded : Icons.system_update_rounded,
+                    isPill: true,
+                    onTap: _isCheckingUpdate ? null : () => _checkUpdate(),
+                  ),
                 ],
               ),
             ],
@@ -5597,7 +5689,7 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
       final ok = await _lanService.pushToDevice(
         device,
         snap,
-        authKey: _lanService.serverAuthKey,
+        authKey: device.authKey,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();

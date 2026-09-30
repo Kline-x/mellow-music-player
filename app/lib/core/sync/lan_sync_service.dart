@@ -12,6 +12,7 @@ class LanDevice {
   final String ip;
   final int port;
   final String version;
+  final String? authKey;
   final DateTime lastSeen;
 
   const LanDevice({
@@ -20,6 +21,7 @@ class LanDevice {
     required this.ip,
     this.port = 23332,
     this.version = '1.0.0',
+    this.authKey,
     required this.lastSeen,
   });
 
@@ -29,6 +31,7 @@ class LanDevice {
         'ip': ip,
         'port': port,
         'version': version,
+        if (authKey != null) 'authKey': authKey,
         'lastSeen': lastSeen.toIso8601String(),
       };
 
@@ -39,6 +42,7 @@ class LanDevice {
         ip: json['ip'] as String? ?? fallbackIp ?? '127.0.0.1',
         port: (json['port'] as num?)?.toInt() ?? 23332,
         version: json['version'] as String? ?? '1.0.0',
+        authKey: json['authKey'] as String?,
         lastSeen: DateTime.now(),
       );
 
@@ -112,6 +116,7 @@ class LanSyncServer {
   StreamSubscription<HttpRequest>? _serverSub;
   int _port = 23332;
   String _authKey = '';
+  bool _requireExplicitAuth = false;
   String _deviceName = 'Mellow Desktop';
   String _deviceId = 'mellow-server';
 
@@ -124,17 +129,21 @@ class LanSyncServer {
   bool get isRunning => _server != null;
   int get port => _port;
   String get authKey => _authKey;
+  bool allowLanDirectPush = true;
 
   /// 启动内置 HTTP 同步服务端
   Future<int> start({
     dynamic address,
     int port = 23332,
     String? authKey,
+    bool allowLanDirectPush = true,
     String? deviceName,
     String? deviceId,
   }) async {
     await stop();
     _port = port;
+    _requireExplicitAuth = authKey != null && authKey.isNotEmpty;
+    this.allowLanDirectPush = allowLanDirectPush;
     _authKey = authKey ?? _generateRandomKey();
     if (deviceName != null) _deviceName = deviceName;
     if (deviceId != null) _deviceId = deviceId;
@@ -178,6 +187,7 @@ class LanSyncServer {
           'deviceId': _deviceId,
           'deviceName': _deviceName,
           'port': _port,
+          'allowDirectPush': allowLanDirectPush && !_requireExplicitAuth,
         };
         request.response.statusCode = HttpStatus.ok;
         request.response.headers.contentType = ContentType.json;
@@ -204,7 +214,9 @@ class LanSyncServer {
         // 3. 接收快照数据投送 (支持标准快照与 SPEC 7.2 LX-Sync 报文)
         final reqKey = request.headers.value('x-auth-key') ??
             request.uri.queryParameters['key'];
-        if (_authKey.isNotEmpty && reqKey != _authKey) {
+        if ((_requireExplicitAuth || !allowLanDirectPush) &&
+            _authKey.isNotEmpty &&
+            reqKey != _authKey) {
           request.response.statusCode = HttpStatus.unauthorized;
           request.response.headers.contentType = ContentType.json;
           request.response.write(jsonEncode({'error': '未授权的投送请求'}));
@@ -563,7 +575,7 @@ class LanSyncService extends ChangeNotifier {
       device.ip,
       snapshot,
       port: device.port,
-      authKey: authKey,
+      authKey: authKey ?? device.authKey,
     );
   }
 

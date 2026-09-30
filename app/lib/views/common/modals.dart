@@ -2924,7 +2924,12 @@ class _SourceSwitcherModalState extends State<SourceSwitcherModal> {
                                     _isSwitching = true;
                                     _switchingTarget = id;
                                   });
-                                  final ok = await player.switchSource(widget.track, id);
+                                  bool ok = false;
+                                  try {
+                                    ok = await player.switchSource(widget.track, id);
+                                  } catch (e) {
+                                    debugPrint('切换音源异常: $e');
+                                  }
                                   if (!mounted) return;
                                   navigator.pop();
                                   messenger.showSnackBar(

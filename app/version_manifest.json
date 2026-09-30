@@ -1,0 +1,21 @@
+{
+  "versionCode": 4,
+  "versionName": "1.2.0",
+  "publishDate": "2026-09-30",
+  "isForceUpdate": false,
+  "releaseNotes": "1. 【近场设备协同升级】：支持局域网免密极速直传与双端曲库无缝合流；\n2. 【全新在线更新体系】：对标专业级多镜像加速，支持全国 CDN 节点测速择优与 Windows/macOS 无损静默升级；\n3. 【Windows 播放稳定性加固】：彻底根治播放历史页切歌与音源切换闪退，高频交互稳如磐石；\n4. 【全景音质引擎】：优化六大音源解析与无损 FLAC 直链自适应播放。",
+  "platforms": {
+    "windows": {
+      "downloadUrl": "https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.1/mellow-music-windows-setup.exe",
+      "backupUrl": "https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.1/mellow-music-windows-setup.exe",
+      "fileSize": 42100000,
+      "installMode": "in_app_download"
+    },
+    "macos": {
+      "downloadUrl": "https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.1/mellow-music-macos.dmg",
+      "backupUrl": "https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.1/mellow-music-macos.dmg",
+      "fileSize": 38200000,
+      "installMode": "in_app_download"
+    }
+  }
+}
