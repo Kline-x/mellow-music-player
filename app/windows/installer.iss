@@ -1,7 +1,7 @@
 ; Inno Setup Script for Mellow Music Windows x64 Installer
 #define MyAppName "Mellow Music"
 #define MyAppChineseName "润音"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.1.1"
 #define MyAppPublisher "Mellow Music Team"
 #define MyAppURL "https://github.com/Kline-x/mellow-music-player"
 #define MyAppExeName "mellow_music.exe"
@@ -37,8 +37,8 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "..\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\runner\resources\app_icon.ico"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\runner\resources\app_icon.ico"; Tasks: desktopicon
+Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent

@@ -2,9 +2,10 @@ name: Mellow Music Continuous Integration (Quality Gate)
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, 'test/*', 'fix/*' ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   # 1. 静态代码分析与全量测试套件
@@ -86,6 +87,21 @@ jobs:
       - name: Build Windows Desktop Release Binary (.exe)
         working-directory: app
         run: flutter build windows --release
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+
+      - name: Compile Windows Setup Installer
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" app/windows/installer.iss
+          Move-Item app/windows/Mellow-Music-Windows-x64-Setup.exe .
+
+      - name: Upload Windows Setup Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mellow-Music-Windows-x64-Setup
+          path: Mellow-Music-Windows-x64-Setup.exe
 
       - name: Archive and Upload Windows Desktop Binary
         uses: actions/upload-artifact@v4
