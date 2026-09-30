@@ -1,46 +1,93 @@
-# Dependencies
-node_modules/
-package-lock.json
-prototype/node_modules/
-prototype/package-lock.json
+# ==============================================================================
+# 0. 操作系统与编辑器临时文件 (OS & Editor Files)
+# ==============================================================================
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+.vscode/
+.idea/
+*.iml
 
-# Logs
+# ==============================================================================
+# 1. 临时调试截图与测试产物 (Screenshots & Temporary Test Artifacts)
+# 铁律：临时验证截图与测试抓帧绝对严禁入库
+# ==============================================================================
+scratch/
+evidence/
+docs/evidence/
+.system_generated/
+test_*.png
+e2e_*.png
+step*.png
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+# 合法静态资源白名单放行
+!docs/images/**
+!app/assets/**
+!app/**/Assets.xcassets/**
+!app/web/**
+!app/android/**/res/**
+
+# ==============================================================================
+# 2. 崩溃转储、诊断数据与日志 (Crash Dumps, Diagnostics & Logs)
+# ==============================================================================
+*.dmp
+*.dump
+*.crash
+*.stackdump
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# OS Files
-.DS_Store
-Thumbs.db
-
-# Scratch & Temporary Test Artifacts
-scratch/
-test_*.png
-*.png
-!docs/images/**
-!app/assets/**
-!app/**/Assets.xcassets/**
-docs/evidence/
-evidence/
-.system_generated/
+# ==============================================================================
+# 3. 临时构建、二进制产物与打包解压中间体 (Build Artifacts & Binaries)
+# ==============================================================================
+build_win_artifact/
+build_win_binaries/
 release_windows/
 release_windows_ci/
-verify_windows_app.ps1
+*.tar.gz
+*.tgz
+*.zip
+*.7z
+*.dmg
+*.pkg
+*.exe
+*.msi
+*.dll
+*.so
+*.dylib
+
+# ==============================================================================
+# 4. 临时排查脚本与解释器缓存 (Scratch Scripts & Python/Dart Temp Files)
+# ==============================================================================
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+debug_*.py
+step*.py
+temp_*.ps1
+verify_windows_app.ps1
+test_real_lan_sync_to_windows.dart
 docs/tools/state.json
 *.py
 !app/scripts/**
-*.dmp
-*.dmg
-build_win_artifact/
-build_win_binaries/
-*.tar.gz
-*.dll
+
+# ==============================================================================
+# 5. 依赖包与包管理器锁文件例外 (Dependencies & Manifests)
+# ==============================================================================
+node_modules/
+package-lock.json
+prototype/node_modules/
+prototype/package-lock.json
 *.json
 !app/version_manifest.json
 !version_manifest.json
 !app/pubspec.lock
-temp_step.ps1
-test_real_lan_sync_to_windows.dart

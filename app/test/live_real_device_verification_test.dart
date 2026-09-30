@@ -115,10 +115,11 @@ void main() {
       // 2. 在 runAsync 环境中执行真实扫描并泵入 UI
       await tester.runAsync(() async {
         await tester.tap(find.text('扫描局域网节点'));
-        // 等待真实扫描完成
-        await Future.delayed(const Duration(seconds: 3));
+        // 等待真实扫描完成或单次探测返回
+        await Future.delayed(const Duration(seconds: 2));
       });
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
+
 
       // 验证界面上是否渲染出了 192.168.1.8 的卡片
       if (find.text('Mellow Desktop').evaluate().isNotEmpty) {
