@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'sync_data_model.dart';
 
@@ -13,6 +14,8 @@ class LanDevice {
   final int port;
   final String version;
   final String? authKey;
+  final String? os;
+  final String? deviceType;
   final DateTime lastSeen;
 
   const LanDevice({
@@ -22,6 +25,8 @@ class LanDevice {
     this.port = 23332,
     this.version = '1.0.0',
     this.authKey,
+    this.os,
+    this.deviceType,
     required this.lastSeen,
   });
 
@@ -32,19 +37,110 @@ class LanDevice {
         'port': port,
         'version': version,
         if (authKey != null) 'authKey': authKey,
+        if (os != null) 'os': os,
+        if (deviceType != null) 'deviceType': deviceType,
         'lastSeen': lastSeen.toIso8601String(),
       };
 
-  factory LanDevice.fromJson(Map<String, dynamic> json, {String? fallbackIp}) =>
-      LanDevice(
-        id: json['deviceId'] as String? ?? json['id'] as String? ?? 'unknown',
-        name: json['deviceName'] as String? ?? json['name'] as String? ?? '未知设备',
-        ip: json['ip'] as String? ?? fallbackIp ?? '127.0.0.1',
-        port: (json['port'] as num?)?.toInt() ?? 23332,
-        version: json['version'] as String? ?? '1.0.0',
-        authKey: json['authKey'] as String?,
-        lastSeen: DateTime.now(),
-      );
+  factory LanDevice.fromJson(Map<String, dynamic> json, {String? fallbackIp}) {
+    final rawOs = json['os'] as String?;
+    final rawType = json['deviceType'] as String?;
+    final name = json['deviceName'] as String? ?? json['name'] as String? ?? '未知设备';
+    final id = json['deviceId'] as String? ?? json['id'] as String? ?? 'unknown';
+
+    // 智能启发式推断 OS
+    String resolvedOs = rawOs ?? '';
+    if (resolvedOs.isEmpty) {
+      final lower = '${name.toLowerCase()} ${id.toLowerCase()}';
+      if (lower.contains('windows') || lower.contains('win')) {
+        resolvedOs = 'windows';
+      } else if (lower.contains('mac') || lower.contains('darwin') || lower.contains('apple')) {
+        resolvedOs = 'macos';
+      } else if (lower.contains('android')) {
+        resolvedOs = 'android';
+      } else if (lower.contains('iphone') || lower.contains('ios') || lower.contains('ipad')) {
+        resolvedOs = 'ios';
+      } else if (lower.contains('linux')) {
+        resolvedOs = 'linux';
+      } else if (lower.contains('desktop')) {
+        resolvedOs = 'desktop';
+      }
+    }
+
+    // 智能启发式推断 DeviceType
+    String resolvedType = rawType ?? '';
+    if (resolvedType.isEmpty) {
+      final lower = '${name.toLowerCase()} ${id.toLowerCase()}';
+      if (lower.contains('phone') || lower.contains('android') || lower.contains('iphone')) {
+        resolvedType = 'mobile';
+      } else if (lower.contains('ipad') || lower.contains('tablet') || lower.contains('pad')) {
+        resolvedType = 'tablet';
+      } else {
+        resolvedType = 'desktop';
+      }
+    }
+
+    return LanDevice(
+      id: id,
+      name: name,
+      ip: json['ip'] as String? ?? fallbackIp ?? '127.0.0.1',
+      port: (json['port'] as num?)?.toInt() ?? 23332,
+      version: json['version'] as String? ?? '1.0.0',
+      authKey: json['authKey'] as String?,
+      os: resolvedOs.isNotEmpty ? resolvedOs : null,
+      deviceType: resolvedType.isNotEmpty ? resolvedType : null,
+      lastSeen: DateTime.now(),
+    );
+  }
+
+  /// 友好的操作系统显示名称
+  String get displayOsName {
+    final o = (os ?? '').toLowerCase();
+    if (o.contains('win')) return 'Windows';
+    if (o.contains('mac') || o.contains('darwin')) return 'macOS';
+    if (o.contains('android')) return 'Android';
+    if (o.contains('ios') || o.contains('iphone')) return 'iOS';
+    if (o.contains('linux')) return 'Linux';
+    if (name.toLowerCase().contains('windows') || name.toLowerCase().contains('win')) return 'Windows';
+    if (name.toLowerCase().contains('mac') || name.toLowerCase().contains('darwin')) return 'macOS';
+    return '通用设备';
+  }
+
+  /// 友好的设备形态类型名称
+  String get displayDeviceTypeName {
+    final t = (deviceType ?? '').toLowerCase();
+    if (t.contains('mobile') || t.contains('phone')) return '智能手机';
+    if (t.contains('tablet') || t.contains('pad')) return '平板电脑';
+    return '桌面 PC / 工作站';
+  }
+
+  /// 系统专属品牌强调色
+  Color get osBrandColor {
+    final o = displayOsName;
+    switch (o) {
+      case 'Windows':
+        return const Color(0xFF0078D4); // 微软极光蓝
+      case 'macOS':
+        return const Color(0xFF0A84FF); // 苹果璀璨蓝 / 深空灰
+      case 'Android':
+        return const Color(0xFF34A853); // 安卓薄荷绿
+      case 'iOS':
+        return const Color(0xFF5856D6); // 苹果绚紫
+      case 'Linux':
+        return const Color(0xFFE95420); // Linux 暖橙
+      default:
+        return const Color(0xFF3B82F6);
+    }
+  }
+
+  /// 设备主卡片大图标
+  IconData get deviceIcon {
+    final t = displayDeviceTypeName;
+    if (t.contains('手机')) return Icons.phone_iphone_rounded;
+    if (t.contains('平板')) return Icons.tablet_mac_rounded;
+    if (displayOsName == 'macOS') return Icons.laptop_mac_rounded;
+    return Icons.desktop_windows_rounded;
+  }
 
   @override
   bool operator ==(Object other) =>
@@ -118,7 +214,7 @@ class LanSyncServer {
   String _authKey = '';
   bool _requireExplicitAuth = false;
   String _deviceName = 'Mellow Desktop';
-  String _deviceId = 'mellow-server';
+  String _deviceId = 'mellow-${DateTime.now().millisecondsSinceEpoch % 1000000}';
 
   final StreamController<SyncSnapshot> _incomingSnapshotController =
       StreamController<SyncSnapshot>.broadcast();
@@ -129,6 +225,8 @@ class LanSyncServer {
   bool get isRunning => _server != null;
   int get port => _port;
   String get authKey => _authKey;
+  String get deviceId => _deviceId;
+  String get deviceName => _deviceName;
   bool allowLanDirectPush = true;
 
   /// 启动内置 HTTP 同步服务端
@@ -186,6 +284,8 @@ class LanSyncServer {
           'version': '1.0.0',
           'deviceId': _deviceId,
           'deviceName': _deviceName,
+          'os': Platform.operatingSystem,
+          'deviceType': Platform.isAndroid || Platform.isIOS ? 'mobile' : 'desktop',
           'port': _port,
           'allowDirectPush': allowLanDirectPush && !_requireExplicitAuth,
         };
@@ -450,6 +550,20 @@ class LanSyncService extends ChangeNotifier {
   String get currentLocalIp => _currentLocalIp ?? '127.0.0.1';
   Stream<SyncSnapshot> get onSnapshotReceived => server.onSnapshotReceived;
 
+  String get localOsName {
+    if (Platform.isWindows) return 'Windows';
+    if (Platform.isMacOS) return 'macOS';
+    if (Platform.isAndroid) return 'Android';
+    if (Platform.isIOS) return 'iOS';
+    if (Platform.isLinux) return 'Linux';
+    return Platform.operatingSystem;
+  }
+
+  String get localDeviceTypeName {
+    if (Platform.isAndroid || Platform.isIOS) return '移动手机';
+    return '桌面 PC / 工作站';
+  }
+
   /// 获取本机主物理局域网 IPv4 地址
   static Future<String> getLocalIPv4() async {
     try {
@@ -473,6 +587,23 @@ class LanSyncService extends ChangeNotifier {
       }
     } catch (_) {}
     return '127.0.0.1';
+  }
+
+  /// 获取本机所有活动的本地 IPv4 地址集合（含 loopback 与 0.0.0.0）
+  static Future<Set<String>> getAllLocalIPv4s() async {
+    final ips = <String>{'127.0.0.1', 'localhost', '0.0.0.0'};
+    try {
+      final interfaces = await NetworkInterface.list(
+        includeLoopback: true,
+        type: InternetAddressType.IPv4,
+      );
+      for (final interface in interfaces) {
+        for (final addr in interface.addresses) {
+          ips.add(addr.address);
+        }
+      }
+    } catch (_) {}
+    return ips;
   }
 
   /// 提取子网前缀 (例如 192.168.1.10 -> 192.168.1)
@@ -540,7 +671,7 @@ class LanSyncService extends ChangeNotifier {
     return info.toUri();
   }
 
-  /// 发现与扫描设备
+  /// 发现与扫描设备（自动剔除本机自身）
   Future<List<LanDevice>> scanNetwork(
     String subnetPrefix, {
     int port = 23332,
@@ -550,14 +681,27 @@ class LanSyncService extends ChangeNotifier {
     _isScanning = true;
     notifyListeners();
     try {
+      final localIps = await getAllLocalIPv4s();
+      if (_currentLocalIp != null) localIps.add(_currentLocalIp!);
+
       final devices = await client.scanSubnet(
         subnetPrefix,
         port: port,
         start: start,
         end: end,
       );
+
+      // 严格双重过滤：剔除所有属于本机自身的节点
+      final remoteDevices = devices.where((dev) {
+        // 1. 若 IP 命中本机任何网卡且端口相同，则为本机
+        final isLocalIpAndPort = localIps.contains(dev.ip) && dev.port == server.port;
+        // 2. 若 deviceId 匹配本机服务端运行时的唯一 ID，则为本机
+        final isSelfDeviceId = server.isRunning && dev.id == server.deviceId;
+        return !isLocalIpAndPort && !isSelfDeviceId;
+      }).toList();
+
       _discoveredDevices.clear();
-      _discoveredDevices.addAll(devices);
+      _discoveredDevices.addAll(remoteDevices);
       return _discoveredDevices;
     } finally {
       _isScanning = false;

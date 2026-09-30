@@ -32,5 +32,15 @@ __pycache__/
 docs/tools/state.json
 *.py
 !app/scripts/**
-app/docs/
 *.dmp
+*.dmg
+build_win_artifact/
+build_win_binaries/
+*.tar.gz
+*.dll
+*.json
+!app/version_manifest.json
+!version_manifest.json
+!app/pubspec.lock
+temp_step.ps1
+test_real_lan_sync_to_windows.dart

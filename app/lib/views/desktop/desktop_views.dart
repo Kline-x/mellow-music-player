@@ -6329,7 +6329,7 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                             const Icon(Icons.wifi_tethering_rounded, size: 14, color: Colors.teal),
                             const SizedBox(width: 5),
                             Text(
-                              '服务监听中: ${_lanLocalIp ?? '127.0.0.1'}:$_lanLocalPort',
+                              '本机 · ${_lanService.localOsName} (${_lanService.localDeviceTypeName}) : ${_lanLocalIp ?? '127.0.0.1'}:$_lanLocalPort',
                               style: const TextStyle(color: Colors.teal, fontSize: 11.5, fontWeight: FontWeight.bold),
                             ),
                           ],
@@ -6436,15 +6436,13 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                               Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: theme.accentColor.withValues(alpha: 0.12),
+                                  color: dev.osBrandColor.withValues(alpha: 0.14),
                                   borderRadius: MellowRadii.borderR12,
                                 ),
                                 child: Icon(
-                                  dev.name.toLowerCase().contains('phone') || dev.name.toLowerCase().contains('android') || dev.name.toLowerCase().contains('ios')
-                                      ? Icons.phone_android_rounded
-                                      : Icons.laptop_chromebook_rounded,
-                                  color: theme.accentColor,
-                                  size: 24,
+                                  dev.deviceIcon,
+                                  color: dev.osBrandColor,
+                                  size: 26,
                                 ),
                               ),
                               const SizedBox(width: 14),
@@ -6459,24 +6457,76 @@ class _DesktopSyncViewState extends State<DesktopSyncView> {
                                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: theme.textPrimary),
                                         ),
                                         const SizedBox(width: 8),
+                                        // 操作系统专属品牌徽章
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: dev.osBrandColor.withValues(alpha: 0.16),
+                                            borderRadius: MellowRadii.borderPill,
+                                            border: Border.all(
+                                              color: dev.osBrandColor.withValues(alpha: 0.35),
+                                              width: 0.6,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                dev.displayOsName == 'Windows'
+                                                    ? Icons.window_rounded
+                                                    : (dev.displayOsName == 'macOS'
+                                                        ? Icons.apple_rounded
+                                                        : (dev.displayOsName == 'Android'
+                                                            ? Icons.android_rounded
+                                                            : Icons.devices_rounded)),
+                                                size: 11,
+                                                color: dev.osBrandColor,
+                                              ),
+                                              const SizedBox(width: 3.5),
+                                              Text(
+                                                dev.displayOsName,
+                                                style: TextStyle(
+                                                  fontSize: 10.5,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: dev.osBrandColor,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        // 设备形态微标签
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
                                             color: theme.canvasColor,
                                             borderRadius: MellowRadii.borderPill,
                                             border: Border.all(
-                                              color: theme.isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.04),
+                                              color: theme.isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
                                               width: 0.5,
                                             ),
                                           ),
                                           child: Text(
-                                            'v${dev.version}',
+                                            dev.displayDeviceTypeName,
                                             style: TextStyle(fontSize: 10, color: theme.textMuted),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        // 版本号
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: theme.canvasColor,
+                                            borderRadius: MellowRadii.borderPill,
+                                          ),
+                                          child: Text(
+                                            'v${dev.version}',
+                                            style: TextStyle(fontSize: 10, color: theme.textMuted.withValues(alpha: 0.8)),
                                           ),
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 4),
+                                    const SizedBox(height: 5),
                                     Text(
                                       '端点: ${dev.ip}:${dev.port} · 节点ID: ${dev.id}',
                                       style: TextStyle(fontSize: 11.5, color: theme.textMuted),
