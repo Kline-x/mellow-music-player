@@ -3438,7 +3438,7 @@ class DesktopSongTableView extends StatelessWidget {
                     showAlbum: showAlbum,
                     isToplistRank: isToplistRank,
                     onTap: () {
-                      Future.microtask(() {
+                      Future.delayed(const Duration(milliseconds: 60), () {
                         if (onIndexTap != null) {
                           onIndexTap!(entry.key);
                         } else if (onTrackTap != null) {
@@ -3500,13 +3500,15 @@ class _DesktopSongTableRowState extends State<_DesktopSongTableRow> {
             ? (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03))
             : Colors.transparent);
 
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: Container(
+    return ExcludeSemantics(
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.onTap,
+          child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
@@ -3617,6 +3619,7 @@ class _DesktopSongTableRowState extends State<_DesktopSongTableRow> {
           ),
         ),
       ),
+    ),
     );
   }
 }
@@ -4062,14 +4065,38 @@ class _DesktopImportedPlaylistsViewState extends State<DesktopImportedPlaylistsV
 }
 
 /// 8. 播放历史 (HistoryView)
-class DesktopHistoryView extends StatelessWidget {
+class DesktopHistoryView extends StatefulWidget {
   final Function(String viewId, [String? extra]) onNavigate;
   const DesktopHistoryView({super.key, required this.onNavigate});
+
+  @override
+  State<DesktopHistoryView> createState() => _DesktopHistoryViewState();
+}
+
+class _DesktopHistoryViewState extends State<DesktopHistoryView> {
+  late List<Track> _frozenTracks;
+  int _lastHistoryLength = -1;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final player = context.read<AudioPlayerService>();
+    if (_lastHistoryLength == -1 || player.playHistory.length != _lastHistoryLength) {
+      _frozenTracks = List.of(player.playHistory);
+      _lastHistoryLength = _frozenTracks.length;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
+
+    // 当且仅当总曲目数变化时（如清空或大批量导入）同步快照，普通切歌时维持视口稳定
+    if (player.playHistory.length != _lastHistoryLength) {
+      _frozenTracks = List.of(player.playHistory);
+      _lastHistoryLength = _frozenTracks.length;
+    }
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(32, 24, 32, 128),
@@ -4085,16 +4112,20 @@ class DesktopHistoryView extends StatelessWidget {
               children: [
                 Text('播放足迹历史', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: theme.textPrimary)),
                 const SizedBox(height: 4),
-                Text('已记录最近 ${player.playHistory.length} 首曲目 · 真实本地存储', style: TextStyle(fontSize: 13, color: theme.textMuted)),
+                Text('已记录最近 ${_frozenTracks.length} 首曲目 · 真实本地存储', style: TextStyle(fontSize: 13, color: theme.textMuted)),
               ],
             ),
-            if (player.playHistory.isNotEmpty)
+            if (_frozenTracks.isNotEmpty)
               SoftButton(
                 label: '清空足迹',
                 icon: Icons.delete_sweep_rounded,
                 isPill: true,
                 onTap: () {
                   player.clearPlayHistory();
+                  setState(() {
+                    _frozenTracks = [];
+                    _lastHistoryLength = 0;
+                  });
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('已清空全部本地播放历史记录')),
@@ -4105,9 +4136,13 @@ class DesktopHistoryView extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         DesktopSongTableView(
-          tracks: List.of(player.playHistory),
+          tracks: _frozenTracks,
           onTrackTap: (track) {
-            Future.microtask(() => player.playTrack(track));
+            Future.delayed(const Duration(milliseconds: 60), () {
+              if (mounted) {
+                player.playTrack(track);
+              }
+            });
           },
           emptyMessage: '暂无播放历史，在发现页、榜单或搜索播放音乐，足迹将自动安全记录在此',
         ),

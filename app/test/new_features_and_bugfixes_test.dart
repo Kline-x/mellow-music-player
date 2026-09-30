@@ -122,8 +122,9 @@ void main() {
       expect(find.text('历史曲目 1'), findsOneWidget);
       expect(find.text('历史曲目 2'), findsOneWidget);
 
-      // 点击第一行触发切歌，验证微任务执行与 0 崩溃
+      // 点击第一行触发切歌，验证延时任务执行与 0 崩溃
       await tester.tap(find.text('历史曲目 1'));
+      await tester.pump(const Duration(milliseconds: 100));
       await tester.pumpAndSettle();
 
       expect(player.currentTrack?.id, 'hist-1');

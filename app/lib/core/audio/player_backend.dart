@@ -49,6 +49,9 @@ class RealAudioPlayerBackend implements AudioPlayerBackend {
     final unwrapped = await OnlineMusicService.unwrapRedirects(uri);
     final direct = OnlineMusicService.upgradeToSecureUrl(unwrapped.isNotEmpty ? unwrapped : uri);
     try {
+      try {
+        await _player.stop();
+      } catch (_) {}
       if (direct.startsWith('http://') || direct.startsWith('https://')) {
         await _player.play(UrlSource(direct));
       } else {
