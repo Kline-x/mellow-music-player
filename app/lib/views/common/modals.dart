@@ -259,73 +259,93 @@ class EqualizerModal extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 // 10 频段滑块流 (支持自适应与小屏平滑水平滚动)
-                RecessedWell(
-                  padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-                  borderRadius: MellowRadii.borderR20,
-                  child: SizedBox(
-                    height: 200,
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        return SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          physics: constraints.maxWidth < 520
-                              ? const BouncingScrollPhysics()
-                              : const NeverScrollableScrollPhysics(),
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minWidth: constraints.maxWidth,
-                              maxWidth: constraints.maxWidth < 520 ? 520 : constraints.maxWidth,
-                            ),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isNarrow = constraints.maxWidth < 520;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (isNarrow)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 6, left: 4),
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: List.generate(10, (index) {
-                                final freq = EqualizerManager.frequencyBands[index];
-                                final gain = eq.bandGains[index];
-
-                                return Column(
-                                  children: [
-                                    Text(
-                                      '${gain > 0 ? '+' : ''}${gain.toStringAsFixed(0)}',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: gain != 0 ? theme.accentColor : theme.textMuted,
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: RotatedBox(
-                                        quarterTurns: 3,
-                                        child: SliderTheme(
-                                          data: SliderTheme.of(context).copyWith(
-                                            trackHeight: 4,
-                                            activeTrackColor: theme.accentColor,
-                                            inactiveTrackColor: isDark ? Colors.white12 : Colors.black12,
-                                            thumbColor: theme.accentColor,
-                                            overlayColor: theme.accentColor.withValues(alpha: 0.15),
-                                            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
-                                          ),
-                                          child: Slider(
-                                            value: gain,
-                                            min: -12.0,
-                                            max: 12.0,
-                                            onChanged: (val) => eq.setBandGain(index, val),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    Text(
-                                      freq,
-                                      style: TextStyle(fontSize: 11, color: theme.textSecondary),
-                                    ),
-                                  ],
-                                );
-                              }),
+                              children: [
+                                Icon(Icons.swipe_left_rounded, size: 14, color: theme.accentColor),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '左右滑动调节 10 频段全部声学参数',
+                                  style: TextStyle(fontSize: 11, color: theme.textMuted),
+                                ),
+                              ],
                             ),
                           ),
-                        );
-                      },
-                    ),
-                  ),
+                        RecessedWell(
+                          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+                          borderRadius: MellowRadii.borderR20,
+                          child: SizedBox(
+                            height: 200,
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              physics: isNarrow
+                                  ? const BouncingScrollPhysics()
+                                  : const NeverScrollableScrollPhysics(),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minWidth: constraints.maxWidth,
+                                  maxWidth: isNarrow ? 540 : constraints.maxWidth,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  children: List.generate(10, (index) {
+                                    final freq = EqualizerManager.frequencyBands[index];
+                                    final gain = eq.bandGains[index];
+
+                                    return Column(
+                                      children: [
+                                        Text(
+                                          '${gain > 0 ? '+' : ''}${gain.toStringAsFixed(0)}',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: gain != 0 ? theme.accentColor : theme.textMuted,
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: RotatedBox(
+                                            quarterTurns: 3,
+                                            child: SliderTheme(
+                                              data: SliderTheme.of(context).copyWith(
+                                                trackHeight: 4,
+                                                activeTrackColor: theme.accentColor,
+                                                inactiveTrackColor: isDark ? Colors.white12 : Colors.black12,
+                                                thumbColor: theme.accentColor,
+                                                overlayColor: theme.accentColor.withValues(alpha: 0.15),
+                                                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+                                              ),
+                                              child: Slider(
+                                                value: gain,
+                                                min: -12.0,
+                                                max: 12.0,
+                                                onChanged: (val) => eq.setBandGain(index, val),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        Text(
+                                          freq,
+                                          style: TextStyle(fontSize: 11, color: theme.textSecondary),
+                                        ),
+                                      ],
+                                    );
+                                  }),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 16),
 
@@ -434,9 +454,14 @@ class SleepTimerModal extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('倒计时进行中', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                           Text(
-                            '剩余 ${remaining ~/ 60} 分 ${remaining % 60} 秒后停止播放',
+                            player.pauseAfterCurrent ? '播完即停已启用' : '倒计时进行中',
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                          ),
+                          Text(
+                            player.pauseAfterCurrent
+                                ? '将在当前曲目播放完成后自动停止'
+                                : '剩余 ${remaining ~/ 60} 分 ${remaining % 60} 秒后停止播放',
                             style: TextStyle(fontSize: 12, color: theme.textSecondary),
                           ),
                         ],
@@ -574,35 +599,41 @@ class _ImportPlaylistModalState extends State<ImportPlaylistModal> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: theme.accentColor.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: theme.accentColor.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.queue_music_rounded, color: theme.accentColor, size: 22),
                       ),
-                      child: Icon(Icons.queue_music_rounded, color: theme.accentColor, size: 22),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '一键导入外部歌单',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: theme.textPrimary,
-                          ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '一键导入外部歌单',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: theme.textPrimary,
+                              ),
+                            ),
+                            Text(
+                              '支持网易云音乐公开歌单 ID 或分享链接一键解析',
+                              style: TextStyle(fontSize: 12, color: theme.textMuted),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
-                        Text(
-                          '支持网易云音乐公开歌单 ID 或分享链接一键解析',
-                          style: TextStyle(fontSize: 12, color: theme.textMuted),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close_rounded),
@@ -841,22 +872,28 @@ class _CreatePlaylistModalState extends State<CreatePlaylistModal> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: theme.accentColor.withValues(alpha: 0.15),
-                          borderRadius: MellowRadii.borderR12,
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: theme.accentColor.withValues(alpha: 0.15),
+                            borderRadius: MellowRadii.borderR12,
+                          ),
+                          child: Icon(Icons.playlist_add_rounded, color: theme.accentColor, size: 22),
                         ),
-                        child: Icon(Icons.playlist_add_rounded, color: theme.accentColor, size: 22),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        '新建自建歌单',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary),
-                      ),
-                    ],
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            '新建自建歌单',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   IconButton(
                     icon: Icon(Icons.close_rounded, color: theme.textMuted),
@@ -1981,26 +2018,41 @@ class _LanPairingModalState extends State<LanPairingModal> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.indigoAccent.withValues(alpha: 0.15),
-                            borderRadius: MellowRadii.borderR12,
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.indigoAccent.withValues(alpha: 0.15),
+                              borderRadius: MellowRadii.borderR12,
+                            ),
+                            child: const Icon(Icons.hub_rounded, color: Colors.indigoAccent, size: 22),
                           ),
-                          child: const Icon(Icons.hub_rounded, color: Colors.indigoAccent, size: 22),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('局域网近场直连配对', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary)),
-                            Text('同 Wi-Fi 局域网下秒级 P2P 快照投送与歌单漫游', style: TextStyle(fontSize: 12, color: theme.textMuted)),
-                          ],
-                        ),
-                      ],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '局域网近场直连配对',
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                                Text(
+                                  '同 Wi-Fi 局域网下秒级 P2P 快照投送与歌单漫游',
+                                  style: TextStyle(fontSize: 12, color: theme.textMuted),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     IconButton(
                       icon: Icon(Icons.close_rounded, color: theme.textMuted, size: 20),
                       onPressed: () => Navigator.of(context).pop(),
@@ -2822,12 +2874,12 @@ class _SourceSwitcherModalState extends State<SourceSwitcherModal> {
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       child: Center(
         child: Container(
           width: 520,
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
-          padding: const EdgeInsets.all(24),
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.82),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
           decoration: BoxDecoration(
             color: MellowColors.card(isDark),
             borderRadius: MellowRadii.borderR24,
@@ -2959,12 +3011,16 @@ class _SourceSwitcherModalState extends State<SourceSwitcherModal> {
                                   children: [
                                     Row(
                                       children: [
-                                        Text(
-                                          name,
-                                          style: TextStyle(
-                                            fontSize: 13.5,
-                                            fontWeight: FontWeight.w600,
-                                            color: theme.textPrimary,
+                                        Flexible(
+                                          child: Text(
+                                            name,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 13.5,
+                                              fontWeight: FontWeight.w600,
+                                              color: theme.textPrimary,
+                                            ),
                                           ),
                                         ),
                                         const SizedBox(width: 8),

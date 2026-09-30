@@ -140,6 +140,25 @@ class AudioPlayerService extends ChangeNotifier {
     return count;
   }
 
+  /// 扫描移动端/系统常见音乐存储路径
+  Future<int> scanDeviceMusicDirectories() async {
+    int totalAdded = 0;
+    final candidateDirs = [
+      '/sdcard/Music',
+      '/sdcard/Download',
+      '/storage/emulated/0/Music',
+      '/storage/emulated/0/Download',
+      '/storage/emulated/0/Android/media',
+    ];
+    for (final d in candidateDirs) {
+      if (Directory(d).existsSync()) {
+        totalAdded += await LocalMusicService.instance.scanDirectory(d);
+      }
+    }
+    notifyListeners();
+    return totalAdded;
+  }
+
   void addLocalTrack(Track track) {
     LocalMusicService.instance.addLocalTrack(track);
     notifyListeners();

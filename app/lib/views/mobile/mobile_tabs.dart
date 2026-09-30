@@ -10,6 +10,8 @@ import '../../core/audio/audio_player_service.dart';
 import '../../core/audio/track_model.dart';
 import '../../core/sources/online_music_service.dart';
 import '../common/modals.dart';
+import '../common/update_dialog.dart';
+import '../../core/services/version_check_service.dart';
 
 /// 1. 移动端 Tab 1: 发现音乐 (MobileDiscoverTab - 1:1 原型复刻)
 class MobileDiscoverTab extends StatelessWidget {
@@ -332,7 +334,7 @@ class MobileDiscoverTab extends StatelessWidget {
                   context,
                   title: '落日微风 · 私人漫游',
                   subtitle: '周杰伦 / 告五人 / M83',
-                  coverUrl: 'https://p1.music.126.net/2z6yB1nJd5b0yP8T4XfRrw==/109951163969562818.jpg',
+                  coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/58/8d/6d/588d6d61-fbac-148a-86bd-0030ce076ac1/23UM1IM57281.rgb.jpg/600x600bb.jpg',
                   onPlay: () {
                     if (player.playlist.isNotEmpty) {
                       player.playTrack(player.playlist[0]);
@@ -354,7 +356,7 @@ class MobileDiscoverTab extends StatelessWidget {
                               context,
                               title: '午夜霓虹',
                               artist: 'M83',
-                              coverUrl: 'https://p2.music.126.net/L3cE6x8y2g6n7Q0o4w0z_g==/109951165123987114.jpg',
+                              coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/cb/7b/a9/cb7ba903-b5f1-cc21-90db-7a81b7aa0997/724596951057.jpg/600x600bb.jpg',
                               onPlay: () async {
                                 final t = player.playlist.where(
                                   (x) => x.title.contains('Midnight') || x.artist.contains('M83'),
@@ -374,7 +376,7 @@ class MobileDiscoverTab extends StatelessWidget {
                               context,
                               title: '慢冷治愈',
                               artist: '梁静茹',
-                              coverUrl: 'https://p1.music.126.net/DrrCqd6YsAC3IVq7o_1XmA==/109951163785461942.jpg',
+                              coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/bf/f0/11/bff01142-f4f0-f9c4-f497-007f43e42783/BD0018-_-_Fall_In_Love_Songs.jpg/600x600bb.jpg',
                               onPlay: () {
                                 if (player.playlist.length > 1) {
                                   player.playTrack(player.playlist[1]);
@@ -394,7 +396,7 @@ class MobileDiscoverTab extends StatelessWidget {
                               context,
                               title: 'Golden Hour',
                               artist: 'JVKE',
-                              coverUrl: 'https://p2.music.126.net/416G4gJ_x_eYpA4x7Y2Huw==/109951163456789123.jpg',
+                              coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/8d/1a/7b/8d1a7b44-316f-7c7f-4380-935673fb697a/5056167175650.jpg/600x600bb.jpg',
                               onPlay: () {
                                 if (player.playlist.length > 2) {
                                   player.playTrack(player.playlist[2]);
@@ -408,7 +410,7 @@ class MobileDiscoverTab extends StatelessWidget {
                               context,
                               title: '爱在西元前',
                               artist: '周杰伦',
-                              coverUrl: 'https://p1.music.126.net/Z5N7uTf4pE4G_0t2_1h2rw==/109951163254987654.jpg',
+                              coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/8c/47/86/8c47862d-e254-8b49-30cf-d1f05ebba05b/23UM1IM56855.rgb.jpg/600x600bb.jpg',
                               onPlay: () {
                                 if (player.playlist.length > 3) {
                                   player.playTrack(player.playlist[3]);
@@ -641,25 +643,25 @@ class MobileDiscoverTab extends StatelessWidget {
         'title': 'Hurry Up, Dreaming',
         'artist': 'M83',
         'year': '2011 · 电子梦幻',
-        'cover': 'https://p2.music.126.net/4F6Z_923J-x_9tQeQ-3w1g==/109951166123456789.jpg',
+        'cover': 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/cb/7b/a9/cb7ba903-b5f1-cc21-90db-7a81b7aa0997/724596951057.jpg/600x600bb.jpg',
       },
       {
         'title': '范特西 Fantasy',
         'artist': '周杰伦',
         'year': '2001 · 华语经典',
-        'cover': 'https://p1.music.126.net/6y-UleORITEDbvrOLAL-vQ==/109951164803975765.jpg',
+        'cover': 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/8c/47/86/8c47862d-e254-8b49-30cf-d1f05ebba05b/23UM1IM56855.rgb.jpg/600x600bb.jpg',
       },
       {
         'title': '爱人错过',
         'artist': '告五人',
         'year': '2019 · 独立摇滚',
-        'cover': 'https://p2.music.126.net/cW3ZzXz8q3n2ZpE4I_pG2w==/109951165432654366.jpg',
+        'cover': 'https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/10/ba/77/10ba77f4-47ae-8cb6-2913-cf49b78452b5/1..jpg/600x600bb.jpg',
       },
       {
         'title': '静夜琴思',
         'artist': '巫娜',
         'year': '2020 · 东方禅意',
-        'cover': 'https://p1.music.126.net/2z6yB1nJd5b0yP8T4XfRrw==/109951163969562818.jpg',
+        'cover': 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/69/49/61/694961f3-1414-355e-66e4-9649ba13ec55/23UM1IM57770.rgb.jpg/600x600bb.jpg',
       },
     ];
 
@@ -814,7 +816,7 @@ class _MobileExploreTabState extends State<MobileExploreTab> {
     final player = context.watch<AudioPlayerService>();
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 130),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 160),
       children: [
         Text('探索音乐全库', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: theme.textPrimary)),
         const SizedBox(height: 14),
@@ -905,7 +907,9 @@ class MobileLibraryTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
-    final favCount = player.playlist.where((t) => player.isFavorite(t.id)).length;
+    final favCount = player.favoriteTracks.isNotEmpty
+        ? player.favoriteTracks.length
+        : player.favoriteIds.length;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
@@ -949,15 +953,47 @@ class MobileLibraryTab extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 14),
+
+        // 局域网多端同步快捷入口
+        SoftCard(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          borderRadius: MellowRadii.borderR16,
+          onTap: () => showDialog(
+            context: context,
+            builder: (_) => const LanPairingModal(),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0284C7).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.cell_tower_rounded, color: Color(0xFF0284C7), size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('局域网多端同步中心', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: theme.textPrimary)),
+                    const SizedBox(height: 2),
+                    Text('与 macOS / Windows 桌面端近场直连互传', style: TextStyle(fontSize: 11, color: theme.textMuted)),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios_rounded, size: 14, color: theme.textMuted),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
 
         // 我喜欢的音乐卡片
         SoftCard(
           padding: const EdgeInsets.all(16),
-          onTap: () {
-            final favs = player.playlist.where((t) => player.isFavorite(t.id)).toList();
-            if (favs.isNotEmpty) player.playTrack(favs[0]);
-          },
+          onTap: () => onNavigatePage('favorites'),
           child: Row(
             children: [
               Container(
@@ -1268,6 +1304,58 @@ class MobileProfileTab extends StatelessWidget {
                     ),
                   );
                 }).toList(),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // 多端协同与系统功能
+        SoftCard(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('多端协同与系统', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: theme.textPrimary)),
+              const SizedBox(height: 12),
+              SoftButton(
+                icon: Icons.cell_tower_rounded,
+                label: '局域网多端同步中心',
+                isPill: false,
+                onTap: () => showDialog(
+                  context: context,
+                  builder: (_) => const LanPairingModal(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SoftButton(
+                icon: Icons.system_update_alt_rounded,
+                label: '检查新版本更新',
+                isPill: false,
+                onTap: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  try {
+                    final service = VersionCheckService();
+                    final newVersion = await service.checkLatestVersion();
+                    if (!context.mounted) return;
+                    if (newVersion != null) {
+                      await UpdateDialog.show(context, newVersion);
+                    } else {
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text('已是最新版本 (v${service.currentVersionName})'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      messenger.showSnackBar(
+                        SnackBar(content: Text('检查更新失败: $e'), behavior: SnackBarBehavior.floating),
+                      );
+                    }
+                  }
+                },
               ),
             ],
           ),

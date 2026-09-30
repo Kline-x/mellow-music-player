@@ -40,7 +40,7 @@ class _DesktopDiscoverViewState extends State<DesktopDiscoverView> {
           ImportedPlaylist(
             id: 'test_curated_wuna',
             title: '东方禅境 · 幽篁古筝琴韵精选',
-            coverUrl: 'https://p2.music.126.net/4F6Z_923J-x_9tQeQ-3w1g==/109951166123456789.jpg',
+            coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/69/49/61/694961f3-1414-355e-66e4-9649ba13ec55/23UM1IM57770.rgb.jpg/600x600bb.jpg',
             description: '甄选推荐歌单 · 4首单曲',
             trackCount: mockWuNaTracks.length,
             tracks: mockWuNaTracks,
@@ -192,7 +192,7 @@ class _DesktopDiscoverViewState extends State<DesktopDiscoverView> {
               const SizedBox(width: 24),
               // 封面微浮雕
               MellowImage(
-                url: 'https://p1.music.126.net/6y-UleORITEDbvrOLAL-vQ==/109951164803975765.jpg',
+                url: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/58/8d/6d/588d6d61-fbac-148a-86bd-0030ce076ac1/23UM1IM57281.rgb.jpg/600x600bb.jpg',
                 width: 150,
                 height: 150,
                 borderRadius: MellowRadii.borderR20,

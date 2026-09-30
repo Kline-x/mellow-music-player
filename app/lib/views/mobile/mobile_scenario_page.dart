@@ -130,7 +130,7 @@ class _MobileScenarioPlaylistPageState extends State<MobileScenarioPlaylistPage>
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 110),
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 130),
         children: [
           // 1. 移动端全幅场景搜索药丸框
           Container(

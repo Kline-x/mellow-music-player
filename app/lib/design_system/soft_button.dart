@@ -112,12 +112,16 @@ class _SoftButtonState extends State<SoftButton> {
       }
       if (widget.label != null) {
         items.add(
-          Text(
-            widget.label!,
-            style: TextStyle(
-              color: fgColor,
-              fontSize: 13.5,
-              fontWeight: widget.isActive ? FontWeight.w600 : FontWeight.w500,
+          Flexible(
+            child: Text(
+              widget.label!,
+              style: TextStyle(
+                color: fgColor,
+                fontSize: 13.5,
+                fontWeight: widget.isActive ? FontWeight.w600 : FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         );

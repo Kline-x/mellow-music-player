@@ -6,7 +6,31 @@ class MellowImage extends StatelessWidget {
   /// 是否在测试模式下运行（测试模式下跳过网络请求渲染占位）
   static bool isInTest = false;
 
-  /// 标准浏览器防盗链 / 反爬请求头（网易云、酷我、主流 CDN 必备，杜绝 Dart User-Agent 导致的 403 Forbidden）
+  /// 智能防盗链 / 反爬请求头解析：依据目标域名动态注入专属 Referer，杜绝 403 跨域拦截
+  static Map<String, String> getHeadersFor(String rawUrl) {
+    final headers = <String, String>{
+      'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+      'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+    };
+
+    final uri = Uri.tryParse(rawUrl);
+    if (uri != null) {
+      final host = uri.host.toLowerCase();
+      if (host.contains('music.126.net') || host.contains('163.com')) {
+        headers['Referer'] = 'https://music.163.com/';
+      } else if (host.contains('gtimg.cn') || host.contains('qq.com')) {
+        headers['Referer'] = 'https://y.qq.com/';
+      } else if (host.contains('kuwo.cn')) {
+        headers['Referer'] = 'https://www.kuwo.cn/';
+      } else if (host.contains('kugou.com')) {
+        headers['Referer'] = 'https://www.kugou.com/';
+      }
+    }
+    return headers;
+  }
+
+  /// 默认通用请求头（兼容旧引用）
   static const Map<String, String> defaultHeaders = {
     'User-Agent':
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
@@ -49,7 +73,7 @@ class MellowImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cleanUrl = url.trim().replaceFirst(RegExp(r'^http://'), 'https://');
+    final cleanUrl = url.trim();
     final bool usePlaceholder = isInTest ||
         cleanUrl.isEmpty ||
         WidgetsBinding.instance.runtimeType.toString().contains('Test');
@@ -113,7 +137,7 @@ class MellowImage extends StatelessWidget {
         width: width,
         height: height,
         fit: fit,
-        headers: defaultHeaders,
+        headers: getHeadersFor(cleanUrl),
         frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
           if (wasSynchronouslyLoaded || frame != null) {
             return child;

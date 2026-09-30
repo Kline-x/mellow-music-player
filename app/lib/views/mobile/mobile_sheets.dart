@@ -46,10 +46,10 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
     super.dispose();
   }
 
-  void _scrollToActiveLine(int index) {
+  void _scrollToActiveLine(int index, [double viewportHeight = 400]) {
     if (index != _lastActiveIndex && _lyricScrollController.hasClients) {
       _lastActiveIndex = index;
-      final targetOffset = max(0.0, index * 48.0 - 120.0);
+      final targetOffset = max(0.0, index * 44.0 - (viewportHeight / 2) + 22.0);
       _lyricScrollController.animateTo(
         targetOffset,
         duration: const Duration(milliseconds: 300),
@@ -100,12 +100,6 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
         activeLineIndex = i;
       }
     }
-    if (_currentPage == 1) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToActiveLine(activeLineIndex);
-      });
-    }
-
     return Scaffold(
       backgroundColor: theme.canvasColor,
       body: Stack(
@@ -117,9 +111,9 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
           SafeArea(
             child: Column(
               children: [
-                // 顶部返回与切换指示条
+                // 顶部返回与切换指示条 (加大顶部间隙，避开挖孔屏)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -147,7 +141,8 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
                             onPressed: () => player.toggleFavorite(track.id),
                           ),
                           IconButton(
-                            icon: Icon(Icons.playlist_add_rounded, color: theme.textSecondary, size: 24),
+                            icon: Icon(Icons.bookmark_add_outlined, color: theme.textSecondary, size: 22),
+                            tooltip: '收藏至歌单',
                             onPressed: () => showDialog(context: context, builder: (_) => AddToPlaylistModal(track: track)),
                           ),
                         ],
@@ -156,12 +151,19 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
                   ),
                 ),
 
-                // 中间滑动区：0 为黑胶唱盘，1 为全屏歌词
+                // 中间滑动区：0 为黑胶唱盘，1 为全屏歌词 (带动态视口高度居中感知)
                 Expanded(
-                  child: PageView(
-                    controller: _pageController,
-                    onPageChanged: (page) => setState(() => _currentPage = page),
-                    children: [
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (_currentPage == 1) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          _scrollToActiveLine(activeLineIndex, constraints.maxHeight);
+                        });
+                      }
+                      return PageView(
+                        controller: _pageController,
+                        onPageChanged: (page) => setState(() => _currentPage = page),
+                        children: [
                       // 页面 1: 黑胶大碟
                       Center(
                         child: Column(
@@ -263,8 +265,10 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
                         },
                       ),
                     ],
-                  ),
-                ),
+                  );
+                },
+              ),
+            ),
 
                 // 底部胶囊进度条与控制台
                 Padding(

@@ -89,7 +89,7 @@ void main() {
       expect(scenarios.length, equals(12));
       for (final s in scenarios) {
         expect(s.defaultCoverUrl.contains('unsplash.com'), isFalse);
-        expect(s.defaultCoverUrl.startsWith('https://p'), isTrue);
+        expect(s.defaultCoverUrl.startsWith('https://'), isTrue);
       }
     });
 

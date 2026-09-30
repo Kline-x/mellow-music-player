@@ -23,6 +23,33 @@ abstract class AudioPlayerBackend {
 class RealAudioPlayerBackend implements AudioPlayerBackend {
   final AudioPlayer _player = AudioPlayer();
 
+  RealAudioPlayerBackend() {
+    _initAudioContext();
+  }
+
+  void _initAudioContext() {
+    if (kIsWeb) return;
+    try {
+      if (Platform.isAndroid || Platform.isIOS) {
+        AudioPlayer.global.setAudioContext(AudioContext(
+          android: const AudioContextAndroid(
+            isSpeakerphoneOn: false,
+            stayAwake: true,
+            contentType: AndroidContentType.music,
+            usageType: AndroidUsageType.media,
+            audioFocus: AndroidAudioFocus.gain,
+          ),
+          iOS: AudioContextIOS(
+            category: AVAudioSessionCategory.playback,
+            options: const {},
+          ),
+        ));
+      }
+    } catch (e) {
+      debugPrint('[RealAudioPlayerBackend] 初始化 AudioContext 失败: $e');
+    }
+  }
+
   @override
   Stream<Duration> get onPositionChanged => _player.onPositionChanged;
 

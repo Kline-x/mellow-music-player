@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../design_system/tokens.dart';
@@ -5,6 +6,9 @@ import '../design_system/theme_provider.dart';
 import '../design_system/acoustic_mesh_glow.dart';
 import '../design_system/mellow_image.dart';
 import '../core/audio/audio_player_service.dart';
+import '../core/audio/equalizer_manager.dart';
+import '../core/sync/lan_sync_service.dart';
+import '../core/sync/sync_data_model.dart';
 import '../views/mobile/mobile_tabs.dart';
 import '../views/mobile/mobile_pages.dart';
 import '../views/mobile/mobile_scenario_page.dart';
@@ -18,22 +22,67 @@ class MobileScaffold extends StatefulWidget {
   State<MobileScaffold> createState() => _MobileScaffoldState();
 }
 
+class _SubPageEntry {
+  final String pageId;
+  final String? param;
+  const _SubPageEntry(this.pageId, [this.param]);
+}
+
 class _MobileScaffoldState extends State<MobileScaffold> {
   int _currentTab = 0;
-  String? _subPageId;
-  String? _subPageParam;
+  final List<_SubPageEntry> _subPageStack = [];
+
+  String? get _subPageId => _subPageStack.isEmpty ? null : _subPageStack.last.pageId;
+  String? get _subPageParam => _subPageStack.isEmpty ? null : _subPageStack.last.param;
+
+  StreamSubscription<SyncSnapshot>? _snapshotSub;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        await LanSyncService.instance.ensureServerRunning();
+      } catch (_) {}
+    });
+
+    _snapshotSub = LanSyncService.instance.onSnapshotReceived.listen((incoming) async {
+      if (!mounted) return;
+      final player = context.read<AudioPlayerService>();
+      final eq = EqualizerManager.instance;
+      final local = SyncSnapshot.createFromAppState(player: player, eqManager: eq);
+      final merged = local.merge(incoming);
+      await SyncSnapshot.applyToAppState(merged, player: player, eqManager: eq);
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('收到局域网设备无线快照！已智能合并 ${merged.favorites.length} 首红心、${merged.playlists.length} 个歌单'),
+            backgroundColor: Colors.teal.shade700,
+          ),
+        );
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _snapshotSub?.cancel();
+    super.dispose();
+  }
 
   void _navigateToPage(String pageId, [String? extra]) {
     setState(() {
-      _subPageId = pageId;
-      _subPageParam = extra;
+      _subPageStack.add(_SubPageEntry(pageId, extra));
     });
   }
 
   void _popSubPage() {
     setState(() {
-      _subPageId = null;
-      _subPageParam = null;
+      if (_subPageStack.isNotEmpty) {
+        _subPageStack.removeLast();
+      }
     });
   }
 
@@ -41,51 +90,69 @@ class _MobileScaffoldState extends State<MobileScaffold> {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
 
-    // 如果处于二级页面状态，优先渲染二级页
-    if (_subPageId != null) {
-      return _buildSubPage();
-    }
+    final bool canPop = _subPageId == null;
 
-    return Scaffold(
-      backgroundColor: theme.canvasColor,
-      body: Stack(
-        children: [
-          // 全局弥散光晕背景
-          const Positioned.fill(child: AcousticMeshGlow()),
-
-          // 主体 Tab 页面
-          SafeArea(
-            child: Column(
+    final Widget content = _subPageId != null
+        ? Scaffold(
+            backgroundColor: theme.canvasColor,
+            body: Stack(
               children: [
-                // 顶部灵动岛状态栏
-                _buildDynamicIslandHeader(context),
+                _buildSubPage(),
+                _buildFloatingMiniPlayer(context, bottom: 16),
+              ],
+            ),
+          )
+        : Scaffold(
+            backgroundColor: theme.canvasColor,
+            body: Stack(
+              children: [
+                // 全局弥散光晕背景
+                const Positioned.fill(child: AcousticMeshGlow()),
 
-                // 4-Tab 视图切换
-                Expanded(
-                  child: IndexedStack(
-                    index: _currentTab,
+                // 主体 Tab 页面
+                SafeArea(
+                  child: Column(
                     children: [
-                      MobileDiscoverTab(
-                        onNavigatePage: _navigateToPage,
-                        onOpenSearch: () => _navigateToPage('search'),
+                      // 顶部灵动岛状态栏
+                      _buildDynamicIslandHeader(context),
+
+                      // 4-Tab 视图切换
+                      Expanded(
+                        child: IndexedStack(
+                          index: _currentTab,
+                          children: [
+                            MobileDiscoverTab(
+                              onNavigatePage: _navigateToPage,
+                              onOpenSearch: () => _navigateToPage('search'),
+                            ),
+                            MobileExploreTab(onNavigatePage: _navigateToPage),
+                            MobileLibraryTab(onNavigatePage: _navigateToPage),
+                            const MobileProfileTab(),
+                          ],
+                        ),
                       ),
-                      MobileExploreTab(onNavigatePage: _navigateToPage),
-                      MobileLibraryTab(onNavigatePage: _navigateToPage),
-                      const MobileProfileTab(),
                     ],
                   ),
                 ),
+
+                // 底部悬浮毛玻璃迷你播放条 (嵌 2px 极细实时播放进度条)
+                _buildFloatingMiniPlayer(context),
+
+                // 底部原生 4-Tab 毛玻璃导航栏
+                _buildBottomTabBar(context),
               ],
             ),
-          ),
+          );
 
-          // 底部悬浮毛玻璃迷你播放条 (嵌 2px 极细实时播放进度条)
-          _buildFloatingMiniPlayer(context),
-
-          // 底部原生 4-Tab 毛玻璃导航栏
-          _buildBottomTabBar(context),
-        ],
-      ),
+    return PopScope(
+      canPop: canPop,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_subPageId != null) {
+          _popSubPage();
+        }
+      },
+      child: content,
     );
   }
 
@@ -189,7 +256,7 @@ class _MobileScaffoldState extends State<MobileScaffold> {
   }
 
   /// 底部悬浮毛玻璃胶囊播放条 (带 2px 极细实时进度条与红心收藏)
-  Widget _buildFloatingMiniPlayer(BuildContext context) {
+  Widget _buildFloatingMiniPlayer(BuildContext context, {double bottom = 72}) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
     final track = player.currentTrack;
@@ -203,7 +270,7 @@ class _MobileScaffoldState extends State<MobileScaffold> {
     return Positioned(
       left: 14,
       right: 14,
-      bottom: 72,
+      bottom: bottom,
       child: GestureDetector(
         key: const Key('mini_player_pill'),
         onTap: () {
@@ -362,7 +429,10 @@ class _MobileScaffoldState extends State<MobileScaffold> {
     final isSelected = _currentTab == index;
 
     return GestureDetector(
-      onTap: () => setState(() => _currentTab = index),
+      onTap: () => setState(() {
+        _currentTab = index;
+        _subPageStack.clear();
+      }),
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -431,6 +501,8 @@ class _MobileScaffoldState extends State<MobileScaffold> {
         return MobileArtistDetailPage(artistName: _subPageParam ?? '巫娜', onBack: _popSubPage);
       case 'local':
         return MobileLocalMusicPage(onBack: _popSubPage);
+      case 'favorites':
+        return MobileFavoritesPage(onBack: _popSubPage);
       default:
         return MobileDailyRecommendPage(onBack: _popSubPage);
     }

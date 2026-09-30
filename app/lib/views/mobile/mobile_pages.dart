@@ -64,11 +64,15 @@ class MobileDailyRecommendPage extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        '$monthYearStr · $weekdayStr',
-                        style: const TextStyle(color: Colors.white70, fontSize: 9.5, fontWeight: FontWeight.bold),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            '$monthYearStr · $weekdayStr',
+                            style: const TextStyle(color: Colors.white70, fontSize: 9.5, fontWeight: FontWeight.bold),
+                          ),
+                        ),
                       ),
                       Text(dayStr, style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900, height: 1.1)),
                     ],
@@ -519,7 +523,7 @@ class _MobilePlaylistSquarePageState extends State<MobilePlaylistSquarePage> {
           ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
           : ListView(
               controller: _scrollController,
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 110),
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 130),
               children: [
                 // 场景歌单推荐横幅
                 if (widget.onOpenScenarios != null) ...[
@@ -1685,9 +1689,41 @@ class _MobileArtistDetailPageState extends State<MobileArtistDetailPage> {
 }
 
 /// 8. 本地与下载二级页 (MobileLocalMusicPage)
-class MobileLocalMusicPage extends StatelessWidget {
+class MobileLocalMusicPage extends StatefulWidget {
   final VoidCallback onBack;
   const MobileLocalMusicPage({super.key, required this.onBack});
+
+  @override
+  State<MobileLocalMusicPage> createState() => _MobileLocalMusicPageState();
+}
+
+class _MobileLocalMusicPageState extends State<MobileLocalMusicPage> {
+  bool _isScanning = false;
+
+  Future<void> _handleScan(BuildContext context, AudioPlayerService player) async {
+    if (_isScanning) return;
+    setState(() => _isScanning = true);
+    try {
+      final added = await player.scanDeviceMusicDirectories();
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            added > 0 ? '扫描完毕，新增 $added 首本地音乐' : '扫描完成，暂未在通用媒体目录中发现新增音频',
+            style: const TextStyle(fontSize: 13),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('扫描本地音频出错: $e'), duration: const Duration(seconds: 2)),
+      );
+    } finally {
+      if (mounted) setState(() => _isScanning = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1702,11 +1738,22 @@ class MobileLocalMusicPage extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.textPrimary, size: 20),
-          onPressed: onBack,
+          onPressed: widget.onBack,
         ),
         title: Text('本地与离线曲库', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary, fontSize: 17)),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: _isScanning
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(theme.accentColor)),
+                  )
+                : Icon(Icons.refresh_rounded, color: theme.accentColor, size: 22),
+            tooltip: '扫描设备音频',
+            onPressed: _isScanning ? null : () => _handleScan(context, player),
+          ),
           if (localTracks.isNotEmpty)
             TextButton.icon(
               icon: Icon(Icons.play_circle_fill_rounded, size: 18, color: theme.accentColor),
@@ -1716,7 +1763,7 @@ class MobileLocalMusicPage extends StatelessWidget {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
         children: [
           RecessedWell(
             padding: const EdgeInsets.all(20),
@@ -1754,8 +1801,16 @@ class MobileLocalMusicPage extends StatelessWidget {
                   Icon(Icons.music_off_rounded, size: 48, color: theme.textMuted.withValues(alpha: 0.5)),
                   const SizedBox(height: 12),
                   Text('暂无本地音乐', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary, fontSize: 15)),
-                  const SizedBox(height: 4),
-                  Text('可在桌面端扫描或将音频放入设备音乐目录', style: TextStyle(color: theme.textMuted, fontSize: 12)),
+                  const SizedBox(height: 6),
+                  Text('可将音频放入设备的 Music 目录，或点击下方按钮检索', style: TextStyle(color: theme.textMuted, fontSize: 12)),
+                  const SizedBox(height: 20),
+                  SoftButton(
+                    label: _isScanning ? '正在扫描设备音频...' : '智能扫描设备本地曲库',
+                    icon: Icons.radar_rounded,
+                    isActive: true,
+                    isPill: true,
+                    onTap: _isScanning ? null : () => _handleScan(context, player),
+                  ),
                 ],
               ),
             )
@@ -1841,6 +1896,7 @@ class _MobileSearchPageState extends State<MobileSearchPage> {
 
   Future<void> _executeSearch(String query) async {
     _debounceTimer?.cancel();
+    _focusNode.unfocus();
     final clean = query.trim();
     if (clean.isEmpty) return;
 
@@ -2231,6 +2287,232 @@ class _MobileSearchPageState extends State<MobileSearchPage> {
           );
         }),
       ],
+    );
+  }
+}
+
+/// 移动端专属：我喜欢的音乐二级页 (MobileFavoritesPage)
+class MobileFavoritesPage extends StatelessWidget {
+  final VoidCallback onBack;
+
+  const MobileFavoritesPage({super.key, required this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.watch<ThemeProvider>();
+    final player = context.watch<AudioPlayerService>();
+    final favorites = player.favoriteTracks;
+
+    return Scaffold(
+      backgroundColor: theme.canvasColor,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.textPrimary, size: 20),
+          onPressed: onBack,
+        ),
+        title: Text(
+          '我喜欢的音乐',
+          style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary, fontSize: 17),
+        ),
+        centerTitle: true,
+      ),
+      body: favorites.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFFEC4899).withValues(alpha: 0.12),
+                    ),
+                    child: const Icon(Icons.favorite_rounded, size: 36, color: Color(0xFFEC4899)),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    '暂无心动单曲',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '在发现、探索或搜索时点击红心即可珍藏',
+                    style: TextStyle(fontSize: 13, color: theme.textMuted),
+                  ),
+                ],
+              ),
+            )
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 130),
+              children: [
+                // 顶部心动大卡片 Header
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFFEC4899).withValues(alpha: 0.85),
+                        const Color(0xFFF43F5E).withValues(alpha: 0.95),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: MellowRadii.borderR24,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFEC4899).withValues(alpha: 0.3),
+                        blurRadius: 16,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 72,
+                        height: 72,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 40),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '我喜欢的音乐',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              '共 ${favorites.length} 首珍藏曲目 · 随时畅听',
+                              style: TextStyle(fontSize: 12.5, color: Colors.white.withValues(alpha: 0.9)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // 播放全部操作栏
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          if (favorites.isNotEmpty) {
+                            player.playPlaylist(favorites, startIndex: 0);
+                          }
+                        },
+                        child: Container(
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: theme.accentColor,
+                            borderRadius: BorderRadius.circular(22),
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.accentColor.withValues(alpha: 0.3),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
+                              SizedBox(width: 6),
+                              Text(
+                                '播放全部',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // 单曲列表
+                ...List.generate(favorites.length, (index) {
+                  final track = favorites[index];
+                  final isCurrent = player.currentTrack?.id == track.id;
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: SoftCard(
+                      padding: const EdgeInsets.all(12),
+                      borderRadius: MellowRadii.borderR16,
+                      onTap: () {
+                        player.playPlaylist(favorites, startIndex: index);
+                      },
+                      child: Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: MellowImage(
+                              url: track.coverUrl,
+                              width: 46,
+                              height: 46,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  track.title,
+                                  style: TextStyle(
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: isCurrent ? theme.accentColor : theme.textPrimary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  track.artist,
+                                  style: TextStyle(fontSize: 12, color: theme.textMuted),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          // 红心切换按钮
+                          IconButton(
+                            icon: const Icon(Icons.favorite_rounded, color: Color(0xFFEC4899), size: 22),
+                            onPressed: () {
+                              player.toggleFavorite(track.id, track);
+                            },
+                          ),
+                          // 播放状态小图标
+                          if (isCurrent)
+                            Icon(
+                              player.isPlaying ? Icons.equalizer_rounded : Icons.pause_rounded,
+                              color: theme.accentColor,
+                              size: 20,
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
     );
   }
 }

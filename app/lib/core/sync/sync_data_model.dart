@@ -127,13 +127,25 @@ class SyncFavoriteItem {
         'isRemoved': isRemoved,
       };
 
-  factory SyncFavoriteItem.fromJson(Map<String, dynamic> json) =>
-      SyncFavoriteItem(
-        track: SyncTrack.fromJson(json['track'] as Map<String, dynamic>),
-        updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
-            DateTime.fromMillisecondsSinceEpoch(0),
-        isRemoved: json['isRemoved'] as bool? ?? false,
-      );
+  factory SyncFavoriteItem.fromJson(Map<String, dynamic> json) {
+    SyncTrack track;
+    if (json.containsKey('track') && json['track'] is Map) {
+      track = SyncTrack.fromJson(json['track'] as Map<String, dynamic>);
+    } else {
+      track = SyncTrack.fromJson(json);
+    }
+    DateTime updatedAt = DateTime.fromMillisecondsSinceEpoch(0);
+    if (json['updatedAt'] is int) {
+      updatedAt = DateTime.fromMillisecondsSinceEpoch(json['updatedAt'] as int);
+    } else if (json['updatedAt'] != null) {
+      updatedAt = DateTime.tryParse(json['updatedAt'].toString()) ?? updatedAt;
+    }
+    return SyncFavoriteItem(
+      track: track,
+      updatedAt: updatedAt,
+      isRemoved: json['isRemoved'] as bool? ?? false,
+    );
+  }
 }
 
 /// 自建歌单数据快照
@@ -186,19 +198,27 @@ class SyncPlaylist {
         'isDeleted': isDeleted,
       };
 
-  factory SyncPlaylist.fromJson(Map<String, dynamic> json) => SyncPlaylist(
-        id: json['id'] as String? ?? '',
-        name: json['name'] as String? ?? '新建歌单',
-        description: json['description'] as String? ?? '',
-        coverUrl: json['coverUrl'] as String? ?? '',
-        songs: (json['songs'] as List<dynamic>?)
-                ?.map((item) => SyncTrack.fromJson(item as Map<String, dynamic>))
-                .toList() ??
-            const [],
-        updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
-            DateTime.fromMillisecondsSinceEpoch(0),
-        isDeleted: json['isDeleted'] as bool? ?? false,
-      );
+  factory SyncPlaylist.fromJson(Map<String, dynamic> json) {
+    DateTime updatedAt = DateTime.fromMillisecondsSinceEpoch(0);
+    if (json['updatedAt'] is int) {
+      updatedAt = DateTime.fromMillisecondsSinceEpoch(json['updatedAt'] as int);
+    } else if (json['updatedAt'] != null) {
+      updatedAt = DateTime.tryParse(json['updatedAt'].toString()) ?? updatedAt;
+    }
+    return SyncPlaylist(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '新建歌单',
+      description: json['description'] as String? ?? '',
+      coverUrl: json['coverUrl'] as String? ?? '',
+      songs: (json['songs'] as List<dynamic>?)
+              ?.whereType<Map<String, dynamic>>()
+              .map((item) => SyncTrack.fromJson(item))
+              .toList() ??
+          const [],
+      updatedAt: updatedAt,
+      isDeleted: json['isDeleted'] as bool? ?? false,
+    );
+  }
 }
 
 /// 播放历史记录项
@@ -216,12 +236,24 @@ class SyncHistoryItem {
         'playedAt': playedAt.toIso8601String(),
       };
 
-  factory SyncHistoryItem.fromJson(Map<String, dynamic> json) =>
-      SyncHistoryItem(
-        track: SyncTrack.fromJson(json['track'] as Map<String, dynamic>),
-        playedAt: DateTime.tryParse(json['playedAt'] as String? ?? '') ??
-            DateTime.fromMillisecondsSinceEpoch(0),
-      );
+  factory SyncHistoryItem.fromJson(Map<String, dynamic> json) {
+    SyncTrack track;
+    if (json.containsKey('track') && json['track'] is Map) {
+      track = SyncTrack.fromJson(json['track'] as Map<String, dynamic>);
+    } else {
+      track = SyncTrack.fromJson(json);
+    }
+    DateTime playedAt = DateTime.fromMillisecondsSinceEpoch(0);
+    if (json['playedAt'] is int) {
+      playedAt = DateTime.fromMillisecondsSinceEpoch(json['playedAt'] as int);
+    } else if (json['playedAt'] != null) {
+      playedAt = DateTime.tryParse(json['playedAt'].toString()) ?? playedAt;
+    }
+    return SyncHistoryItem(
+      track: track,
+      playedAt: playedAt,
+    );
+  }
 }
 
 /// 10 频段 EQ 均衡器配置快照
@@ -401,36 +433,44 @@ class SyncSnapshot {
       };
 
   /// 反序列化
-  factory SyncSnapshot.fromJson(Map<String, dynamic> json) => SyncSnapshot(
-        version: json['version'] as String? ?? '1.0.0',
-        deviceId: json['deviceId'] as String? ?? 'unknown-device',
-        deviceName: json['deviceName'] as String? ?? 'Mellow Client',
-        timestamp: DateTime.tryParse(json['timestamp'] as String? ?? '') ??
-            DateTime.now(),
-        favorites: (json['favorites'] as List<dynamic>?)
-                ?.map((e) =>
-                    SyncFavoriteItem.fromJson(e as Map<String, dynamic>))
-                .toList() ??
-            const [],
-        playlists: (json['playlists'] as List<dynamic>?)
-                ?.map((e) => SyncPlaylist.fromJson(e as Map<String, dynamic>))
-                .toList() ??
-            const [],
-        history: (json['history'] as List<dynamic>?)
-                ?.map((e) =>
-                    SyncHistoryItem.fromJson(e as Map<String, dynamic>))
-                .toList() ??
-            const [],
-        equalizer: json['equalizer'] != null
-            ? SyncEqualizerConfig.fromJson(
-                json['equalizer'] as Map<String, dynamic>)
-            : SyncEqualizerConfig.defaultFlat(),
-        playbackState: json['playbackState'] != null
-            ? SyncPlaybackState.fromJson(
-                json['playbackState'] as Map<String, dynamic>)
-            : SyncPlaybackState.initial(),
-        extra: json['extra'] as Map<String, dynamic>? ?? const {},
-      );
+  factory SyncSnapshot.fromJson(Map<String, dynamic> json) {
+    DateTime ts = DateTime.now();
+    if (json['timestamp'] is int) {
+      ts = DateTime.fromMillisecondsSinceEpoch(json['timestamp'] as int);
+    } else if (json['timestamp'] != null) {
+      ts = DateTime.tryParse(json['timestamp'].toString()) ?? ts;
+    }
+    return SyncSnapshot(
+      version: json['version']?.toString() ?? '1.0.0',
+      deviceId: json['deviceId']?.toString() ?? 'unknown-device',
+      deviceName: json['deviceName']?.toString() ?? 'Mellow Client',
+      timestamp: ts,
+      favorites: (json['favorites'] as List<dynamic>?)
+              ?.whereType<Map<String, dynamic>>()
+              .map((e) => SyncFavoriteItem.fromJson(e))
+              .toList() ??
+          const [],
+      playlists: (json['playlists'] as List<dynamic>?)
+              ?.whereType<Map<String, dynamic>>()
+              .map((e) => SyncPlaylist.fromJson(e))
+              .toList() ??
+          const [],
+      history: (json['history'] as List<dynamic>?)
+              ?.whereType<Map<String, dynamic>>()
+              .map((e) => SyncHistoryItem.fromJson(e))
+              .toList() ??
+          const [],
+      equalizer: json['equalizer'] is Map<String, dynamic>
+          ? SyncEqualizerConfig.fromJson(
+              json['equalizer'] as Map<String, dynamic>)
+          : SyncEqualizerConfig.defaultFlat(),
+      playbackState: json['playbackState'] is Map<String, dynamic>
+          ? SyncPlaybackState.fromJson(
+              json['playbackState'] as Map<String, dynamic>)
+          : SyncPlaybackState.initial(),
+      extra: json['extra'] as Map<String, dynamic>? ?? const {},
+    );
+  }
 
   String toRawJson() => jsonEncode(toJson());
 

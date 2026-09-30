@@ -45,7 +45,7 @@ class ScenarioPlaylistService extends ChangeNotifier {
       icon: Icons.favorite_rounded,
       gradient: [Color(0xFFFF5376), Color(0xFFFF8EAB)],
       description: '执子之手 · 浪漫誓言，见证幸福永恒的甜蜜旋律',
-      defaultCoverUrl: 'https://p2.music.126.net/4F6Z_923J-x_9tQeQ-3w1g==/109951166123456789.jpg',
+      defaultCoverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/bf/f0/11/bff01142-f4f0-f9c4-f497-007f43e42783/BD0018-_-_Fall_In_Love_Songs.jpg/600x600bb.jpg',
     ),
     ScenarioItem(
       id: 'national_day',
@@ -54,7 +54,7 @@ class ScenarioPlaylistService extends ChangeNotifier {
       icon: Icons.flag_rounded,
       gradient: [Color(0xFFE11D48), Color(0xFFFB7185)],
       description: '盛世华章 · 欢度国庆，唱响巍巍中华的时代赞歌',
-      defaultCoverUrl: 'https://p1.music.126.net/8g9h1j2k3l4m5n6o7p8q9r==/109951165876543210.jpg',
+      defaultCoverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/8c/47/86/8c47862d-e254-8b49-30cf-d1f05ebba05b/23UM1IM56855.rgb.jpg/600x600bb.jpg',
     ),
     ScenarioItem(
       id: 'new_year',
@@ -63,7 +63,7 @@ class ScenarioPlaylistService extends ChangeNotifier {
       icon: Icons.celebration_rounded,
       gradient: [Color(0xFFDC2626), Color(0xFFF97316)],
       description: '金玉满堂 · 辞旧迎新，洋溢万家灯火的年味喜气',
-      defaultCoverUrl: 'https://p2.music.126.net/1a2b3c4d5e6f7g8h9i0j1k==/109951164567890123.jpg',
+      defaultCoverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/58/8d/6d/588d6d61-fbac-148a-86bd-0030ce076ac1/23UM1IM57281.rgb.jpg/600x600bb.jpg',
     ),
     ScenarioItem(
       id: 'coffee',
@@ -72,7 +72,7 @@ class ScenarioPlaylistService extends ChangeNotifier {
       icon: Icons.local_cafe_rounded,
       gradient: [Color(0xFFB45309), Color(0xFFD97706)],
       description: '浓醇余韵 · 慢调时光，享受惬意舒适的悠闲茶歇',
-      defaultCoverUrl: 'https://p1.music.126.net/0p1q2r3s4t5u6v7w8x9y0z==/109951169789012345.jpg',
+      defaultCoverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/69/49/61/694961f3-1414-355e-66e4-9649ba13ec55/23UM1IM57770.rgb.jpg/600x600bb.jpg',
     ),
     ScenarioItem(
       id: 'sleep',
@@ -81,7 +81,7 @@ class ScenarioPlaylistService extends ChangeNotifier {
       icon: Icons.bedtime_rounded,
       gradient: [Color(0xFF4338CA), Color(0xFF6366F1)],
       description: '星河清梦 · 舒缓解压，抚平喧嚣的一枕安眠之音',
-      defaultCoverUrl: 'https://p2.music.126.net/3d4e5f6g7h8i9j0k1l2m3n==/109951164234567890.jpg',
+      defaultCoverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/df/5a/0a/df5a0aca-4dbe-ecb4-dec2-eafce5588e15/4711502630195.jpg/600x600bb.jpg',
     ),
     ScenarioItem(
       id: 'fitness',
@@ -90,7 +90,7 @@ class ScenarioPlaylistService extends ChangeNotifier {
       icon: Icons.fitness_center_rounded,
       gradient: [Color(0xFFEA580C), Color(0xFFFACC15)],
       description: '节奏爆发 · 荷尔蒙释放，激发潜能的高燃节拍',
-      defaultCoverUrl: 'https://p1.music.126.net/9z8y7x6w5v4u3t2s1r0q9p==/109951163123456789.jpg',
+      defaultCoverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/cb/7b/a9/cb7ba903-b5f1-cc21-90db-7a81b7aa0997/724596951057.jpg/600x600bb.jpg',
     ),
     ScenarioItem(
       id: 'study',
@@ -99,7 +99,7 @@ class ScenarioPlaylistService extends ChangeNotifier {
       icon: Icons.menu_book_rounded,
       gradient: [Color(0xFF0F766E), Color(0xFF14B8A6)],
       description: '沉浸心流 · 灵感涌现，深度工作与自习的学习伴侣',
-      defaultCoverUrl: 'https://p1.music.126.net/7m8n9o0p1q2r3s4t5u6v7w==/109951165345678901.jpg',
+      defaultCoverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/8d/1a/7b/8d1a7b44-316f-7c7f-4380-935673fb697a/5056167175650.jpg/600x600bb.jpg',
     ),
     ScenarioItem(
       id: 'drive',
@@ -108,7 +108,7 @@ class ScenarioPlaylistService extends ChangeNotifier {
       icon: Icons.directions_car_rounded,
       gradient: [Color(0xFF0284C7), Color(0xFF38BDF8)],
       description: '车窗微风 · 沿途风景，奔向自由与远方的公路狂想',
-      defaultCoverUrl: 'https://p2.music.126.net/5v6w7x8y9z0a1b2c3d4e5f==/109951166456789012.jpg',
+      defaultCoverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/10/ba/77/10ba77f4-47ae-8cb6-2913-cf49b78452b5/1..jpg/600x600bb.jpg',
     ),
     ScenarioItem(
       id: 'camping',
@@ -117,7 +117,7 @@ class ScenarioPlaylistService extends ChangeNotifier {
       icon: Icons.forest_rounded,
       gradient: [Color(0xFF15803D), Color(0xFF4ADE80)],
       description: '营火夜话 · 伴风而眠，重归山野自然的清凉晚风',
-      defaultCoverUrl: 'https://p1.music.126.net/2b3c4d5e6f7g8h9i0j1k2l==/109951167567890123.jpg',
+      defaultCoverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/58/8d/6d/588d6d61-fbac-148a-86bd-0030ce076ac1/23UM1IM57281.rgb.jpg/600x600bb.jpg',
     ),
     ScenarioItem(
       id: 'party',
@@ -126,7 +126,7 @@ class ScenarioPlaylistService extends ChangeNotifier {
       icon: Icons.cake_rounded,
       gradient: [Color(0xFF9333EA), Color(0xFFC084FC)],
       description: '热烈狂欢 · 气氛高涨，好友欢聚嗨唱的不眠之夜',
-      defaultCoverUrl: 'https://p2.music.126.net/6h7i8j9k0l1m2n3o4p5q6r==/109951168678901234.jpg',
+      defaultCoverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Video126/v4/01/f8/46/01f846cb-cac8-c363-a8c2-30f212204357/23UM1IM68172.crop.jpg/600x600bb.jpg',
     ),
     ScenarioItem(
       id: 'gaming',
@@ -135,7 +135,7 @@ class ScenarioPlaylistService extends ChangeNotifier {
       icon: Icons.sports_esports_rounded,
       gradient: [Color(0xFF7C3AED), Color(0xFFF43F5E)],
       description: '高能反杀 · 战役巅峰，激发胜负欲的热血交响曲',
-      defaultCoverUrl: 'https://p1.music.126.net/6y-UleORITEDbvrOLAL-vQ==/109951164803975765.jpg',
+      defaultCoverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/cb/7b/a9/cb7ba903-b5f1-cc21-90db-7a81b7aa0997/724596951057.jpg/600x600bb.jpg',
     ),
     ScenarioItem(
       id: 'rain',
@@ -144,7 +144,7 @@ class ScenarioPlaylistService extends ChangeNotifier {
       icon: Icons.water_drop_rounded,
       gradient: [Color(0xFF475569), Color(0xFF94A3B8)],
       description: '窗外雨落 · 檐下听声，静谧阴雨天的感性思绪',
-      defaultCoverUrl: 'https://p2.music.126.net/4t5u6v7w8x9y0z1a2b3c4d==/109951161234567890.jpg',
+      defaultCoverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/df/5a/0a/df5a0aca-4dbe-ecb4-dec2-eafce5588e15/4711502630195.jpg/600x600bb.jpg',
     ),
   ];
 
