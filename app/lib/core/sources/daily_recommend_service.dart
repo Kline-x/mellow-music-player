@@ -156,7 +156,7 @@ class DailyRecommendService extends ChangeNotifier {
     }
 
     // 单测模式或无网模式全保底
-    if (_cachedTracks.isEmpty && (Platform.environment.containsKey('FLUTTER_TEST') || kDebugMode)) {
+    if (_cachedTracks.isEmpty) {
       final pool = getAllKnownTracks();
       if (pool.isNotEmpty) {
         _cachedTracks = pool.take(limit).toList();
@@ -175,8 +175,8 @@ class DailyRecommendService extends ChangeNotifier {
     if (_cachedTracks.isNotEmpty && _cachedDateKey == dateKey) {
       return _cachedTracks.take(limit).toList();
     }
-    // 离线单测模式下由已知曲库测试夹具兜底，保证测试契约成立
-    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+    // 离线无网或缓存为空时由已知优质曲库兜底，保证任何模式秒开
+    if (_cachedTracks.isEmpty) {
       final pool = getAllKnownTracks();
       if (pool.isNotEmpty) {
         return pool.take(limit).toList();

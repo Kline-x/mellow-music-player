@@ -159,8 +159,13 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
                   // 左栏：微拟物黑胶大碟唱机与旋转唱针
                   Expanded(
                     flex: 5,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    child: Center(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: SizedBox(
+                          width: 380,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         // 黑胶唱机与动态唱针
                         SizedBox(
@@ -365,8 +370,7 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
                               ),
                             ),
                             const SizedBox(width: 10),
-                            SizedBox(
-                              width: 320,
+                            Expanded(
                               child: SliderTheme(
                                 data: SliderTheme.of(context).copyWith(
                                   trackHeight: 3.5,
@@ -451,6 +455,9 @@ class _DesktopFullscreenLyricsViewState extends State<DesktopFullscreenLyricsVie
                       ],
                     ),
                   ),
+                ),
+              ),
+            ),
 
                   const SizedBox(width: 48),
 

@@ -693,7 +693,10 @@ class _DesktopPlaylistSquareViewState extends State<DesktopPlaylistSquareView> {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text('专属声学每日推荐 · 28 首高保真单曲', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                      Builder(builder: (context) {
+                        final count = DailyRecommendService.instance.getDailyRecommendTracks().length;
+                        return Text('专属声学每日推荐 · $count 首高保真单曲', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: theme.textPrimary));
+                      }),
                       Text(DailyRecommendService.instance.getGreeting(), style: TextStyle(fontSize: 12, color: theme.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
                     ],
                   ),
@@ -2174,26 +2177,29 @@ class _DesktopDailyRecommendViewState extends State<DesktopDailyRecommendView> {
       padding: const EdgeInsets.fromLTRB(32, 20, 32, 128),
       children: [
         // 顶部返回按钮与层级导航
-        InkWell(
-          onTap: () => widget.onNavigate('discover'),
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SoftButton(
-                  icon: Icons.arrow_back_rounded,
-                  isCircle: true,
-                  onTap: () => widget.onNavigate('discover'),
-                ),
-                const SizedBox(width: 12),
-                Text('发现音乐', style: TextStyle(color: theme.textSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
-                const SizedBox(width: 8),
-                Icon(Icons.chevron_right_rounded, size: 16, color: theme.textMuted),
-                const SizedBox(width: 8),
-                Text('每日推荐', style: TextStyle(color: theme.accentColor, fontSize: 13, fontWeight: FontWeight.bold)),
-              ],
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => widget.onNavigate('discover'),
+            borderRadius: BorderRadius.circular(20),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SoftButton(
+                    icon: Icons.arrow_back_rounded,
+                    isCircle: true,
+                    onTap: () => widget.onNavigate('discover'),
+                  ),
+                  const SizedBox(width: 12),
+                  Text('发现音乐', style: TextStyle(color: theme.textSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
+                  const SizedBox(width: 8),
+                  Icon(Icons.chevron_right_rounded, size: 16, color: theme.textMuted),
+                  const SizedBox(width: 8),
+                  Text('每日推荐', style: TextStyle(color: theme.accentColor, fontSize: 13, fontWeight: FontWeight.bold)),
+                ],
+              ),
             ),
           ),
         ),

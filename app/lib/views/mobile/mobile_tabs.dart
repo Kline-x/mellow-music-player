@@ -335,7 +335,7 @@ class MobileDiscoverTab extends StatelessWidget {
               Expanded(
                 child: _buildRadarLargeCard(
                   context,
-                  title: '落日微风 · 私人漫游',
+                  title: '落日微风 · 精选推荐',
                   subtitle: '周杰伦 / 告五人 / M83',
                   coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/58/8d/6d/588d6d61-fbac-148a-86bd-0030ce076ac1/23UM1IM57281.rgb.jpg/600x600bb.jpg',
                   onPlay: () {
@@ -875,14 +875,10 @@ class _MobileExploreTabState extends State<MobileExploreTab> with SingleTickerPr
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
 
-    return RefreshIndicator(
-      onRefresh: () => _loadExploreTracks(_currentTag, refresh: true),
-      color: theme.accentColor,
-      backgroundColor: theme.cardColor,
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 160),
-        children: [
+    return ListView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 180),
+      children: [
           // 1. 顶部 Header 与换一批按键
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1232,8 +1228,7 @@ class _MobileExploreTabState extends State<MobileExploreTab> with SingleTickerPr
               },
             ),
         ],
-      ),
-    );
+      );
   }
 }
 

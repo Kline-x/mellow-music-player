@@ -163,7 +163,7 @@ void main() {
       expect(find.text('更新于 06:00'), findsOneWidget);
 
       // 2. 验证左侧大卡片
-      expect(find.text('落日微风 · 私人漫游'), findsOneWidget);
+      expect(find.text('落日微风 · 精选推荐'), findsOneWidget);
       expect(find.text('周杰伦 / 告五人 / M83'), findsOneWidget);
 
       // 3. 验证右侧 2x2 四张紧凑小卡片

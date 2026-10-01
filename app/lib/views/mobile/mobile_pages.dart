@@ -858,14 +858,50 @@ class _MobileToplistPageState extends State<MobileToplistPage> {
                 ),
                 const SizedBox(height: 10),
                 if (chartTracks.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text(_isLoading ? '正在拉取实时官方榜单...' : '暂无榜单数据', style: TextStyle(fontSize: 12, color: theme.textMuted)),
-                  )
+                  if (_isLoading)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            height: 13,
+                            width: 180,
+                            decoration: BoxDecoration(
+                              color: theme.isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Container(
+                            height: 13,
+                            width: 220,
+                            decoration: BoxDecoration(
+                              color: theme.isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Container(
+                            height: 13,
+                            width: 140,
+                            decoration: BoxDecoration(
+                              color: theme.isDarkMode ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text('暂无榜单数据', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                    )
                 else ...List.generate(chartTracks.length.clamp(0, 3), (i) {
                   final t = chartTracks[i];
                   return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    padding: const EdgeInsets.only(top: 2, bottom: 2, right: 12),
                     child: Text(
                       '${i + 1}. ${t.title} - ${t.artist}',
                       style: TextStyle(fontSize: 12.5, color: i == 0 ? theme.accentColor : theme.textSecondary),
@@ -1512,7 +1548,7 @@ class _MobileArtistsPageState extends State<MobileArtistsPage> {
           icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.textPrimary, size: 20),
           onPressed: widget.onBack,
         ),
-        title: Text('热门入驻歌手', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary, fontSize: 17)),
+        title: Text('热门歌手', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary, fontSize: 17)),
         centerTitle: true,
       ),
       body: _isLoading && _artists.isEmpty

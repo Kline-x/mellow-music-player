@@ -112,11 +112,13 @@ class AudioPlayerService extends ChangeNotifier {
   }
 
   void _setPlaybackNotice(String message, {int autoDismissSeconds = 4}) {
+    if (_isDisposed) return;
     _playbackNoticeTimer?.cancel();
     _playbackNotice = message;
     notifyListeners();
     if (autoDismissSeconds > 0) {
       _playbackNoticeTimer = Timer(Duration(seconds: autoDismissSeconds), () {
+        if (_isDisposed) return;
         _playbackNotice = null;
         notifyListeners();
       });
@@ -124,6 +126,7 @@ class AudioPlayerService extends ChangeNotifier {
   }
 
   void clearPlaybackNotice() {
+    if (_isDisposed) return;
     _playbackNoticeTimer?.cancel();
     if (_playbackNotice != null) {
       _playbackNotice = null;
@@ -796,7 +799,7 @@ class AudioPlayerService extends ChangeNotifier {
         debugPrint('[AudioPlayerService] 换源重试亦异常: $retryErr');
       }
 
-      if (session != _playSessionId) return;
+      if (_isDisposed || session != _playSessionId) return;
 
       // 3. 所有音源均不可用时，给用户清晰浮动提示并快速自动跳播下一首 (500ms 快速平滑切歌)
       _consecutiveFailures++;
@@ -804,16 +807,16 @@ class AudioPlayerService extends ChangeNotifier {
         _setPlaybackNotice('连续多首歌曲全网暂无可播放音频，已为您自动暂停播放', autoDismissSeconds: 5);
         _isPlaying = false;
         _consecutiveFailures = 0;
-        notifyListeners();
+        if (!_isDisposed) notifyListeners();
         return;
       }
 
       _setPlaybackNotice('「${track.title}」全网音源暂不可用，已自动跳播下一首', autoDismissSeconds: 3);
       _autoSkipTimer?.cancel();
+      if (_isDisposed) return;
       _autoSkipTimer = Timer(const Duration(milliseconds: 500), () {
-        if (session == _playSessionId && _playlist.isNotEmpty && _isPlaying) {
-          next();
-        }
+        if (_isDisposed || session != _playSessionId || _playlist.isEmpty || !_isPlaying) return;
+        next();
       });
     }
   }

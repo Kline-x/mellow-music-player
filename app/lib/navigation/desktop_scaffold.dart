@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -522,7 +524,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                                     borderRadius: MellowRadii.borderR8,
                                   ),
                                   child: Text(
-                                    '⌘K',
+                                    (!kIsWeb && Platform.isMacOS) ? '⌘K' : 'Ctrl+K',
                                     style: TextStyle(fontSize: 10, color: theme.textSecondary, fontWeight: FontWeight.bold),
                                   ),
                                 ),
@@ -693,8 +695,25 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
     );
   }
 
+  bool _isNavItemSelected(String navId) {
+    if (_activeView == navId) return true;
+    if (navId == 'discover') {
+      return _activeView == 'daily_recommend';
+    }
+    if (navId == 'toplist') {
+      return _activeView == 'toplist_detail';
+    }
+    if (navId == 'playlists') {
+      return _activeView == 'playlist_detail';
+    }
+    if (navId == 'artists') {
+      return _activeView == 'artist_detail';
+    }
+    return false;
+  }
+
   Widget _buildNavItem(String id, String label, IconData icon, {bool isCompact = false}) {
-    final isSelected = _activeView == id;
+    final isSelected = _isNavItemSelected(id);
     return _DesktopSidebarNavItem(
       id: id,
       label: label,
