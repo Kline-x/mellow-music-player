@@ -187,7 +187,7 @@ void main() {
 
       // 验证 5 大金刚区入口存在
       expect(find.text('每日推荐'), findsOneWidget);
-      expect(find.text('私人漫游'), findsOneWidget);
+      expect(find.text('热门歌手'), findsOneWidget);
 
       // 点击每日推荐金刚区进入二级页
       await tester.tap(find.text('每日推荐'));

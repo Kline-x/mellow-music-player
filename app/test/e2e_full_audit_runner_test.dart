@@ -244,10 +244,10 @@ void main() {
     await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
     await tester.pump(const Duration(milliseconds: 300));
 
-    // 移动端私人漫游 FM
-    await tester.tap(find.text('私人漫游'));
+    // 移动端热门歌手（已取代私人漫游与全端对齐）
+    await tester.tap(find.text('热门歌手'));
     await tester.pump(const Duration(milliseconds: 300));
-    await capture('audit_21_mobile_roaming_fm.png');
+    await capture('audit_21_mobile_artists.png');
     // 返回
     await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
     await tester.pump(const Duration(milliseconds: 300));

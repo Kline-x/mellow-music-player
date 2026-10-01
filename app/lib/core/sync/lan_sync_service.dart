@@ -491,7 +491,7 @@ class LanSyncClient {
     }
   }
 
-  /// 快速扫描指定网段内开启同步服务的设备
+  /// 快速扫描指定网段内开启同步服务的设备 (支持移动端分批受控并发，杜绝套接字耗尽)
   Future<List<LanDevice>> scanSubnet(
     String subnetPrefix, {
     int port = 23332,
@@ -500,20 +500,26 @@ class LanSyncClient {
     Duration timeout = const Duration(milliseconds: 400),
   }) async {
     final List<LanDevice> discovered = [];
-    final futures = <Future>[];
+    const batchSize = 36; // 批次并发控制，保障移动端套接字与内存安全
 
-    for (int i = start; i <= end; i++) {
-      final ip = '$subnetPrefix.$i';
-      futures.add(
-        pingDevice(ip, port: port).then((dev) {
-          if (dev != null) {
-            discovered.add(dev);
-          }
-        }),
-      );
+    for (int i = start; i <= end; i += batchSize) {
+      final currentEnd = (i + batchSize - 1).clamp(start, end);
+      final futures = <Future>[];
+
+      for (int j = i; j <= currentEnd; j++) {
+        final ip = '$subnetPrefix.$j';
+        futures.add(
+          pingDevice(ip, port: port).then((dev) {
+            if (dev != null) {
+              discovered.add(dev);
+            }
+          }),
+        );
+      }
+
+      await Future.wait(futures);
     }
 
-    await Future.wait(futures);
     return discovered;
   }
 
@@ -564,13 +570,29 @@ class LanSyncService extends ChangeNotifier {
     return '桌面 PC / 工作站';
   }
 
-  /// 获取本机主物理局域网 IPv4 地址
+  /// 获取本机主物理局域网 IPv4 地址 (移动端优先识别 Wi-Fi 物理网卡)
   static Future<String> getLocalIPv4() async {
     try {
       final interfaces = await NetworkInterface.list(
         includeLoopback: false,
         type: InternetAddressType.IPv4,
       );
+      // 1. 优先从 Wi-Fi / 有线网卡 (wlan, eth, en) 提取私有网段 IP
+      for (final interface in interfaces) {
+        final name = interface.name.toLowerCase();
+        if (name.startsWith('wlan') || name.startsWith('en') || name.startsWith('eth')) {
+          for (final addr in interface.addresses) {
+            final ip = addr.address;
+            if (!addr.isLoopback &&
+                (ip.startsWith('192.168.') ||
+                    ip.startsWith('10.') ||
+                    ip.startsWith('172.'))) {
+              return ip;
+            }
+          }
+        }
+      }
+      // 2. 通用私有局域网网卡匹配
       for (final interface in interfaces) {
         for (final addr in interface.addresses) {
           final ip = addr.address;

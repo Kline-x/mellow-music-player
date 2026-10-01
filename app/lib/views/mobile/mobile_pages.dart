@@ -23,28 +23,40 @@ class MobileDailyRecommendPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
-    final service = DailyRecommendService.instance;
-    final tracks = service.getDailyRecommendTracks();
-    final greeting = service.getGreeting();
-    final dayStr = service.getFormattedDay();
-    final weekdayStr = service.getFormattedWeekday();
-    final monthYearStr = service.getFormattedMonthYear();
 
-    return Scaffold(
-      backgroundColor: theme.canvasColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.textPrimary, size: 20),
-          onPressed: onBack,
-        ),
-        title: Text('每日推荐', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary, fontSize: 17)),
-        centerTitle: true,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-        children: [
+    return ListenableBuilder(
+      listenable: DailyRecommendService.instance,
+      builder: (context, _) {
+        final service = DailyRecommendService.instance;
+        final tracks = service.getDailyRecommendTracks();
+        final greeting = service.getGreeting();
+        final dayStr = service.getFormattedDay();
+        final weekdayStr = service.getFormattedWeekday();
+        final monthYearStr = service.getFormattedMonthYear();
+        final isLoading = service.isLoading;
+
+        return Scaffold(
+          backgroundColor: theme.canvasColor,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.textPrimary, size: 20),
+              onPressed: onBack,
+            ),
+            title: Text('每日推荐', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary, fontSize: 17)),
+            centerTitle: true,
+            actions: [
+              IconButton(
+                icon: Icon(Icons.refresh_rounded, color: theme.textPrimary, size: 20),
+                tooltip: '刷新今日推荐',
+                onPressed: () => service.getDailyRecommendTracksAsync(),
+              ),
+            ],
+          ),
+          body: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 130),
+            children: [
           // 拟物日历便签头
           SoftCard(
             padding: const EdgeInsets.all(18),
@@ -137,6 +149,30 @@ class MobileDailyRecommendPage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
+          if (tracks.isEmpty)
+            SoftCard(
+              margin: const EdgeInsets.only(top: 24),
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                children: [
+                  if (isLoading)
+                    CircularProgressIndicator(color: theme.accentColor, strokeWidth: 2.5)
+                  else ...[
+                    Icon(Icons.queue_music_rounded, size: 48, color: theme.textMuted),
+                    const SizedBox(height: 12),
+                    Text('今日推荐正在精心调配中...', style: TextStyle(color: theme.textSecondary, fontSize: 13.5)),
+                    const SizedBox(height: 12),
+                    SoftButton(
+                      label: '立即抓取今日推荐',
+                      icon: Icons.refresh_rounded,
+                      isActive: true,
+                      isPill: true,
+                      onTap: () => service.getDailyRecommendTracksAsync(),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ...List.generate(tracks.length, (idx) {
             final t = tracks[idx];
             final isPlaying = player.currentTrack?.id == t.id;
@@ -186,6 +222,8 @@ class MobileDailyRecommendPage extends StatelessWidget {
           }),
         ],
       ),
+    );
+      },
     );
   }
 }
@@ -2508,6 +2546,139 @@ class MobileFavoritesPage extends StatelessWidget {
                             ),
                         ],
                       ),
+                    ),
+                  );
+                }),
+              ],
+            ),
+    );
+  }
+}
+
+/// 12. 播放历史二级页面 (MobileHistoryPage)
+class MobileHistoryPage extends StatelessWidget {
+  final VoidCallback onBack;
+  const MobileHistoryPage({super.key, required this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.watch<ThemeProvider>();
+    final player = context.watch<AudioPlayerService>();
+    final history = player.playHistory;
+
+    return Scaffold(
+      backgroundColor: theme.canvasColor,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.textPrimary, size: 20),
+          onPressed: onBack,
+        ),
+        title: Text('播放历史', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary, fontSize: 17)),
+        centerTitle: true,
+        actions: [
+          if (history.isNotEmpty)
+            IconButton(
+              icon: Icon(Icons.delete_outline_rounded, color: theme.textMuted, size: 20),
+              tooltip: '清空播放历史',
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('清空播放历史'),
+                    content: const Text('确定要清空全部播放历史记录吗？'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+                      TextButton(
+                        onPressed: () {
+                          player.clearHistory();
+                          Navigator.pop(ctx);
+                        },
+                        child: const Text('确定清空', style: TextStyle(color: Colors.redAccent)),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+      body: history.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.history_rounded, size: 64, color: theme.textMuted.withValues(alpha: 0.5)),
+                  const SizedBox(height: 16),
+                  Text('暂无播放历史记录', style: TextStyle(color: theme.textSecondary, fontSize: 14)),
+                  const SizedBox(height: 6),
+                  Text('快去发现你心动的音乐吧', style: TextStyle(color: theme.textMuted, fontSize: 12)),
+                ],
+              ),
+            )
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 130),
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('共 ${history.length} 首足迹歌曲', style: TextStyle(fontSize: 12.5, color: theme.textMuted)),
+                    SoftButton(
+                      label: '播放全部',
+                      icon: Icons.play_arrow_rounded,
+                      isActive: true,
+                      isPill: true,
+                      onTap: () => player.playPlaylist(history, startIndex: 0),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ...List.generate(history.length, (idx) {
+                  final t = history[idx];
+                  final isCurrent = player.currentTrack?.id == t.id;
+                  final isFav = player.isFavorite(t.id);
+                  return SoftCard(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    onTap: () => player.playPlaylist(history, startIndex: idx),
+                    child: Row(
+                      children: [
+                        MellowImage(url: t.coverUrl, width: 44, height: 44, borderRadius: MellowRadii.borderR8),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                t.title,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13.5,
+                                  color: isCurrent ? theme.accentColor : theme.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${t.artist} · ${t.album}',
+                                style: TextStyle(fontSize: 11.5, color: theme.textMuted),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                            color: Colors.pink,
+                            size: 20,
+                          ),
+                          onPressed: () => player.toggleFavorite(t.id, t),
+                        ),
+                      ],
                     ),
                   );
                 }),

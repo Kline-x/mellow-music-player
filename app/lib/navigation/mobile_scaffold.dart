@@ -501,6 +501,8 @@ class _MobileScaffoldState extends State<MobileScaffold> {
         return MobileArtistDetailPage(artistName: _subPageParam ?? '巫娜', onBack: _popSubPage);
       case 'local':
         return MobileLocalMusicPage(onBack: _popSubPage);
+      case 'history':
+        return MobileHistoryPage(onBack: _popSubPage);
       case 'favorites':
         return MobileFavoritesPage(onBack: _popSubPage);
       default:

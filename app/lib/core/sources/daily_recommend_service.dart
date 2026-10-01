@@ -3,18 +3,42 @@ import 'dart:io';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import '../audio/track_model.dart';
+import '../storage/storage_service.dart';
 import 'online_music_service.dart';
 
 /// 每日专属推荐曲库引擎 (基于自然日期 06:00 业务临界点生成真实推荐曲库与动态问候语)
 class DailyRecommendService extends ChangeNotifier {
   static final DailyRecommendService instance = DailyRecommendService._internal();
   DailyRecommendService._internal() {
+    _loadFromLocalCache();
     _scheduleNextDailyReset();
+    if (!Platform.environment.containsKey('FLUTTER_TEST')) {
+      // 启动时后台非阻塞预热今日推荐
+      Future.microtask(() => getDailyRecommendTracksAsync());
+    }
   }
 
   List<Track> _cachedTracks = [];
   String _cachedDateKey = '';
   Timer? _midnightResetTimer;
+  bool _isLoading = false;
+
+  bool get isLoading => _isLoading;
+  bool get hasTracks => _cachedTracks.isNotEmpty;
+
+  void _loadFromLocalCache() {
+    try {
+      final todayKey = getEffectiveDateKey();
+      final savedDate = StorageService.instance.getDailyRecommendCachedDate();
+      if (savedDate == todayKey) {
+        final savedTracks = StorageService.instance.getDailyRecommendCachedTracks();
+        if (savedTracks != null && savedTracks.isNotEmpty) {
+          _cachedTracks = savedTracks;
+          _cachedDateKey = todayKey;
+        }
+      }
+    } catch (_) {}
+  }
 
   /// 计算当前有效推荐业务日期 Key
   /// 规则：以早晨 06:00 作为全新一天日推的切换节点。
@@ -45,6 +69,7 @@ class DailyRecommendService extends ChangeNotifier {
       _cachedTracks.clear();
       _cachedDateKey = '';
       notifyListeners();
+      getDailyRecommendTracksAsync();
       _scheduleNextDailyReset();
     });
   }
@@ -92,6 +117,9 @@ class DailyRecommendService extends ChangeNotifier {
       return _cachedTracks;
     }
 
+    _isLoading = true;
+    notifyListeners();
+
     try {
       final results = await Future.wait([
         OnlineMusicService.fetchToplistTracks('热歌榜', limit: 30),
@@ -106,6 +134,8 @@ class DailyRecommendService extends ChangeNotifier {
         deduped.shuffle(Random(seed));
         _cachedTracks = deduped.take(limit).toList();
         _cachedDateKey = dateKey;
+        StorageService.instance.saveDailyRecommendCache(dateKey, _cachedTracks);
+        _isLoading = false;
         notifyListeners();
         return _cachedTracks;
       }
@@ -113,6 +143,29 @@ class DailyRecommendService extends ChangeNotifier {
       debugPrint('[DailyRecommendService] 异步抓取真实日推曲目异常: $e');
     }
 
+    // 容灾兜底：若网络榜单接口遇到网络抖动，拉取原创榜与华语榜补充
+    if (_cachedTracks.isEmpty) {
+      try {
+        final fallbackList = await OnlineMusicService.fetchToplistTracks('华语金曲榜', limit: limit);
+        if (fallbackList.isNotEmpty) {
+          _cachedTracks = fallbackList;
+          _cachedDateKey = dateKey;
+          StorageService.instance.saveDailyRecommendCache(dateKey, _cachedTracks);
+        }
+      } catch (_) {}
+    }
+
+    // 单测模式或无网模式全保底
+    if (_cachedTracks.isEmpty && (Platform.environment.containsKey('FLUTTER_TEST') || kDebugMode)) {
+      final pool = getAllKnownTracks();
+      if (pool.isNotEmpty) {
+        _cachedTracks = pool.take(limit).toList();
+        _cachedDateKey = dateKey;
+      }
+    }
+
+    _isLoading = false;
+    notifyListeners();
     return _cachedTracks;
   }
 

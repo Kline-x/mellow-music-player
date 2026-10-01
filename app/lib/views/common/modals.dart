@@ -1923,6 +1923,9 @@ class _LanPairingModalState extends State<LanPairingModal> {
   bool _isPushing = false;
   String? _statusMessage;
   bool? _pushSuccess;
+  bool _isScanning = false;
+  List<LanDevice> _discoveredDevices = [];
+  String? _pushingDeviceId;
 
   @override
   void initState() {
@@ -1935,7 +1938,49 @@ class _LanPairingModalState extends State<LanPairingModal> {
 
   Future<void> _initLan() async {
     await _lanService.ensureServerRunning();
-    if (mounted) setState(() {});
+    if (mounted) {
+      setState(() {});
+      _scanLanDevices();
+    }
+  }
+
+  Future<void> _scanLanDevices() async {
+    if (_isScanning) return;
+    setState(() => _isScanning = true);
+    try {
+      final ip = await LanSyncService.getLocalIPv4();
+      final subnet = LanSyncService.getSubnetPrefix(ip);
+      final list = await _lanService.scanNetwork(subnet, port: _lanService.serverPort);
+      if (mounted) {
+        setState(() {
+          _discoveredDevices = list;
+          _isScanning = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isScanning = false);
+    }
+  }
+
+  Future<void> _pushToDevice(LanDevice device) async {
+    setState(() => _pushingDeviceId = device.id);
+    try {
+      final player = context.read<AudioPlayerService>();
+      final eq = EqualizerManager.instance;
+      final snap = SyncSnapshot.createFromAppState(player: player, eqManager: eq);
+      final ok = await _lanService.pushToDevice(device, snap, authKey: device.authKey);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(ok
+              ? '成功向「${device.name}」(${device.ip}) 投送当前曲库快照！'
+              : '投送失败，请确认对端设备处于前台并保持在同一局域网'),
+          backgroundColor: ok ? Colors.teal.shade700 : Colors.redAccent,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _pushingDeviceId = null);
+    }
   }
 
   @override
@@ -2125,6 +2170,145 @@ class _LanPairingModalState extends State<LanPairingModal> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 18),
+
+                // 局域网在线设备发现
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('在线协同设备 (${_discoveredDevices.length})', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: theme.textSecondary)),
+                    InkWell(
+                      onTap: _isScanning ? null : _scanLanDevices,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        child: Row(
+                          children: [
+                            if (_isScanning)
+                              SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: theme.accentColor))
+                            else
+                              Icon(Icons.radar_rounded, size: 14, color: theme.accentColor),
+                            const SizedBox(width: 4),
+                            Text(
+                              _isScanning ? '正在扫描...' : '雷达扫描',
+                              style: TextStyle(fontSize: 11.5, color: theme.accentColor, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                if (_isScanning && _discoveredDevices.isEmpty)
+                  RecessedWell(
+                    padding: const EdgeInsets.all(16),
+                    borderRadius: MellowRadii.borderR16,
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: theme.accentColor)),
+                          const SizedBox(width: 10),
+                          Text('正在扫描局域网内的 PC 与手机设备...', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                        ],
+                      ),
+                    ),
+                  )
+                else if (_discoveredDevices.isNotEmpty)
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 180),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: _discoveredDevices.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (ctx, idx) {
+                        final dev = _discoveredDevices[idx];
+                        final isPushingThis = _pushingDeviceId == dev.id;
+                        return SoftCard(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          borderRadius: MellowRadii.borderR12,
+                          onTap: () {
+                            _targetIpCtrl.text = dev.ip;
+                            _targetPortCtrl.text = dev.port.toString();
+                            if (dev.authKey != null) _targetKeyCtrl.text = dev.authKey!;
+                          },
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: dev.osBrandColor.withValues(alpha: 0.15),
+                                  borderRadius: MellowRadii.borderR8,
+                                ),
+                                child: Icon(dev.deviceIcon, color: dev.osBrandColor, size: 20),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            dev.name,
+                                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.textPrimary),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                          decoration: BoxDecoration(
+                                            color: dev.osBrandColor.withValues(alpha: 0.12),
+                                            borderRadius: MellowRadii.borderPill,
+                                          ),
+                                          child: Text(
+                                            dev.displayOsName,
+                                            style: TextStyle(fontSize: 9.5, color: dev.osBrandColor, fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${dev.ip}:${dev.port} · ${dev.displayDeviceTypeName}',
+                                      style: TextStyle(fontSize: 11, color: theme.textMuted),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              SoftButton(
+                                label: isPushingThis ? '投送中' : '一键投送',
+                                icon: Icons.send_rounded,
+                                iconSize: 14,
+                                isActive: true,
+                                isPill: true,
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                onTap: isPushingThis ? null : () => _pushToDevice(dev),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  )
+                else
+                  RecessedWell(
+                    padding: const EdgeInsets.all(12),
+                    borderRadius: MellowRadii.borderR12,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.wifi_find_rounded, size: 16, color: theme.textMuted),
+                        const SizedBox(width: 6),
+                        Text('暂未扫描到在线设备，可点右上角重新探测或手动直连', style: TextStyle(fontSize: 11.5, color: theme.textMuted)),
+                      ],
+                    ),
+                  ),
                 const SizedBox(height: 18),
 
                 // 手动直连投送目标

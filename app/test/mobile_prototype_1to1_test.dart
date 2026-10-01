@@ -133,7 +133,7 @@ void main() {
       expect(find.text('歌单广场'), findsOneWidget);
       expect(find.text('排行榜'), findsOneWidget);
       expect(find.text('声音电台'), findsOneWidget);
-      expect(find.text('私人漫游'), findsOneWidget);
+      expect(find.text('热门歌手'), findsOneWidget);
 
       // 点击“歌单广场”下钻
       await tester.tap(find.text('歌单广场'));

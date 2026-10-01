@@ -232,11 +232,11 @@ class MobileDiscoverTab extends StatelessWidget {
         ),
         _buildKingKongCard(
           context,
-          label: '私人漫游',
-          icon: Icons.podcasts_rounded,
+          label: '热门歌手',
+          icon: Icons.people_alt_rounded,
           bgColor: isDark ? const Color(0xFF831843).withValues(alpha: 0.35) : const Color(0xFFFCE7F3),
           iconColor: const Color(0xFFDB2777),
-          onTap: () => onNavigatePage('fm'),
+          onTap: () => onNavigatePage('artists'),
         ),
       ],
     );
@@ -1278,14 +1278,14 @@ class MobileLibraryTab extends StatelessWidget {
             Expanded(
               child: SoftCard(
                 padding: const EdgeInsets.all(16),
-                onTap: () => onNavigatePage('artists'),
+                onTap: () => onNavigatePage('history'),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.people_alt_rounded, color: Color(0xFF8B5CF6), size: 28),
+                    const Icon(Icons.history_rounded, color: Color(0xFF8B5CF6), size: 28),
                     const SizedBox(height: 10),
-                    Text('关注歌手', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: theme.textPrimary)),
-                    Text('4 位入驻音乐人', style: TextStyle(fontSize: 11, color: theme.textMuted)),
+                    Text('播放历史', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: theme.textPrimary)),
+                    Text('最近播放 · ${context.watch<AudioPlayerService>().playHistory.length} 首', style: TextStyle(fontSize: 11, color: theme.textMuted)),
                   ],
                 ),
               ),
@@ -1589,19 +1589,28 @@ class MobileProfileTab extends StatelessWidget {
                 children: [
                   Expanded(
                     child: SoftButton(
-                      label: '温润白瓷',
-                      icon: Icons.light_mode_rounded,
-                      isActive: !isDark,
-                      onTap: () => theme.setDarkMode(false),
+                      label: '跟随系统',
+                      icon: Icons.brightness_auto_rounded,
+                      isActive: theme.appThemeMode == AppThemeMode.system,
+                      onTap: () => theme.setThemeMode(AppThemeMode.system),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: SoftButton(
+                      label: '温润白瓷',
+                      icon: Icons.light_mode_rounded,
+                      isActive: theme.appThemeMode == AppThemeMode.light,
+                      onTap: () => theme.setThemeMode(AppThemeMode.light),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: SoftButton(
                       label: '深石墨夜间',
                       icon: Icons.dark_mode_rounded,
-                      isActive: isDark,
-                      onTap: () => theme.setDarkMode(true),
+                      isActive: theme.appThemeMode == AppThemeMode.dark,
+                      onTap: () => theme.setThemeMode(AppThemeMode.dark),
                     ),
                   ),
                 ],

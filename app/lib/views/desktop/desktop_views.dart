@@ -4595,19 +4595,28 @@ class _DesktopSettingsViewState extends State<DesktopSettingsView> {
                 children: [
                   Expanded(
                     child: SoftButton(
-                      label: '温润白瓷 (Light)',
-                      icon: Icons.light_mode_rounded,
-                      isActive: !isDark,
-                      onTap: () => theme.setDarkMode(false),
+                      label: '跟随系统 (Auto)',
+                      icon: Icons.brightness_auto_rounded,
+                      isActive: theme.appThemeMode == AppThemeMode.system,
+                      onTap: () => theme.setThemeMode(AppThemeMode.system),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: SoftButton(
+                      label: '温润白瓷 (Light)',
+                      icon: Icons.light_mode_rounded,
+                      isActive: theme.appThemeMode == AppThemeMode.light,
+                      onTap: () => theme.setThemeMode(AppThemeMode.light),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: SoftButton(
                       label: '深石墨夜间 (Dark)',
                       icon: Icons.dark_mode_rounded,
-                      isActive: isDark,
-                      onTap: () => theme.setDarkMode(true),
+                      isActive: theme.appThemeMode == AppThemeMode.dark,
+                      onTap: () => theme.setThemeMode(AppThemeMode.dark),
                     ),
                   ),
                 ],

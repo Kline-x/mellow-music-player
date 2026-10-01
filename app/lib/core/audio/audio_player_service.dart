@@ -57,6 +57,7 @@ class AudioPlayerService extends ChangeNotifier {
   Timer? _autoSkipTimer;
   int _consecutiveFailures = 0;
   bool _isSwitchingSource = false;
+  String? _currentLoadedTrackId;
   bool _isDisposed = false;
   bool get isDisposed => _isDisposed;
 
@@ -562,11 +563,23 @@ class AudioPlayerService extends ChangeNotifier {
 
   void play() {
     if (_playlist.isEmpty) return;
-    _isPlaying = true;
     final track = currentTrack;
-    if (track != null) {
-      _executeRealPlay(track);
+    if (track == null) return;
+
+    // 若当前音源已在声卡中装载就绪且处于暂停态，直接恢复播放，保持当前进度
+    if (!_isPlaying && _currentLoadedTrackId == track.id) {
+      _isPlaying = true;
+      _backend.resume().catchError((e) {
+        debugPrint('[AudioPlayerService] 恢复播放异常，自动重新加载: $e');
+        _executeRealPlay(track);
+      });
+      WindowsSmtcService.instance.updatePlaybackState(true);
+      notifyListeners();
+      return;
     }
+
+    _isPlaying = true;
+    _executeRealPlay(track);
     notifyListeners();
   }
 
@@ -580,6 +593,7 @@ class AudioPlayerService extends ChangeNotifier {
   }
 
   void playTrack(Track track) {
+    final isSameTrack = currentTrack?.id == track.id;
     final index = _playlist.indexWhere((t) => t.id == track.id);
     if (index != -1) {
       _currentIndex = index;
@@ -587,7 +601,15 @@ class AudioPlayerService extends ChangeNotifier {
       _playlist.insert(0, track);
       _currentIndex = 0;
     }
+
+    // 若点击的正是当前暂停曲目，无缝恢复播放
+    if (isSameTrack && !_isPlaying && _currentLoadedTrackId == track.id) {
+      play();
+      return;
+    }
+
     _position = Duration.zero;
+    _currentLoadedTrackId = null;
     _recordHistory(_playlist[_currentIndex]);
     _isPlaying = true;
     WindowsTrayService.instance.updateTooltip(_playlist[_currentIndex]);
@@ -612,6 +634,7 @@ class AudioPlayerService extends ChangeNotifier {
         }
         await _backend.play(track.localPath!);
         if (session != _playSessionId) return;
+        _currentLoadedTrackId = track.id;
       } else {
         String? playUrl = track.audioUrl;
 
@@ -722,6 +745,7 @@ class AudioPlayerService extends ChangeNotifier {
           }
           await _backend.play(safePlayUrl);
           if (session != _playSessionId) return;
+          _currentLoadedTrackId = track.id;
           _consecutiveFailures = 0;
         } else {
           throw Exception('全网音源暂未匹配到有效可播放音频流');
@@ -982,6 +1006,8 @@ class AudioPlayerService extends ChangeNotifier {
     StorageService.instance.clearPlayHistory();
     notifyListeners();
   }
+
+  void clearHistory() => clearPlayHistory();
 
   void cyclePlaybackMode() {
     switch (_mode) {

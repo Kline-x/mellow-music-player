@@ -76,12 +76,12 @@ class MellowMusicApp extends StatelessWidget {
     // ignore: avoid_print
     print('>>> [STEP 7] MellowMusicApp build executed');
     final theme = context.watch<ThemeProvider>();
-    final isDark = theme.isDarkMode;
 
     return MaterialApp(
       title: 'Mellow Music · 润音',
       debugShowCheckedModeBanner: false,
-      themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+      themeMode: theme.themeMode,
+      themeAnimationDuration: Duration.zero,
       theme: ThemeData(
         brightness: Brightness.light,
         scaffoldBackgroundColor: MellowColors.canvasLight,

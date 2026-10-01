@@ -31,6 +31,9 @@ class StorageService {
 
   // Keys 常量
   static const _keyIsDarkMode = 'mellow_theme_is_dark';
+  static const _keyThemeMode = 'mellow_theme_mode'; // 'system', 'light', 'dark'
+  static const _keyDailyRecommendDate = 'mellow_daily_recommend_date';
+  static const _keyDailyRecommendTracks = 'mellow_daily_recommend_tracks';
   static const _keyAccentType = 'mellow_theme_accent_type';
   static const _keyGlowIntensity = 'mellow_theme_glow_intensity';
   static const _keyVolume = 'mellow_audio_volume';
@@ -200,9 +203,36 @@ class StorageService {
 
   // --- 主题偏好 ---
 
+  String? getThemeModeSetting() => _prefs?.getString(_keyThemeMode);
+  Future<bool> saveThemeModeSetting(String mode) async =>
+      (await _prefs?.setString(_keyThemeMode, mode)) ?? false;
+
   bool? getIsDarkMode() => _prefs?.getBool(_keyIsDarkMode);
   Future<bool> saveIsDarkMode(bool value) async =>
       (await _prefs?.setBool(_keyIsDarkMode, value)) ?? false;
+
+  // --- 每日推荐离线缓存 ---
+  String? getDailyRecommendCachedDate() => _prefs?.getString(_keyDailyRecommendDate);
+  List<Track>? getDailyRecommendCachedTracks() {
+    final raw = _prefs?.getString(_keyDailyRecommendTracks);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final list = jsonDecode(raw) as List<dynamic>;
+      return list.map((item) => _deserializeTrack(item as Map<String, dynamic>)).toList();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<bool> saveDailyRecommendCache(String dateKey, List<Track> tracks) async {
+    try {
+      final list = tracks.map((t) => _serializeTrack(t)).toList();
+      await _prefs?.setString(_keyDailyRecommendDate, dateKey);
+      return (await _prefs?.setString(_keyDailyRecommendTracks, jsonEncode(list))) ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
 
   String? getAccentType() => _prefs?.getString(_keyAccentType);
   Future<bool> saveAccentType(String name) async =>
