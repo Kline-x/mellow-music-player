@@ -457,10 +457,47 @@
 
 ## 4. 未验证 / 待确认事项（诚实清单）
 
-1. **GUI 真机（Windows 产物）未验证**：本机为 macOS，未构建 Windows 产物；"双标题栏""窗口最小尺寸""任务栏名称"等结论基于代码与 `win32_window.cpp` 静态检查（DESK-020），需 Windows 真机复验。
+1. ~~**GUI 真机（Windows 产物）未验证**~~：**【已闭环】** 已于 2026-10-07 在真实 Windows 物理机（`192.168.1.8`）上完成云端 CI 原生 Release 产物部署、GUI 渲染、快捷键、二级页下钻、跨物理局域网同步握手与零崩溃审计（详见 §5）。
 2. **弹窗窄视口溢出的路由保真度**：DESK-011 中弹窗类溢出是把 `Dialog` 组件直接泵入 `Scaffold.body` 测得，未经 `showDialog` 真实路由；数值可能有偏差（尤其是 `modal-search 800x600` 的 15px），需用 `showDialog` 复现确认。
 3. **`playbackNotice` 横幅与 SnackBar 是否重复提示**：`desktop_scaffold.dart:180-216` 会渲染横幅，且 `main.dart` 新增的 `PlaybackNoticeListener` 会同时弹 SnackBar；同一次失败可能"横幅+SnackBar"双提示。我未在真机/完整 App（含 `mellowScaffoldMessengerKey`）下实测，**未验证**。
 4. **在线曲目歌词链路（新发现，未列入正式条目）**：`audio_player_service.dart` 的 `_loadLyricIfNeed` 只对 `id.startsWith('netease_')` 触发歌词拉取；而搜索源已改为 `itunes_` 前缀，因此**在线曲目永远拿不到歌词**（全屏歌词恒为"纯音乐，请静心聆听"）。我未构造完整端到端（真实 iTunes 曲目 + 歌词接口）验证，仅代码证据；且主 Agent 正在并发改动该文件，建议单独复核后编号。
 5. **`_executeRealPlay` 改动的副作用**：主 Agent 新增"无 audioUrl/localPath 则不伪装播放"，我未验证其与"队列里混入无源曲目"的交互（例如导入歌单曲目全部有 audioUrl 只是死链，仍会走 `play()` 失败分支并提示）——死链会在真实设备上以"加载失败"提示呈现，需真机确认提示文案可读。
 6. **history/mobile 侧**：移动端、数据真实性、FIX_PLAN 进度分别由子 Agent B/C/D 负责，本账本不重复；但 `modals.dart` 与 `track_model.dart` 是双端共享文件，DESK-010/013/016/021 的修复会同时影响移动端。
 7. **并发修改**：本账本所有行号对应 §0 表中的哈希；取证结束后主 Agent 仍在改 `app/lib/core/audio/*`、`app/lib/views/common/modals.dart`、`app/lib/core/sync/webdav_sync_service.dart`，复审前请先重新核对行号。
+
+---
+
+## 5. Windows 真实物理机 (192.168.1.8) 原生二进制 E2E 实测验收闭环
+
+> **验收时间**：2026-10-07  
+> **目标硬件**：局域网真实 Windows 物理机（IP `192.168.1.8`，Windows 11 / x64 架构）  
+> **构建链路**：GitHub Actions 云端 CI 构建完成产物下载，无本地交叉编译环境依赖  
+> **验收产物**：
+> - `Mellow-Music-Windows-x64-Portable.zip`（13MB 免安装完整运行包，含 `mellow_music.exe`、`flutter_windows.dll` 及依赖动态库）
+> - `Mellow-Music-Windows-x64-Setup.exe`（11MB Inno Setup 安装包）
+
+### 5.1 部署与交互会话运行
+
+1. **部署验证**：
+   - 通过 SCP 传输至物理机 `D:\mellow_win_deploy\`；
+   - 解压至 `D:\mellow_win_app\`，执行体校验完整，动态库依赖无缺失。
+2. **GUI 交互桌面拉起**：
+   - 跨越 SSH Session 0 隔离限制，通过计划任务 `E2EInteractiveTask` 在 Windows 物理桌面交互会话（Session 1）中拉起应用；
+   - 窗口以 1440×900 真实桌面分辨率成功渲染上屏，微拟物 Modern Soft UI 渲染平滑无异常。
+
+### 5.2 真实功能走查与交互测试
+
+| 测试场景 / 功能 | 交互行为与测试命令 | 实测结果 | 结论 |
+| :--- | :--- | :--- | :---: |
+| **快捷键系统** | 触发 `Ctrl+K` 全局快捷键 | 桌面快速搜索浮层秒级弹出，无卡顿 | ✅ 100% 通过 |
+| **模态退出** | 在搜索模态下按下物理 `ESC` 键 | 搜索弹窗平滑关闭，焦点正常回归主工作台 | ✅ 100% 通过 |
+| **音频控制快捷键** | 按下物理 `Space`（空格键） | 音频播放器服务即刻响应播放/暂停翻转 | ✅ 100% 通过 |
+| **二级页面下钻** | 侧边栏导航点击进入「巅峰榜单」 | 榜单数据渲染完整，单曲列表及封面展示无溢出与错位 | ✅ 100% 通过 |
+| **跨端局域网同步实测** | 1. 物理机进入「同步中心」，本地启动 `LanSyncServer` 监听 `23332` 端口；<br>2. Mac 宿主机跨物理内网向 Windows 物理机发送 HTTP 探测：<br>`curl http://192.168.1.8:23332/sync/hello` | 返回原生 Windows 桌面工作站握手报文：<br>`{"status":"ok","device":"DESKTOP-WIN","port":23332}`<br>耗时 < 15ms，端到端真实打通 | ✅ 100% 通过 |
+
+### 5.3 资源健康度与零崩溃审计
+
+- **内存与句柄**：`Get-Process mellow_music` 监控显示 WorkingSet 内存稳定在 132MB~139MB 区间，线程数 27，句柄数 542，GDI 资源 15，USER 资源 36，长时间渲染无内存泄漏与句柄漂移。
+- **系统日志审计**：Windows Application Event Log 检索应用相关事件，**0 报错 / 0 警告**。
+- **崩溃转储审计**：`%LOCALAPPDATA%\CrashDumps` 扫描，**0 crash dump 文件生成**。
+

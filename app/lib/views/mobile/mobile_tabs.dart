@@ -1053,16 +1053,20 @@ class _MobileExploreTabState extends State<MobileExploreTab> with SingleTickerPr
                 ],
               ),
               GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: () => widget.onNavigatePage('scenarios'),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '全部场景',
-                      style: TextStyle(fontSize: 11.5, color: theme.accentColor, fontWeight: FontWeight.w600),
-                    ),
-                    Icon(Icons.chevron_right_rounded, size: 16, color: theme.accentColor),
-                  ],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '全部场景',
+                        style: TextStyle(fontSize: 11.5, color: theme.accentColor, fontWeight: FontWeight.w600),
+                      ),
+                      Icon(Icons.chevron_right_rounded, size: 16, color: theme.accentColor),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -1424,7 +1428,31 @@ class MobileLibraryTab extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.play_arrow_rounded, color: theme.accentColor, size: 24),
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  if (player.favoriteTracks.isNotEmpty) {
+                    player.playPlaylist(player.favoriteTracks, startIndex: 0);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('暂无收藏歌曲，快去探索并添加心动单曲吧'),
+                        duration: Duration(seconds: 1),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                },
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: theme.accentColor.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.play_arrow_rounded, color: theme.accentColor, size: 22),
+                ),
+              ),
             ],
           ),
         ),

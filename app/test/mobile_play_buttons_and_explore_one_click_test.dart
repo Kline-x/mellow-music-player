@@ -8,7 +8,6 @@ import 'package:mellow_music/core/storage/storage_service.dart';
 import 'package:mellow_music/design_system/theme_provider.dart';
 import 'package:mellow_music/views/mobile/mobile_tabs.dart';
 import 'package:mellow_music/views/mobile/mobile_pages.dart';
-import 'package:mellow_music/views/mobile/mobile_scenario_page.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -144,6 +143,60 @@ void main() {
 
       expect(player.playlist.isNotEmpty, isTrue);
       expect(player.isPlaying, isTrue);
+    });
+
+    testWidgets('MOB-035: 资料库「我喜欢的音乐」卡片右侧播放按钮点击能独立起播收藏单曲', (tester) async {
+      final player = AudioPlayerService();
+      final testTrack = Track(
+        id: 'fav-test-1',
+        title: '测试收藏曲目',
+        artist: '测试歌手',
+        album: '测试专辑',
+        coverUrl: 'http://example.com/cover.jpg',
+        duration: const Duration(minutes: 3),
+      );
+      player.toggleFavorite(testTrack.id, testTrack);
+
+      await tester.pumpWidget(
+        buildTestApp(
+          MobileLibraryTab(onNavigatePage: (_, [__]) {}),
+          player: player,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('我喜欢的音乐'), findsOneWidget);
+      expect(find.textContaining('已收藏 1 首心动单曲'), findsOneWidget);
+
+      final playFavBtn = find.byIcon(Icons.play_arrow_rounded).first;
+      await tester.tap(playFavBtn);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(player.isPlaying, isTrue);
+      expect(player.currentTrack?.title, '测试收藏曲目');
+    });
+
+    testWidgets('MOB-037: 声音电台卡片右侧播放按钮点击能起播电台音频', (tester) async {
+      final player = AudioPlayerService();
+
+      await tester.pumpWidget(
+        buildTestApp(
+          MobileRadioPage(onBack: () {}),
+          player: player,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('声音电台'), findsOneWidget);
+
+      final firstPlayIcon = find.byIcon(Icons.play_arrow_rounded).first;
+      await tester.tap(firstPlayIcon);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(player.isPlaying, isTrue);
+      expect(player.currentTrack, isNotNull);
     });
   });
 }

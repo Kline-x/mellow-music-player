@@ -1502,7 +1502,21 @@ class MobileRadioPage extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(Icons.play_arrow_rounded, color: theme.accentColor, size: 24),
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    player.playTrack(r.track);
+                  },
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: theme.accentColor.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.play_arrow_rounded, color: theme.accentColor, size: 22),
+                  ),
+                ),
               ],
             ),
           );

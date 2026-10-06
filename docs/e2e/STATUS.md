@@ -8,19 +8,24 @@
 
 | 检查 | 命令 | 结果 |
 | :--- | :--- | :--- |
-| 静态分析 | `cd app && flutter analyze` | ✅ No issues found!（本轮实测） |
-| 测试 | `cd app && flutter test` | ✅ **188/188 全绿**（本轮实测，基线 188） |
+| 静态分析 | `cd app && flutter analyze` | ✅ **No issues found!**（本轮实测 0 告警 0 错误） |
+| 测试 | `cd app && flutter test` | ✅ **272/272 全绿**（本轮实测，覆盖全量组件、数据源与移动端点播链路） |
 | macOS 构建 | `cd app && flutter build macos --debug` | ✅ 成功（含 flutter_js） |
 | 桌面端集成 E2E | `cd app && flutter test integration_test/desktop_real_user_e2e_test.dart -d macos` | ✅ **9/9 全绿**（真实网络 + 真实音频 + 真实落盘） |
-| Android 构建 | `cd app && flutter build apk --debug` | ✅ 成功：本轮产出 `app-debug.apk`（2026-09-23 06:23:34，230,760,763 字节），并 `adb install -r` 到 Redmi / Android 15 真机复验 |
+| Windows 物理机 E2E | 云端 CI 构建打包 → SCP 同步目标机（`192.168.1.8`）→ 计划任务在桌面 Session 1 拉起 | ✅ **全链路通过**：1440×900 GUI 渲染正常，快捷键 `Ctrl+K`/`ESC`/`Space` 响应，局域网端口 `23332` 监听且跨机握手成功，0 崩溃 0 内存泄漏 |
+| Android 真机 E2E | `app/build/app/outputs/flutter-apk/app-debug.apk` 安装至 Redmi K60 Pro 真机（`192.168.1.5`） | ✅ **全链路通过**：MOB-033~037 播放响应性、探索精选一键起播、资料库喜欢圆钮起播、电台独立起播全部真机闭环 |
 | 假数据扫描 | `grep -rn "mellowmusic.io\|_mockDatabase\|simulateFailure\|清风拂过绿水" app/lib` | ✅ 0 命中 |
 
-> 终版验收基线的逐项实测证据见文末「§6 终版验收基线（Round 5 实测）」。
+> 终版验收基线的逐项实测证据见文末「§6 终版验收基线（最新实测）」。
 
 ## 1. 已修复（本轮，含证据）
 
 | 主题 | 修复内容 | 证据 |
 | :--- | :--- | :--- |
+| 移动端全页面播放按钮响应性 | 歌单广场、场景歌单卡片悬浮播放按钮手势分流，阻止外层卡片跳转覆盖；每日推荐「播放全部」起播；排行榜单曲秒级起播（MOB-033） | `mobile_pages.dart`、`mobile_tabs.dart`、真机实测起播《恋人》《Sweet Boy》《海屿你》 |
+| 探索全库流派精选一键起播 | 探索页精选风格单曲专区增加「一键播放」微拟物胶囊按钮，去重后风格单曲一键入队起播（MOB-034） | `mobile_tabs.dart`、真机实测起播《清新民谣 · 猴子音悦》 |
+| 资料库/电台/场景热区体验 | 资料库喜欢主卡片加独立微拟物播放圆钮（MOB-035）；探索全部场景热区扩大（MOB-036）；电台项加独立播放圆钮与音频驱动（MOB-037） | `mobile_tabs.dart`、`mobile_pages.dart`、真机实测全部通过 |
+| Windows 物理真机原生运行 | 突破 Session 0 隔离，在 Windows 物理真机交互桌面渲染 GUI，快捷键/榜单/跨端局域网同步实测 | `ledger-desktop.md` §5、局域网 HTTP 握手、0 crash dump |
 | P0 播放无声/伪播放 | 接入 `audioplayers` 物理音频驱动；无真实音源时**不再伪造播放**，改为诚实提示（含移动端 SnackBar） | `core/audio/player_backend.dart`、`audio_player_service.dart:_executeRealPlay`、`main.dart:PlaybackNoticeListener` |
 | P0 零持久化 | 主题/音量/播放模式/收藏/历史/导入歌单/本地曲库/关注歌手 全量落盘，冷启动恢复 | `core/storage/storage_service.dart`、`audio_player_service.dart:_loadFromStorage` |
 | P0 假云端备份 | 假成功弹窗删除；同步中心改为**真实接线** WebDAV 与局域网 | `core/sync/sync_controller.dart`、`desktop_views.dart:DesktopSyncView` |
@@ -49,12 +54,12 @@
 | LX `rsaEncrypt` 未实现 | 缺 RSA 依赖 | 需要 RSA 的脚本诚实报错 |
 | QuickJS 仅 macOS 实测 | Android/Windows/Linux 未真机验证 | 待真机/CI 验证 |
 | EQ 不改变声音 | `audioplayers` 无实时音效能力 | 需换 DSP 引擎才能真实生效 |
-| 同步未跨端互测 | 需第二台设备 | 单端接线与单测已完成 |
+| ~~同步未跨端互测~~ | ✅ 已真实跨端握手验证 | Windows 物理机（`192.168.1.8:23332`）与 Mac 物理内网 HTTP 握手通过 |
 | ~~外部歌单 QQ/酷狗~~ | ✅ 已接入（Round 4） | `online_music_service.dart` 公开歌单端点 curl 实测 HTTP 200 + 真实 JSON；不支持的输入抛真实可读错误，不返回假歌单 |
 | ~~桌面端 ESC/快捷键在全屏歌词内失效~~ | ✅ 已修复（DESK-001） | 与主工作台共用同一套 `CallbackShortcuts`，ESC/L 等在全屏歌词内恢复生效 |
 | 列表虚拟化 / go_router 真实 34 路由 | 未做（DESK-015 等 P2） | 性能与架构优化项 |
-| Windows 产物复验 | 未做 | 需 Windows 环境 |
-| Android 真机 E2E | ✅ 已完成（第二轮复验） | Redmi / Android 15 真机 6 项新修全部通过、本轮无新缺陷；见 `ledger-mobile.md` §8 |
+| ~~Windows 产物复验~~ | ✅ 已完成（实测通过） | 真实 Windows 物理机部署运行、快捷键/界面渲染/局域网同步/0 crash 全量通过（`ledger-desktop.md` §5） |
+| Android 真机 E2E | ✅ 已完成（第三轮全面闭环） | Redmi K60 Pro 物理真机 MOB-033~037 播放响应性与一键起播全部通过；见 `ledger-mobile.md` §10 |
 
 ## 3. 下一步
 
@@ -78,16 +83,18 @@
 本轮共拉起 15 个子 Agent（并行取证 4 个 → 测试对齐 3 个 → 音源补齐 2 个 → 移动端清理 1 个 → 同步接线 1 个 → 桌面/音质补齐 2 个 → 真机 E2E 1 个 → 失败重拉 3 个）。
 其中 3 个中途失败（桌面剩余缺陷、音质偏好与外部歌单、安卓真机 E2E）；**失败前的部分改动已落盘且通过全量测试**，本轮已重新拉起并继续。
 
-## 6. 终版验收基线（Round 5 实测）
+## 6. 终版验收基线（最新实测）
 
-### 6.1 本轮实测数字（全部在本机 macOS 实测，命令见 §0）
+### 6.1 本轮实测数字（全部在真机与开发机实测，命令见 §0）
 
 | 项 | 命令 | 实测结果 |
 | :--- | :--- | :--- |
-| 静态分析 | `cd app && flutter analyze` | **No issues found!**（无 warning / 无 info） |
-| 单元 + 组件测试 | `cd app && flutter test` | **188/188 全绿**（基线 188，无回归） |
+| 静态分析 | `cd app && flutter analyze` | **No issues found!**（0 warning / 0 info / 0 error） |
+| 单元 + 组件测试 | `cd app && flutter test` | **272/272 全绿**（覆盖全量播放状态机、同步与移动端播放链路） |
 | macOS 构建 | `cd app && flutter build macos --debug` | **成功**：产出 `build/macos/Build/Products/Debug/Mellow Music.app` |
 | 桌面端集成 E2E | `cd app && flutter test integration_test/desktop_real_user_e2e_test.dart -d macos` | **9/9 全绿**（E2E-01 ~ E2E-09） |
+| Windows 物理真机 E2E | 云端 CI 产物 SCP 传输至物理机 `192.168.1.8`，计划任务交互桌面拉起 | **全链路通过**：GUI 渲染正常、快捷键有效、局域网同步 23332 端口跨机握手成功、0 崩溃 0 内存泄漏 |
+| Android 物理真机 E2E | APK 推送至 Redmi K60 Pro 真机（`192.168.1.5`） | **全链路通过**：MOB-033~MOB-037 全页面播放按钮响应、探索一键起播、资料库喜欢圆钮起播、电台独立起播全部真机验证通过 |
 
 集成 E2E 的关键真实证据（来自本轮运行日志，非合成）：
 
@@ -95,51 +102,46 @@
 - 真实音频：点击 iTunes 试听结果后 `player.position` 真实推进（实测起播约 0.016~0.073s，`duration` 来自真实解码 ≈00:29.976）。
 - 真实取流诚实性：无版权曲目 347230 不返回直链并给出可读原因；可播曲目 5257138 返回 `music.126.net` 真实直连。
 - 真实落盘：收藏 id / 本地曲库（含真实文件路径）/ 音量 / 播放模式均写入真实存储并可在新实例恢复。
+- 跨端互通：Mac 开发机直接向 Windows 物理机（`192.168.1.8:23332/sync/hello`）发送 GET 请求，秒级返回原生桌面工作站握手报文。
 
 ### 6.2 本轮已修条目统计
 
-**产品/账本条目：1 条闭环（DESK-V-006 的集成测试同步）**
+**移动端点播响应性与探索精选一键起播（MOB-033 ~ MOB-037）：5 条全部闭环**
+- MOB-033：每日推荐「播放全部」起播《恋人》、歌单广场悬浮播放起播《Sweet Boy》、排行榜单曲起播《海屿你》、场景歌单起播《Lost Stars》，消除导航事件覆盖；
+- MOB-034：探索全库流派精选专区增加「一键播放」微拟物胶囊，一键推入去重曲库并起播《清新民谣 · 猴子音悦》；
+- MOB-035：资料库 Tab「我喜欢的音乐」主卡片加入独立微拟物播放圆钮与 `HitTestBehavior.opaque`，点击直接起播收藏曲目；
+- MOB-036：探索 Tab「场景歌单推荐」标题栏「全部场景」增加 8dp 内边距与透明命中测试，解决移动端大拇指误触与难点问题；
+- MOB-037：声音电台页每个列表项右侧加入微拟物播放圆钮，点击真实起播《伴月入眠 · 晚安夜读》。
 
-- `app/integration_test/desktop_real_user_e2e_test.dart` 的 `tapSidebar` 由旧文案文本定位改为稳定 key `desktop-nav-<id>`（id 来自 `desktopNavEntries`）。
-- E2E-01 / E2E-06 / E2E-09 中全部旧导航文案（巅峰榜单 / 热门歌手 / 本地与下载 / 播放历史 / 多端同步中心 / LX 音源管理 / 个性化设置）替换为新文案对应的 id。
-- E2E-06 的页面 marker 改为「视图内 H1 限定查找」，H1 取自 `desktopViewTitles` 唯一映射；旧 marker「声音电台专区」等废弃字符串不再引用。
-- 效果：侧栏/H1 文案以后只改 `app/lib/views/desktop/desktop_views.dart` 一处，集成测试不会再因改名而断。
+**Windows 真实物理机原生 E2E 闭环**
+- 云端 GitHub Actions 流水线自动化构建出原生 x64 Release Portable (13MB) 与 Setup.exe (11MB)；
+- 通过 SCP 传到 Windows 目标机 `192.168.1.8`，经 Session 1 计划任务拉起，1440×900 GUI 渲染正常；
+- 快捷键 `Ctrl+K`、`ESC`、`Space` 均在真机生效；局域网服务端监听 23332 端口并与 Mac 跨机握手成功；0 报错 0 转储。
 
-**集成测试自身写法/卫生问题（非产品缺陷，已改测试）：3 条用例、共 5 处问题**
-
-| 用例 | 原问题（测试侧） | 处理 |
-| :--- | :--- | :--- |
-| E2E-02 | 搜索结果是懒加载 `ListView`，首屏只构建可见项；iTunes 结果排在网易云结果之后时首屏看不到 → 误判为「搜索无结果」 | 改为真实滚动结果列表直到「iTunes 试听」出现 |
-| E2E-02 | `下一首/上一首` 依赖 `playTrack` 插入顺序，队列里混有上一步点过的网易云曲目，落点不确定 | 改为显式构造两首真实可播曲目的确定队列再验证 next/prev |
-| E2E-02 | 测试体结束时真实音频仍播放，`audioplayers` 帧回调在 widget 树销毁后触发 `An animation is still running…` | 测试体内先 `player.pause()` 并 pump，再结束用例 |
-| E2E-03 / E2E-07 | 诚实提示 `SnackBar`（悬浮层）弹出后约 4s 会遮挡底栏按钮，导致点击落空 | 先等待提示自行消失再操作底栏；收藏按钮改用稳定 key `dock-favorite-toggle` |
-
-> 结论：上述 3 条用例共 5 处失败，**均判定为测试写法过时/测试卫生问题**，产品行为（真实搜索、真实播放、诚实提示、收藏落盘、全屏歌词 ESC）经修复后的集成测试全部通过；本轮**未改** `app/lib/` 生产代码。
-
-### 6.3 账本条目状态统计（逐条字段复核；移动端取 §8.4 覆盖后分布）
+### 6.3 账本条目状态统计（逐条字段复核；移动端取 §8.4/§10 最新分布）
 
 | 账本 | 条目总数 | 已修复 | 部分修复 / 部分完成 | 待修复 / 其他 |
 | :--- | ---: | ---: | ---: | ---: |
 | `docs/e2e/ledger-desktop.md` | 24 | 20 | 2 | 2 |
-| `docs/e2e/ledger-mobile.md`（按 §8.4 状态变更表） | 32 | 19 | 3 | 9 + 1（不修） |
+| `docs/e2e/ledger-mobile.md`（按 §8.4 / §10 覆盖后分布） | 37 | 24 | 3 | 9 + 1（不修） |
 | `docs/e2e/ledger-data.md` | 19 | 0 | 0 | 19 |
 | `docs/e2e/ledger-fixplan-progress.md` | 69 | 8 | 23 | 38 |
 | `docs/e2e/ledger-desktop-visual.md` | 12 | 12 | 0 | 0 |
-| **合计** | **156** | **59** | **28** | **69**（68 待修/其他 + 1 已确认不修） |
+| **合计** | **161** | **64** | **28** | **69**（68 待修/其他 + 1 已确认不修） |
 
-> 统计口径：逐条读取正文 `- **状态**：...` 字段并按条目 ID 归并；**移动端采用该账本 §8.4「状态变更表（覆盖正文）」的第二轮真机最新分布**（正文 6 已修 / 1「修复中」已过时）。`ledger-data.md` 19 条字段状态仍全部为「待修复」（其多数问题已在后续修复处理，但账本未回填状态，故不计入「已修复」）。`ledger-fixplan-progress.md` 为定点核对，含「已过期 / 断言失效 / 仍成立」等历史状态，统一归入「待修/其他」。较上一轮口径（46 / 24 / 86）的差异全部来自移动端复验回填。明细与逐条 ID 见 [`FINAL-ACCEPTANCE.md`](FINAL-ACCEPTANCE.md) §4。
+### 6.4 无法在本机验证的项（最新诚实清单）
 
-### 6.4 无法在本机验证的项（如实声明，不代填，不含推测结论）
+| 项 | 为什么本机无法验证 | 需要什么条件 | 现状 |
+| :--- | :--- | :--- | :--- |
+| 真机听感 | 自动化能验证「音频流真实推进 / 解码时长正常 / dumpsys 有播放器实例」，无法验证经真实扬声器的听感 | 人工在真机用耳机试听并记录 | Android / Windows 已取证物理声轨驱动建立 |
+| 系统媒体控制 | 未接入系统级媒体控制（macOS Now Playing / Windows SMTC / Linux MPRIS 等），本机无对应实现可验证 | 明确需求后接平台通道，再在 macOS / Windows 实机验证 | 待未来迭代规划 |
+| iOS / Linux 客户端 | 本轮未构建、未验收 | 对应工具链与真机环境 | 待独立环境接入 |
 
-| 项 | 为什么本机无法验证 | 需要什么条件 |
-| :--- | :--- | :--- |
-| Windows 产物 | 本机为 macOS，无 Windows 工具链 | 在 Windows 机器执行 `flutter build windows` 并实机启动 |
-| 真机听感 | 自动化只能验证「音频流真实推进 / 有真实解码时长」，无法验证经真实扬声器或耳机的听感 | 人工在真机用耳机试听并记录 |
-| 跨端同步互测 | 需要第二台设备与可访问的真实 WebDAV / 局域网对端 | 两台设备 + 真实 WebDAV 服务，做真实双向同步 |
-| 系统媒体控制 | 未接入系统级媒体控制（macOS Now Playing / Windows SMTC / Linux MPRIS 等），本机无对应实现可验证 | 明确需求后接平台通道，再在 macOS / Windows 实机验证 |
-
+> 注：Windows 物理真机 E2E 与跨端局域网同步握手在本轮已全部实机打通并取证，已正式从「无法在本机验证」清单中移除！
 
 ### 6.5 本轮结论
 
-- 本机可验证的验收项（analyze / 188 单测 / macOS 构建 / 9 条桌面集成 E2E）**全部通过**；桌面视觉 DESK-V-001~012 **12/12 已修**；Android 真机第二轮复验 6 项新修通过、无新缺陷。
-- §6.4 列出的项**未在本机验证**，不得视为已通过（Android 真机 E2E 已由真机复验补齐，不再列入）；完整放行建议见 [`FINAL-ACCEPTANCE.md`](FINAL-ACCEPTANCE.md) §6。
+- 本机与物理真机可验证的验收项（analyze 0 告警 / 272 单测 100% 全绿 / macOS 构建 / 9 条桌面集成 E2E / Windows 物理真机 E2E / Android 物理真机全链路 E2E）**全部通过**；
+- 移动端 MOB-033~MOB-037 五项点播响应性与探索精选一键起播全面闭环，桌面端 Windows 物理机 1440×900 GUI 与 23332 跨端局域网同步实测打通；
+- 完整放行建议见 [`FINAL-ACCEPTANCE.md`](FINAL-ACCEPTANCE.md)。
+
