@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/audio/audio_player_service.dart';
+import '../../core/audio/track_model.dart';
 import '../../core/sources/online_music_service.dart';
 import '../../core/sources/scenario_playlist_service.dart';
 import '../../core/storage/storage_service.dart';
@@ -423,10 +424,25 @@ class _MobileScenarioPlaylistPageState extends State<MobileScenarioPlaylistPage>
                               bottom: 6,
                               right: 6,
                               child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
                                 onTap: () async {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('正在播放场景歌单「${pl.title}」...'),
+                                      duration: const Duration(milliseconds: 1200),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                  if (pl.tracks.isNotEmpty) {
+                                    player.playPlaylist(pl.tracks, startIndex: 0);
+                                    return;
+                                  }
                                   final detail = await ScenarioPlaylistService.instance.getScenarioPlaylistDetail(pl.id);
                                   if (detail != null && detail.tracks.isNotEmpty) {
                                     player.playPlaylist(detail.tracks, startIndex: 0);
+                                  } else {
+                                    final fallback = getAllKnownTracks();
+                                    if (fallback.isNotEmpty) player.playPlaylist(fallback, startIndex: 0);
                                   }
                                 },
                                 child: Container(

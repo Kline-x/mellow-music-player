@@ -338,9 +338,19 @@ class MobileDiscoverTab extends StatelessWidget {
                   title: '落日微风 · 精选推荐',
                   subtitle: '周杰伦 / 告五人 / M83',
                   coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/58/8d/6d/588d6d61-fbac-148a-86bd-0030ce076ac1/23UM1IM57281.rgb.jpg/600x600bb.jpg',
-                  onPlay: () {
+                  onPlay: () async {
                     if (player.playlist.isNotEmpty) {
                       player.playTrack(player.playlist[0]);
+                    } else {
+                      final pool = getAllKnownTracks();
+                      if (pool.isNotEmpty) {
+                        player.playPlaylist(pool, startIndex: 0);
+                      } else {
+                        final searched = await OnlineMusicService.searchOnlineTracks('落日微风 周杰伦', limit: 5);
+                        if (searched.isNotEmpty) {
+                          player.playPlaylist(searched, startIndex: 0);
+                        }
+                      }
                     }
                   },
                 ),
@@ -361,14 +371,23 @@ class MobileDiscoverTab extends StatelessWidget {
                               artist: 'M83',
                               coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/cb/7b/a9/cb7ba903-b5f1-cc21-90db-7a81b7aa0997/724596951057.jpg/600x600bb.jpg',
                               onPlay: () async {
-                                final t = player.playlist.where(
-                                  (x) => x.title.contains('Midnight') || x.artist.contains('M83'),
-                                ).firstOrNull;
-                                if (t != null) {
-                                  player.playTrack(t);
-                                } else {
+                                final match = getAllKnownTracks().where((x) => x.title.contains('Midnight') || x.artist.contains('M83')).firstOrNull;
+                                if (match != null) {
+                                  player.playTrack(match);
+                                  return;
+                                }
+                                try {
                                   final searched = await OnlineMusicService.searchOnlineTracks('Midnight M83', limit: 1);
-                                  if (searched.isNotEmpty) player.playTrack(searched.first);
+                                  if (searched.isNotEmpty) {
+                                    player.playTrack(searched.first);
+                                    return;
+                                  }
+                                } catch (_) {}
+                                if (player.playlist.isNotEmpty) {
+                                  player.playTrack(player.playlist.first);
+                                } else {
+                                  final fallback = getAllKnownTracks();
+                                  if (fallback.isNotEmpty) player.playTrack(fallback.first);
                                 }
                               },
                             ),
@@ -380,9 +399,24 @@ class MobileDiscoverTab extends StatelessWidget {
                               title: '慢冷治愈',
                               artist: '梁静茹',
                               coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/bf/f0/11/bff01142-f4f0-f9c4-f497-007f43e42783/BD0018-_-_Fall_In_Love_Songs.jpg/600x600bb.jpg',
-                              onPlay: () {
-                                if (player.playlist.length > 1) {
-                                  player.playTrack(player.playlist[1]);
+                              onPlay: () async {
+                                final match = getAllKnownTracks().where((x) => x.title.contains('慢冷') || x.artist.contains('梁静茹')).firstOrNull;
+                                if (match != null) {
+                                  player.playTrack(match);
+                                  return;
+                                }
+                                try {
+                                  final searched = await OnlineMusicService.searchOnlineTracks('慢冷 梁静茹', limit: 1);
+                                  if (searched.isNotEmpty) {
+                                    player.playTrack(searched.first);
+                                    return;
+                                  }
+                                } catch (_) {}
+                                if (player.playlist.isNotEmpty) {
+                                  player.playTrack(player.playlist[player.playlist.length > 1 ? 1 : 0]);
+                                } else {
+                                  final fallback = getAllKnownTracks();
+                                  if (fallback.isNotEmpty) player.playTrack(fallback.first);
                                 }
                               },
                             ),
@@ -400,9 +434,24 @@ class MobileDiscoverTab extends StatelessWidget {
                               title: 'Golden Hour',
                               artist: 'JVKE',
                               coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/8d/1a/7b/8d1a7b44-316f-7c7f-4380-935673fb697a/5056167175650.jpg/600x600bb.jpg',
-                              onPlay: () {
-                                if (player.playlist.length > 2) {
-                                  player.playTrack(player.playlist[2]);
+                              onPlay: () async {
+                                final match = getAllKnownTracks().where((x) => x.title.contains('Golden Hour') || x.artist.contains('JVKE')).firstOrNull;
+                                if (match != null) {
+                                  player.playTrack(match);
+                                  return;
+                                }
+                                try {
+                                  final searched = await OnlineMusicService.searchOnlineTracks('Golden Hour JVKE', limit: 1);
+                                  if (searched.isNotEmpty) {
+                                    player.playTrack(searched.first);
+                                    return;
+                                  }
+                                } catch (_) {}
+                                if (player.playlist.isNotEmpty) {
+                                  player.playTrack(player.playlist[player.playlist.length > 2 ? 2 : 0]);
+                                } else {
+                                  final fallback = getAllKnownTracks();
+                                  if (fallback.isNotEmpty) player.playTrack(fallback.first);
                                 }
                               },
                             ),
@@ -414,9 +463,24 @@ class MobileDiscoverTab extends StatelessWidget {
                               title: '爱在西元前',
                               artist: '周杰伦',
                               coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/8c/47/86/8c47862d-e254-8b49-30cf-d1f05ebba05b/23UM1IM56855.rgb.jpg/600x600bb.jpg',
-                              onPlay: () {
-                                if (player.playlist.length > 3) {
-                                  player.playTrack(player.playlist[3]);
+                              onPlay: () async {
+                                final match = getAllKnownTracks().where((x) => x.title.contains('爱在西元前') || x.artist.contains('周杰伦')).firstOrNull;
+                                if (match != null) {
+                                  player.playTrack(match);
+                                  return;
+                                }
+                                try {
+                                  final searched = await OnlineMusicService.searchOnlineTracks('爱在西元前 周杰伦', limit: 1);
+                                  if (searched.isNotEmpty) {
+                                    player.playTrack(searched.first);
+                                    return;
+                                  }
+                                } catch (_) {}
+                                if (player.playlist.isNotEmpty) {
+                                  player.playTrack(player.playlist[player.playlist.length > 3 ? 3 : 0]);
+                                } else {
+                                  final fallback = getAllKnownTracks();
+                                  if (fallback.isNotEmpty) player.playTrack(fallback.first);
                                 }
                               },
                             ),
@@ -851,17 +915,20 @@ class _MobileExploreTabState extends State<MobileExploreTab> with SingleTickerPr
         maxPerArtist: 1,
       );
 
+      final finalTracks = deduped.isNotEmpty ? deduped : getAllKnownTracks().take(22).toList();
       if (mounted) {
         setState(() {
-          _tracks = deduped;
+          _tracks = finalTracks;
           _isLoading = false;
           _isRefreshing = false;
         });
         _refreshAnimController.reset();
       }
     } catch (_) {
+      final fallback = getAllKnownTracks().take(22).toList();
       if (mounted) {
         setState(() {
+          _tracks = fallback;
           _isLoading = false;
           _isRefreshing = false;
         });
@@ -1074,34 +1141,41 @@ class _MobileExploreTabState extends State<MobileExploreTab> with SingleTickerPr
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 3.5,
-                    height: 13,
-                    decoration: BoxDecoration(
-                      color: theme.accentColor,
-                      borderRadius: BorderRadius.circular(2),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 3.5,
+                      height: 13,
+                      decoration: BoxDecoration(
+                        color: theme.accentColor,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '$_currentTag 精选风格单曲',
-                    style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: theme.textPrimary),
-                  ),
-                ],
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        '$_currentTag 精选风格单曲',
+                        style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               if (_tracks.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                  decoration: BoxDecoration(
-                    color: theme.accentColor.withValues(alpha: 0.12),
-                    borderRadius: MellowRadii.borderPill,
-                  ),
-                  child: Text(
-                    '多样性精选 · ${_tracks.length} 首',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: theme.accentColor),
-                  ),
+                SoftButton(
+                  icon: Icons.play_arrow_rounded,
+                  label: '一键播放',
+                  isPill: true,
+                  isActive: true,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  onTap: () {
+                    if (_tracks.isNotEmpty) {
+                      player.playPlaylist(_tracks, startIndex: 0);
+                    }
+                  },
                 ),
             ],
           ),

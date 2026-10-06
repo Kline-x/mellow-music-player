@@ -709,10 +709,25 @@ class _MobilePlaylistSquarePageState extends State<MobilePlaylistSquarePage> {
                                   bottom: 6,
                                   right: 6,
                                   child: GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
                                     onTap: () async {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('正在播放歌单「${pl.title}」...'),
+                                          duration: const Duration(milliseconds: 1200),
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                      if (pl.tracks.isNotEmpty) {
+                                        player.playPlaylist(pl.tracks, startIndex: 0);
+                                        return;
+                                      }
                                       final detail = await OnlineMusicService.importNeteasePlaylist(pl.id);
                                       if (detail != null && detail.tracks.isNotEmpty) {
                                         player.playPlaylist(detail.tracks, startIndex: 0);
+                                      } else {
+                                        final fallback = getAllKnownTracks();
+                                        if (fallback.isNotEmpty) player.playPlaylist(fallback, startIndex: 0);
                                       }
                                     },
                                     child: Container(
@@ -849,8 +864,19 @@ class _MobileToplistPageState extends State<MobileToplistPage> {
                   children: [
                     Text(chartName, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary)),
                     GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onTap: () {
-                        if (chartTracks.isNotEmpty) player.playPlaylist(chartTracks, startIndex: 0);
+                        if (chartTracks.isNotEmpty) {
+                          player.playPlaylist(chartTracks, startIndex: 0);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('正在拉取「$chartName」曲目，请稍候...'),
+                              duration: const Duration(seconds: 1),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
                       },
                       child: Icon(Icons.play_circle_fill_rounded, color: theme.accentColor, size: 28),
                     ),
@@ -1689,6 +1715,16 @@ class _MobileArtistDetailPageState extends State<MobileArtistDetailPage> {
                             onTap: () {
                               if (_tracks.isNotEmpty) {
                                 player.playPlaylist(_tracks, startIndex: 0);
+                              } else if (artist.tracks.isNotEmpty) {
+                                player.playPlaylist(artist.tracks, startIndex: 0);
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('正在拉取歌手代表作，请稍候...'),
+                                    duration: Duration(seconds: 1),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
                               }
                             },
                           ),
