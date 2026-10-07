@@ -12,12 +12,13 @@ import '../../core/audio/track_model.dart';
 import '../../core/sources/online_music_service.dart';
 import '../../core/sources/scenario_playlist_service.dart';
 import '../../core/sources/explore_deduplicator.dart';
+import '../../core/sources/daily_recommend_service.dart';
 import '../common/modals.dart';
 import '../common/update_dialog.dart';
 import '../../core/services/version_check_service.dart';
 
 /// 1. 移动端 Tab 1: 发现音乐 (MobileDiscoverTab - 1:1 原型复刻)
-class MobileDiscoverTab extends StatelessWidget {
+class MobileDiscoverTab extends StatefulWidget {
   final Function(String pageId, [String? extra]) onNavigatePage;
   final VoidCallback onOpenSearch;
 
@@ -28,29 +29,68 @@ class MobileDiscoverTab extends StatelessWidget {
   });
 
   @override
+  State<MobileDiscoverTab> createState() => _MobileDiscoverTabState();
+}
+
+class _MobileDiscoverTabState extends State<MobileDiscoverTab> {
+  List<Track> _newAlbumTracks = [];
+  bool _isLoadingAlbums = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // 预热今日推荐曲库与真实新碟专栏
+    DailyRecommendService.instance.getDailyRecommendTracksAsync();
+    _initNewAlbums();
+  }
+
+  void _initNewAlbums() async {
+    final localFallback = (toplistTracksMap['新歌榜'] ?? getAllKnownTracks()).take(8).toList();
+    if (mounted) {
+      setState(() {
+        _newAlbumTracks = localFallback;
+        _isLoadingAlbums = false;
+      });
+    }
+    try {
+      final fetched = await OnlineMusicService.fetchToplistTracks('新歌榜', limit: 12);
+      if (fetched.isNotEmpty && mounted) {
+        setState(() {
+          _newAlbumTracks = fetched;
+        });
+      }
+    } catch (_) {}
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
-      children: [
-        // 1. 顶部 Header (发现音乐 + Mobile 胶囊 + 白瓷日夜按钮 + 圆角头像)
-        _buildHeader(context),
-        const SizedBox(height: 14),
+    return ListenableBuilder(
+      listenable: DailyRecommendService.instance,
+      builder: (context, _) {
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
+          children: [
+            // 1. 顶部 Header (发现音乐 + Mobile 胶囊 + 白瓷日夜按钮 + 圆角头像)
+            _buildHeader(context),
+            const SizedBox(height: 14),
 
-        // 2. 全幅药丸圆角搜索框
-        _buildSearchPill(context),
-        const SizedBox(height: 20),
+            // 2. 全幅药丸圆角搜索框
+            _buildSearchPill(context),
+            const SizedBox(height: 20),
 
-        // 3. 五大彩色微拟物金刚区大圆角卡片
-        _buildKingKongSection(context),
-        const SizedBox(height: 26),
+            // 3. 五大彩色微拟物金刚区大圆角卡片
+            _buildKingKongSection(context),
+            const SizedBox(height: 26),
 
-        // 4. 专属雷达 · Daily Mixes (1 + 4 不对称网格矩阵)
-        _buildDailyMixesRadar(context),
-        const SizedBox(height: 26),
+            // 4. 每日推荐专区 (替代原专属雷达，点播放按钮播放全部歌曲)
+            _buildDailyRecommendSection(context),
+            const SizedBox(height: 26),
 
-        // 5. 新碟与精选专栏 (横向水平滑动卡片流)
-        _buildNewAlbumsSection(context),
-      ],
+            // 5. 新碟与精选专栏 (真实新碟曲库流，点击播放对应歌曲并推入专栏歌单)
+            _buildNewAlbumsSection(context),
+          ],
+        );
+      },
     );
   }
 
@@ -158,7 +198,7 @@ class MobileDiscoverTab extends StatelessWidget {
     final isDark = theme.isDarkMode;
 
     return GestureDetector(
-      onTap: onOpenSearch,
+      onTap: widget.onOpenSearch,
       child: Container(
         height: 44,
         padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -204,7 +244,7 @@ class MobileDiscoverTab extends StatelessWidget {
           icon: Icons.calendar_today_rounded,
           bgColor: isDark ? const Color(0xFF0C4A6E).withValues(alpha: 0.35) : const Color(0xFFE0F2FE),
           iconColor: const Color(0xFF0284C7),
-          onTap: () => onNavigatePage('recommend'),
+          onTap: () => widget.onNavigatePage('recommend'),
         ),
         _buildKingKongCard(
           context,
@@ -212,7 +252,7 @@ class MobileDiscoverTab extends StatelessWidget {
           icon: Icons.grid_view_rounded,
           bgColor: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.35) : const Color(0xFFDCFCE7),
           iconColor: const Color(0xFF16A34A),
-          onTap: () => onNavigatePage('playlists'),
+          onTap: () => widget.onNavigatePage('playlists'),
         ),
         _buildKingKongCard(
           context,
@@ -220,7 +260,7 @@ class MobileDiscoverTab extends StatelessWidget {
           icon: Icons.leaderboard_rounded,
           bgColor: isDark ? const Color(0xFF78350F).withValues(alpha: 0.35) : const Color(0xFFFEF3C7),
           iconColor: const Color(0xFFD97706),
-          onTap: () => onNavigatePage('toplist'),
+          onTap: () => widget.onNavigatePage('toplist'),
         ),
         _buildKingKongCard(
           context,
@@ -228,7 +268,7 @@ class MobileDiscoverTab extends StatelessWidget {
           icon: Icons.radio_rounded,
           bgColor: isDark ? const Color(0xFF581C87).withValues(alpha: 0.35) : const Color(0xFFF3E8FF),
           iconColor: const Color(0xFF9333EA),
-          onTap: () => onNavigatePage('radio'),
+          onTap: () => widget.onNavigatePage('radio'),
         ),
         _buildKingKongCard(
           context,
@@ -236,7 +276,7 @@ class MobileDiscoverTab extends StatelessWidget {
           icon: Icons.people_alt_rounded,
           bgColor: isDark ? const Color(0xFF831843).withValues(alpha: 0.35) : const Color(0xFFFCE7F3),
           iconColor: const Color(0xFFDB2777),
-          onTap: () => onNavigatePage('artists'),
+          onTap: () => widget.onNavigatePage('artists'),
         ),
       ],
     );
@@ -288,37 +328,80 @@ class MobileDiscoverTab extends StatelessWidget {
     );
   }
 
-  /// 专属雷达 · Daily Mixes (1 + 4 不对称网格矩阵)
-  Widget _buildDailyMixesRadar(BuildContext context) {
+  /// 每日推荐 · Daily Recommend (1 + 4 不对称网格矩阵 + 一键播放全部)
+  Widget _buildDailyRecommendSection(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
+    final dailyService = DailyRecommendService.instance;
+    final tracks = dailyService.getDailyRecommendTracks(limit: 30);
+
+    final primaryTrack = tracks.isNotEmpty ? tracks[0] : null;
+    final subTracks = tracks.length > 1 ? tracks.sublist(1, tracks.length >= 5 ? 5 : tracks.length) : <Track>[];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 标题行：左侧“专属雷达 · Daily Mixes”，右侧“更新于 06:00”
+        // 标题行：左侧“每日推荐 · Daily Recommend”，右侧微拟物“播放全部”按钮与更新时间
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Expanded(
-              child: Text(
-                '专属雷达 · Daily Mixes',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: theme.textPrimary,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => widget.onNavigatePage('recommend'),
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        '每日推荐 · Daily Recommend',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: theme.textPrimary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(Icons.chevron_right_rounded, size: 18, color: theme.textMuted),
+                  ],
                 ),
               ),
             ),
             const SizedBox(width: 8),
-            Text(
-              '更新于 06:00',
-              style: TextStyle(
-                fontSize: 11,
-                color: theme.textMuted,
-                fontWeight: FontWeight.w500,
+            // 播放全部微拟物药丸按钮 (MOB-041 播放歌单内全部歌曲)
+            GestureDetector(
+              onTap: () {
+                if (tracks.isNotEmpty) {
+                  player.playPlaylist(tracks, startIndex: 0);
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: theme.accentColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: theme.accentColor.withValues(alpha: 0.35),
+                    width: 0.8,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.play_arrow_rounded, size: 15, color: theme.accentColor),
+                    const SizedBox(width: 3),
+                    Text(
+                      '播放全部',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: theme.accentColor,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -331,33 +414,21 @@ class MobileDiscoverTab extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 左侧大卡片 (落日微风 · 私人漫游)
+              // 左侧大卡片 (首推单曲，点击直接播放全部)
               Expanded(
-                child: _buildRadarLargeCard(
+                child: _buildDailyLargeCard(
                   context,
-                  title: '落日微风 · 精选推荐',
-                  subtitle: '周杰伦 / 告五人 / M83',
-                  coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/58/8d/6d/588d6d61-fbac-148a-86bd-0030ce076ac1/23UM1IM57281.rgb.jpg/600x600bb.jpg',
-                  onPlay: () async {
-                    if (player.playlist.isNotEmpty) {
-                      player.playTrack(player.playlist[0]);
-                    } else {
-                      final pool = getAllKnownTracks();
-                      if (pool.isNotEmpty) {
-                        player.playPlaylist(pool, startIndex: 0);
-                      } else {
-                        final searched = await OnlineMusicService.searchOnlineTracks('落日微风 周杰伦', limit: 5);
-                        if (searched.isNotEmpty) {
-                          player.playPlaylist(searched, startIndex: 0);
-                        }
-                      }
+                  track: primaryTrack,
+                  onPlay: () {
+                    if (tracks.isNotEmpty) {
+                      player.playPlaylist(tracks, startIndex: 0);
                     }
                   },
                 ),
               ),
               const SizedBox(width: 10),
 
-              // 右侧 2x2 紧凑卡片矩阵 (上图下文架构)
+              // 右侧 2x2 紧凑小卡片矩阵 (点击精准播放对应项并把全部30首推入队列)
               Expanded(
                 child: Column(
                   children: [
@@ -365,58 +436,28 @@ class MobileDiscoverTab extends StatelessWidget {
                       child: Row(
                         children: [
                           Expanded(
-                            child: _buildRadarMiniCard(
+                            child: _buildDailyMiniCard(
                               context,
-                              title: '午夜霓虹',
-                              artist: 'M83',
-                              coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/cb/7b/a9/cb7ba903-b5f1-cc21-90db-7a81b7aa0997/724596951057.jpg/600x600bb.jpg',
-                              onPlay: () async {
-                                final match = getAllKnownTracks().where((x) => x.title.contains('Midnight') || x.artist.contains('M83')).firstOrNull;
-                                if (match != null) {
-                                  player.playTrack(match);
-                                  return;
-                                }
-                                try {
-                                  final searched = await OnlineMusicService.searchOnlineTracks('Midnight M83', limit: 1);
-                                  if (searched.isNotEmpty) {
-                                    player.playTrack(searched.first);
-                                    return;
-                                  }
-                                } catch (_) {}
-                                if (player.playlist.isNotEmpty) {
-                                  player.playTrack(player.playlist.first);
-                                } else {
-                                  final fallback = getAllKnownTracks();
-                                  if (fallback.isNotEmpty) player.playTrack(fallback.first);
+                              track: subTracks.isNotEmpty ? subTracks[0] : null,
+                              onPlay: () {
+                                if (tracks.length > 1) {
+                                  player.playPlaylist(tracks, startIndex: 1);
+                                } else if (tracks.isNotEmpty) {
+                                  player.playPlaylist(tracks, startIndex: 0);
                                 }
                               },
                             ),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: _buildRadarMiniCard(
+                            child: _buildDailyMiniCard(
                               context,
-                              title: '慢冷治愈',
-                              artist: '梁静茹',
-                              coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/bf/f0/11/bff01142-f4f0-f9c4-f497-007f43e42783/BD0018-_-_Fall_In_Love_Songs.jpg/600x600bb.jpg',
-                              onPlay: () async {
-                                final match = getAllKnownTracks().where((x) => x.title.contains('慢冷') || x.artist.contains('梁静茹')).firstOrNull;
-                                if (match != null) {
-                                  player.playTrack(match);
-                                  return;
-                                }
-                                try {
-                                  final searched = await OnlineMusicService.searchOnlineTracks('慢冷 梁静茹', limit: 1);
-                                  if (searched.isNotEmpty) {
-                                    player.playTrack(searched.first);
-                                    return;
-                                  }
-                                } catch (_) {}
-                                if (player.playlist.isNotEmpty) {
-                                  player.playTrack(player.playlist[player.playlist.length > 1 ? 1 : 0]);
-                                } else {
-                                  final fallback = getAllKnownTracks();
-                                  if (fallback.isNotEmpty) player.playTrack(fallback.first);
+                              track: subTracks.length > 1 ? subTracks[1] : null,
+                              onPlay: () {
+                                if (tracks.length > 2) {
+                                  player.playPlaylist(tracks, startIndex: 2);
+                                } else if (tracks.isNotEmpty) {
+                                  player.playPlaylist(tracks, startIndex: 0);
                                 }
                               },
                             ),
@@ -429,58 +470,28 @@ class MobileDiscoverTab extends StatelessWidget {
                       child: Row(
                         children: [
                           Expanded(
-                            child: _buildRadarMiniCard(
+                            child: _buildDailyMiniCard(
                               context,
-                              title: 'Golden Hour',
-                              artist: 'JVKE',
-                              coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/8d/1a/7b/8d1a7b44-316f-7c7f-4380-935673fb697a/5056167175650.jpg/600x600bb.jpg',
-                              onPlay: () async {
-                                final match = getAllKnownTracks().where((x) => x.title.contains('Golden Hour') || x.artist.contains('JVKE')).firstOrNull;
-                                if (match != null) {
-                                  player.playTrack(match);
-                                  return;
-                                }
-                                try {
-                                  final searched = await OnlineMusicService.searchOnlineTracks('Golden Hour JVKE', limit: 1);
-                                  if (searched.isNotEmpty) {
-                                    player.playTrack(searched.first);
-                                    return;
-                                  }
-                                } catch (_) {}
-                                if (player.playlist.isNotEmpty) {
-                                  player.playTrack(player.playlist[player.playlist.length > 2 ? 2 : 0]);
-                                } else {
-                                  final fallback = getAllKnownTracks();
-                                  if (fallback.isNotEmpty) player.playTrack(fallback.first);
+                              track: subTracks.length > 2 ? subTracks[2] : null,
+                              onPlay: () {
+                                if (tracks.length > 3) {
+                                  player.playPlaylist(tracks, startIndex: 3);
+                                } else if (tracks.isNotEmpty) {
+                                  player.playPlaylist(tracks, startIndex: 0);
                                 }
                               },
                             ),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: _buildRadarMiniCard(
+                            child: _buildDailyMiniCard(
                               context,
-                              title: '爱在西元前',
-                              artist: '周杰伦',
-                              coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/8c/47/86/8c47862d-e254-8b49-30cf-d1f05ebba05b/23UM1IM56855.rgb.jpg/600x600bb.jpg',
-                              onPlay: () async {
-                                final match = getAllKnownTracks().where((x) => x.title.contains('爱在西元前') || x.artist.contains('周杰伦')).firstOrNull;
-                                if (match != null) {
-                                  player.playTrack(match);
-                                  return;
-                                }
-                                try {
-                                  final searched = await OnlineMusicService.searchOnlineTracks('爱在西元前 周杰伦', limit: 1);
-                                  if (searched.isNotEmpty) {
-                                    player.playTrack(searched.first);
-                                    return;
-                                  }
-                                } catch (_) {}
-                                if (player.playlist.isNotEmpty) {
-                                  player.playTrack(player.playlist[player.playlist.length > 3 ? 3 : 0]);
-                                } else {
-                                  final fallback = getAllKnownTracks();
-                                  if (fallback.isNotEmpty) player.playTrack(fallback.first);
+                              track: subTracks.length > 3 ? subTracks[3] : null,
+                              onPlay: () {
+                                if (tracks.length > 4) {
+                                  player.playPlaylist(tracks, startIndex: 4);
+                                } else if (tracks.isNotEmpty) {
+                                  player.playPlaylist(tracks, startIndex: 0);
                                 }
                               },
                             ),
@@ -498,15 +509,16 @@ class MobileDiscoverTab extends StatelessWidget {
     );
   }
 
-  Widget _buildRadarLargeCard(
+  Widget _buildDailyLargeCard(
     BuildContext context, {
-    required String title,
-    required String subtitle,
-    required String coverUrl,
+    required Track? track,
     required VoidCallback onPlay,
   }) {
     final theme = context.watch<ThemeProvider>();
     final isDark = theme.isDarkMode;
+    final title = track?.title ?? '今日推荐曲目';
+    final subtitle = track != null ? '${track.artist} · ${track.album}' : '智能汇集今日灵感音乐';
+    final coverUrl = track?.coverUrl ?? '';
 
     return GestureDetector(
       onTap: onPlay,
@@ -533,11 +545,16 @@ class MobileDiscoverTab extends StatelessWidget {
                   Positioned.fill(
                     child: ClipRRect(
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-                      child: MellowImage(
-                        url: coverUrl,
-                        width: double.infinity,
-                        height: double.infinity,
-                      ),
+                      child: coverUrl.isNotEmpty
+                          ? MellowImage(
+                              url: coverUrl,
+                              width: double.infinity,
+                              height: double.infinity,
+                            )
+                          : Container(
+                              color: theme.accentColor.withValues(alpha: 0.1),
+                              child: Icon(Icons.music_note_rounded, size: 40, color: theme.accentColor),
+                            ),
                     ),
                   ),
                   // 右下角悬浮白色毛玻璃圆形播放按钮
@@ -545,10 +562,10 @@ class MobileDiscoverTab extends StatelessWidget {
                     right: 8,
                     bottom: 8,
                     child: Container(
-                      width: 30,
-                      height: 30,
+                      width: 32,
+                      height: 32,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.92),
+                        color: Colors.white.withValues(alpha: 0.95),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
@@ -561,7 +578,7 @@ class MobileDiscoverTab extends StatelessWidget {
                       child: const Icon(
                         Icons.play_arrow_rounded,
                         color: Color(0xFF0F172A),
-                        size: 20,
+                        size: 22,
                       ),
                     ),
                   ),
@@ -604,15 +621,16 @@ class MobileDiscoverTab extends StatelessWidget {
     );
   }
 
-  Widget _buildRadarMiniCard(
+  Widget _buildDailyMiniCard(
     BuildContext context, {
-    required String title,
-    required String artist,
-    required String coverUrl,
+    required Track? track,
     required VoidCallback onPlay,
   }) {
     final theme = context.watch<ThemeProvider>();
     final isDark = theme.isDarkMode;
+    final title = track?.title ?? '精选推荐';
+    final artist = track?.artist ?? '未知歌手';
+    final coverUrl = track?.coverUrl ?? '';
 
     return GestureDetector(
       onTap: onPlay,
@@ -640,21 +658,26 @@ class MobileDiscoverTab extends StatelessWidget {
                   Positioned.fill(
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
-                      child: MellowImage(
-                        url: coverUrl,
-                        width: double.infinity,
-                        height: double.infinity,
-                      ),
+                      child: coverUrl.isNotEmpty
+                          ? MellowImage(
+                              url: coverUrl,
+                              width: double.infinity,
+                              height: double.infinity,
+                            )
+                          : Container(
+                              color: theme.accentColor.withValues(alpha: 0.1),
+                              child: Icon(Icons.music_note_rounded, size: 20, color: theme.accentColor),
+                            ),
                     ),
                   ),
                   Positioned(
                     right: 4,
                     bottom: 4,
                     child: Container(
-                      width: 18,
-                      height: 18,
+                      width: 20,
+                      height: 20,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: Colors.white.withValues(alpha: 0.95),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
@@ -666,7 +689,7 @@ class MobileDiscoverTab extends StatelessWidget {
                       child: const Icon(
                         Icons.play_arrow_rounded,
                         color: Colors.black87,
-                        size: 13,
+                        size: 14,
                       ),
                     ),
                   ),
@@ -700,37 +723,11 @@ class MobileDiscoverTab extends StatelessWidget {
     );
   }
 
-  /// 新碟与精选专栏 (横向水平滑动卡片流)
+  /// 新碟与精选专栏 (真实新碟曲库流，点击播放对应曲目并全量入队专栏)
   Widget _buildNewAlbumsSection(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
-
-    final albums = [
-      {
-        'title': 'Hurry Up, Dreaming',
-        'artist': 'M83',
-        'year': '2011 · 电子梦幻',
-        'cover': 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/cb/7b/a9/cb7ba903-b5f1-cc21-90db-7a81b7aa0997/724596951057.jpg/600x600bb.jpg',
-      },
-      {
-        'title': '范特西 Fantasy',
-        'artist': '周杰伦',
-        'year': '2001 · 华语经典',
-        'cover': 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/8c/47/86/8c47862d-e254-8b49-30cf-d1f05ebba05b/23UM1IM56855.rgb.jpg/600x600bb.jpg',
-      },
-      {
-        'title': '爱人错过',
-        'artist': '告五人',
-        'year': '2019 · 独立摇滚',
-        'cover': 'https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/10/ba/77/10ba77f4-47ae-8cb6-2913-cf49b78452b5/1..jpg/600x600bb.jpg',
-      },
-      {
-        'title': '静夜琴思',
-        'artist': '巫娜',
-        'year': '2020 · 东方禅意',
-        'cover': 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/69/49/61/694961f3-1414-355e-66e4-9649ba13ec55/23UM1IM57770.rgb.jpg/600x600bb.jpg',
-      },
-    ];
+    final albums = _newAlbumTracks;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -746,95 +743,140 @@ class MobileDiscoverTab extends StatelessWidget {
                 color: theme.textPrimary,
               ),
             ),
-            GestureDetector(
-              onTap: () => onNavigatePage('playlists'),
-              child: Row(
-                children: [
-                  Text(
-                    '全部 48 专',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: theme.textMuted,
+            Row(
+              children: [
+                if (albums.isNotEmpty)
+                  GestureDetector(
+                    onTap: () {
+                      player.playPlaylist(albums, startIndex: 0);
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: theme.accentColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.play_arrow_rounded, size: 14, color: theme.accentColor),
+                          const SizedBox(width: 2),
+                          Text(
+                            '播放专栏',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: theme.accentColor,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  Icon(Icons.chevron_right_rounded, size: 16, color: theme.textMuted),
-                ],
-              ),
+                GestureDetector(
+                  onTap: () => widget.onNavigatePage('playlists'),
+                  child: Row(
+                    children: [
+                      Text(
+                        '全部 ${albums.length} 专',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: theme.textMuted,
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded, size: 16, color: theme.textMuted),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
         const SizedBox(height: 12),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          child: Row(
-            children: albums.map((item) {
-              return Container(
-                width: 124,
-                margin: const EdgeInsets.only(right: 12),
-                child: GestureDetector(
-                  onTap: () {
-                    if (player.playlist.isNotEmpty) {
-                      player.playTrack(player.playlist[0]);
-                    }
-                  },
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(14),
-                        child: Stack(
-                          children: [
-                            MellowImage(
-                              url: item['cover']!,
-                              width: 124,
-                              height: 124,
-                            ),
-                            Positioned(
-                              right: 8,
-                              bottom: 8,
-                              child: Container(
-                                width: 26,
-                                height: 26,
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.6),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 16),
+        if (_isLoadingAlbums && albums.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          )
+        else
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: List.generate(albums.length, (idx) {
+                final item = albums[idx];
+                return Container(
+                  width: 124,
+                  margin: const EdgeInsets.only(right: 12),
+                  child: GestureDetector(
+                    onTap: () {
+                      // 精准播放所选新碟曲目，并将专栏全部曲目推入队列
+                      player.playPlaylist(albums, startIndex: idx);
+                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: Stack(
+                            children: [
+                              MellowImage(
+                                url: item.coverUrl,
+                                width: 124,
+                                height: 124,
                               ),
-                            ),
-                          ],
+                              Positioned(
+                                right: 8,
+                                bottom: 8,
+                                child: Container(
+                                  width: 28,
+                                  height: 28,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.92),
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.25),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(Icons.play_arrow_rounded, color: Colors.black87, size: 18),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        item['title']!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: theme.textPrimary,
+                        const SizedBox(height: 6),
+                        Text(
+                          item.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: theme.textPrimary,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 1),
-                      Text(
-                        '${item['artist']} · ${item['year']}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: theme.textMuted,
+                        const SizedBox(height: 1),
+                        Text(
+                          '${item.artist} · ${item.album}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: theme.textMuted,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              );
-            }).toList(),
+                );
+              }),
+            ),
           ),
-        ),
       ],
     );
   }
@@ -852,6 +894,7 @@ class MobileExploreTab extends StatefulWidget {
 class _MobileExploreTabState extends State<MobileExploreTab> with SingleTickerProviderStateMixin {
   String _currentTag = '全部';
   final List<String> _tags = ['全部', '华语', '流行', '摇滚', '民谣', '电子', '古典'];
+  final Map<String, int> _tagPageMap = {};
   List<Track> _tracks = [];
   bool _isLoading = true;
   bool _isRefreshing = false;
@@ -876,14 +919,18 @@ class _MobileExploreTabState extends State<MobileExploreTab> with SingleTickerPr
   Future<void> _loadExploreTracks(String tag, {bool refresh = false}) async {
     if (!mounted) return;
     if (refresh) {
+      _tagPageMap[tag] = (_tagPageMap[tag] ?? 1) + 1;
       setState(() => _isRefreshing = true);
       _refreshAnimController.repeat();
     } else {
+      _tagPageMap.putIfAbsent(tag, () => 1);
       setState(() {
         _isLoading = true;
         _tracks = [];
       });
     }
+
+    final currentPage = _tagPageMap[tag] ?? 1;
 
     try {
       final subQueries = List<String>.from(ExploreDeduplicator.genreKeywords[tag] ?? [tag]);
@@ -891,7 +938,7 @@ class _MobileExploreTabState extends State<MobileExploreTab> with SingleTickerPr
       // 选取前 2~3 个子关键词并发拉取以保证曲库广度
       final selectedQueries = subQueries.take(3).toList();
 
-      final futures = selectedQueries.map((q) => OnlineMusicService.searchOnlineTracks(q, limit: 16));
+      final futures = selectedQueries.map((q) => OnlineMusicService.searchOnlineTracks(q, page: currentPage, limit: 16));
       final nestedResults = await Future.wait(futures);
 
       // 交错洗牌合并结果池
@@ -915,7 +962,12 @@ class _MobileExploreTabState extends State<MobileExploreTab> with SingleTickerPr
         maxPerArtist: 1,
       );
 
-      final finalTracks = deduped.isNotEmpty ? deduped : getAllKnownTracks().take(22).toList();
+      final allKnown = getAllKnownTracks();
+      final offset = allKnown.isNotEmpty ? ((currentPage - 1) * 8) % allKnown.length : 0;
+      final rotated = allKnown.isNotEmpty ? [...allKnown.sublist(offset), ...allKnown.sublist(0, offset)] : allKnown;
+      final fallback = rotated.take(22).toList();
+
+      final finalTracks = deduped.isNotEmpty ? deduped : fallback;
       if (mounted) {
         setState(() {
           _tracks = finalTracks;
@@ -925,7 +977,10 @@ class _MobileExploreTabState extends State<MobileExploreTab> with SingleTickerPr
         _refreshAnimController.reset();
       }
     } catch (_) {
-      final fallback = getAllKnownTracks().take(22).toList();
+      final allKnown = getAllKnownTracks();
+      final offset = allKnown.isNotEmpty ? ((currentPage - 1) * 8) % allKnown.length : 0;
+      final rotated = allKnown.isNotEmpty ? [...allKnown.sublist(offset), ...allKnown.sublist(0, offset)] : allKnown;
+      final fallback = rotated.take(22).toList();
       if (mounted) {
         setState(() {
           _tracks = fallback;
@@ -1101,36 +1156,71 @@ class _MobileExploreTabState extends State<MobileExploreTab> with SingleTickerPr
                         ),
                       ],
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Stack(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.22),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(scenario.icon, color: Colors.white, size: 16),
-                        ),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              scenario.title,
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.22),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(scenario.icon, color: Colors.white, size: 16),
                             ),
-                            const SizedBox(height: 1.5),
-                            Text(
-                              scenario.description,
-                              style: TextStyle(color: Colors.white.withValues(alpha: 0.88), fontSize: 9.5),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  scenario.title,
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 1.5),
+                                Text(
+                                  scenario.description,
+                                  style: TextStyle(color: Colors.white.withValues(alpha: 0.88), fontSize: 9.5),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
                           ],
+                        ),
+                        // 场景右上角一键播放全部歌曲按钮
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: GestureDetector(
+                            onTap: () async {
+                              try {
+                                final playlists = await ScenarioPlaylistService.instance.searchScenarioPlaylists(scenario.primaryKeyword, limit: 1);
+                                if (playlists.isNotEmpty && playlists.first.tracks.isNotEmpty) {
+                                  player.playPlaylist(playlists.first.tracks, startIndex: 0);
+                                  return;
+                                }
+                              } catch (_) {}
+                              try {
+                                final tracks = await OnlineMusicService.searchOnlineTracks(scenario.primaryKeyword, limit: 15);
+                                if (tracks.isNotEmpty) {
+                                  player.playPlaylist(tracks, startIndex: 0);
+                                }
+                              } catch (_) {}
+                            },
+                            child: Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.25),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 16),
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -1239,7 +1329,7 @@ class _MobileExploreTabState extends State<MobileExploreTab> with SingleTickerPr
 
                 return SoftCard(
                   padding: const EdgeInsets.all(9),
-                  onTap: () => player.playTrack(t),
+                  onTap: () => player.playPlaylist(_tracks, startIndex: idx),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1258,24 +1348,33 @@ class _MobileExploreTabState extends State<MobileExploreTab> with SingleTickerPr
                             Positioned(
                               right: 6,
                               bottom: 6,
-                              child: Container(
-                                width: 26,
-                                height: 26,
-                                decoration: BoxDecoration(
-                                  color: isCurrent ? theme.accentColor : Colors.black.withValues(alpha: 0.5),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.3),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 1.5),
-                                    ),
-                                  ],
-                                ),
-                                child: Icon(
-                                  isCurrent && player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                                  color: Colors.white,
-                                  size: 16,
+                              child: GestureDetector(
+                                onTap: () {
+                                  if (isCurrent) {
+                                    player.togglePlay();
+                                  } else {
+                                    player.playPlaylist(_tracks, startIndex: idx);
+                                  }
+                                },
+                                child: Container(
+                                  width: 26,
+                                  height: 26,
+                                  decoration: BoxDecoration(
+                                    color: isCurrent ? theme.accentColor : Colors.black.withValues(alpha: 0.5),
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.3),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 1.5),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Icon(
+                                    isCurrent && player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
                                 ),
                               ),
                             ),

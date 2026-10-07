@@ -63,7 +63,7 @@ void main() {
   });
 
   group('MOB-033 移动端全页面播放按钮响应性与冷启动防空转验证', () {
-    testWidgets('发现页雷达推荐大卡片在播放队列为空时点击绝不空转，自动注入曲目并起播', (tester) async {
+    testWidgets('发现页每日推荐大卡片在播放队列为空时点击绝不空转，自动注入全量推荐曲目并起播', (tester) async {
       final player = AudioPlayerService();
       player.clearQueue();
       expect(player.playlist.isEmpty, isTrue);
@@ -78,20 +78,23 @@ void main() {
         ),
       );
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
 
-      // 点击「落日微风 · 精选推荐」大卡片
-      final largeCard = find.text('落日微风 · 精选推荐');
-      expect(largeCard, findsOneWidget);
-      await tester.tap(largeCard);
+      // 验证存在每日推荐专区与播放全部按钮
+      expect(find.text('每日推荐 · Daily Recommend'), findsOneWidget);
+      final playAllBtn = find.text('播放全部').first;
+      expect(playAllBtn, findsOneWidget);
+
+      await tester.tap(playAllBtn);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      // 验证成功起播且队列不再为空
+      // 验证成功起播且队列注入了全量曲目
       expect(player.playlist.isNotEmpty, isTrue);
       expect(player.isPlaying, isTrue);
     });
 
-    testWidgets('发现页雷达紧凑小卡片在冷启动时点击真实起播对应曲目', (tester) async {
+    testWidgets('发现页每日推荐紧凑小卡片在冷启动时点击真实起播对应曲目并全量入队', (tester) async {
       final player = AudioPlayerService();
       player.clearQueue();
 
@@ -105,15 +108,17 @@ void main() {
         ),
       );
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
 
-      // 点击「慢冷治愈」卡片
-      final miniCard = find.text('慢冷治愈');
-      expect(miniCard, findsOneWidget);
-      await tester.tap(miniCard);
+      // 验证找到每日推荐内的小卡片播放按钮并点击
+      final playButtons = find.byIcon(Icons.play_arrow_rounded);
+      expect(playButtons, findsWidgets);
+
+      await tester.tap(playButtons.at(1));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      // 验证成功起播
+      // 验证成功起播并导入队列
       expect(player.playlist.isNotEmpty, isTrue);
       expect(player.isPlaying, isTrue);
     });

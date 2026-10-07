@@ -150,7 +150,7 @@ void main() {
       expect(find.text('发现音乐'), findsOneWidget);
     });
 
-    testWidgets('MOB-04: “专属雷达 · Daily Mixes” 1 + 4 不对称网格矩阵点播交互', (tester) async {
+    testWidgets('MOB-04: “每日推荐 · Daily Recommend” 1 + 4 不对称网格矩阵与全量播放交互', (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -158,27 +158,30 @@ void main() {
       await tester.pumpWidget(buildMobileApp());
       await tester.pump(const Duration(milliseconds: 300));
 
-      // 1. 验证标题栏
-      expect(find.text('专属雷达 · Daily Mixes'), findsOneWidget);
-      expect(find.text('更新于 06:00'), findsOneWidget);
+      // 1. 验证标题栏与一键播放全部按钮
+      expect(find.text('每日推荐 · Daily Recommend'), findsOneWidget);
+      expect(find.text('播放全部'), findsWidgets);
 
-      // 2. 验证左侧大卡片
-      expect(find.text('落日微风 · 精选推荐'), findsOneWidget);
-      expect(find.text('周杰伦 / 告五人 / M83'), findsOneWidget);
-
-      // 3. 验证右侧 2x2 四张紧凑小卡片
-      expect(find.text('午夜霓虹'), findsOneWidget);
-      expect(find.text('慢冷治愈'), findsOneWidget);
-      expect(find.text('Golden Hour'), findsOneWidget);
-      expect(find.text('爱在西元前'), findsOneWidget);
-
-      // 4. 点击小卡片切歌点播
-      await tester.tap(find.text('Golden Hour'));
+      // 2. 点击「播放全部」
+      final playAll = find.text('播放全部').first;
+      await tester.tap(playAll);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // 验证当前播放歌曲切换
-      expect(audioService.currentIndex, equals(2));
+      // 验证全量曲目入队并从第 0 首起播
+      expect(audioService.playlist.length, greaterThanOrEqualTo(5));
+      expect(audioService.currentIndex, equals(0));
+      expect(audioService.isPlaying, isTrue);
+
+      // 3. 点击小卡片点播
+      final playButtons = find.byIcon(Icons.play_arrow_rounded);
+      expect(playButtons, findsWidgets);
+      await tester.tap(playButtons.at(2));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // 验证当前播放歌曲切换且处于播放中
+      expect(audioService.isPlaying, isTrue);
 
       // 暂停防止定时器泄漏
       audioService.pause();

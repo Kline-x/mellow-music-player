@@ -173,8 +173,16 @@ class _DesktopDiscoverViewState extends State<DesktopDiscoverView> {
                           isPill: true,
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                           onTap: () {
-                            if (player.playlist.isNotEmpty) {
+                            final dailyTracks = DailyRecommendService.instance.getDailyRecommendTracks(limit: 30);
+                            if (dailyTracks.isNotEmpty) {
+                              player.playPlaylist(dailyTracks, startIndex: 0);
+                            } else if (player.playlist.isNotEmpty) {
                               player.playTrack(player.playlist[0]);
+                            } else {
+                              final pool = getAllKnownTracks();
+                              if (pool.isNotEmpty) {
+                                player.playPlaylist(pool, startIndex: 0);
+                              }
                             }
                           },
                         ),

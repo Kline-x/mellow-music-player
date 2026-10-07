@@ -1474,6 +1474,21 @@ class MobileRadioPage extends StatelessWidget {
         ),
         title: Text('声音电台', style: TextStyle(fontWeight: FontWeight.bold, color: theme.textPrimary, fontSize: 17)),
         centerTitle: true,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: TextButton.icon(
+              onPressed: () {
+                final allTracks = radios.map((e) => e.track).toList();
+                if (allTracks.isNotEmpty) {
+                  player.playPlaylist(allTracks, startIndex: 0);
+                }
+              },
+              icon: Icon(Icons.play_arrow_rounded, color: theme.accentColor, size: 18),
+              label: Text('播放全部', style: TextStyle(color: theme.accentColor, fontSize: 13, fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
       ),
       body: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
@@ -1481,10 +1496,11 @@ class MobileRadioPage extends StatelessWidget {
         separatorBuilder: (_, __) => const SizedBox(height: 12),
         itemBuilder: (context, idx) {
           final r = radios[idx];
+          final allTracks = radios.map((e) => e.track).toList();
           return SoftCard(
             padding: const EdgeInsets.all(16),
             onTap: () {
-              player.playTrack(r.track);
+              player.playPlaylist(allTracks, startIndex: idx);
             },
             child: Row(
               children: [
@@ -1505,7 +1521,7 @@ class MobileRadioPage extends StatelessWidget {
                 GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () {
-                    player.playTrack(r.track);
+                    player.playPlaylist(allTracks, startIndex: idx);
                   },
                   child: Container(
                     width: 36,
@@ -1937,33 +1953,52 @@ class _MobileLocalMusicPageState extends State<MobileLocalMusicPage> {
                   ),
                 ],
               ),
-            )
-          else
-            ...localTracks.map((t) => SoftCard(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              onTap: () => player.playTrack(t),
-              child: Row(
-                children: [
-                  const Icon(Icons.audio_file_rounded, color: Colors.blueAccent),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: theme.textPrimary)),
-                        const SizedBox(height: 2),
-                        Text('${t.artist} · ${t.album}', style: TextStyle(fontSize: 11, color: theme.textMuted)),
-                      ],
+            ),
+          if (localTracks.isNotEmpty) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('本地曲目 (${localTracks.length})', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: theme.textPrimary)),
+                SoftButton(
+                  icon: Icons.play_arrow_rounded,
+                  label: '播放全部',
+                  isPill: true,
+                  isActive: true,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  onTap: () => player.playPlaylist(localTracks, startIndex: 0),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ...List.generate(localTracks.length, (idx) {
+              final t = localTracks[idx];
+              return SoftCard(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                onTap: () => player.playPlaylist(localTracks, startIndex: idx),
+                child: Row(
+                  children: [
+                    const Icon(Icons.audio_file_rounded, color: Colors.blueAccent),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: theme.textPrimary)),
+                          const SizedBox(height: 2),
+                          Text('${t.artist} · ${t.album}', style: TextStyle(fontSize: 11, color: theme.textMuted)),
+                        ],
+                      ),
                     ),
-                  ),
-                  Icon(
-                    player.currentTrack?.id == t.id && player.isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_arrow_rounded,
-                    color: theme.accentColor,
-                  ),
-                ],
-              ),
-            )),
+                    Icon(
+                      player.currentTrack?.id == t.id && player.isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_arrow_rounded,
+                      color: theme.accentColor,
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
         ],
       ),
     );
@@ -2216,12 +2251,13 @@ class _MobileSearchPageState extends State<MobileSearchPage> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    ..._searchResults.map((t) {
+                    ...List.generate(_searchResults.length, (idx) {
+                      final t = _searchResults[idx];
                       final isCurrent = player.currentTrack?.id == t.id && player.isPlaying;
                       return SoftCard(
                         margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.all(10),
-                        onTap: () => player.playTrack(t),
+                        onTap: () => player.playPlaylist(_searchResults, startIndex: idx),
                         child: Row(
                           children: [
                             ClipRRect(
