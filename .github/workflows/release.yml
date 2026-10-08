@@ -214,19 +214,26 @@ jobs:
           storeFile=mellow-release.jks
           EOF
 
-      - name: Build Android APK
+      - name: Build Android APKs (Split-per-ABI & Universal)
         working-directory: app
-        run: flutter build apk --release
-
-      - name: Copy and Rename APK
         run: |
-          cp app/build/app/outputs/flutter-apk/app-release.apk Mellow-Music-Android.apk
+          # 1. 编译全机型 Universal 通用包 (~59MB)
+          flutter build apk --release
+          cp build/app/outputs/flutter-apk/app-release.apk ../Mellow-Music-Android.apk
 
-      - name: Upload Android Artifact
+          # 2. 编译各硬件架构精简分包 (arm64 仅约 20MB)
+          flutter build apk --split-per-abi --release
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk ../Mellow-Music-Android-arm64.apk
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk ../Mellow-Music-Android-armv7.apk
+
+      - name: Upload Android Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Mellow-Music-Android
-          path: Mellow-Music-Android.apk
+          path: |
+            Mellow-Music-Android.apk
+            Mellow-Music-Android-arm64.apk
+            Mellow-Music-Android-armv7.apk
 
   # ---------------------------------------------------------------------------
   # 5. iOS 移动端原生安装包 (.ipa Installer) 构建
@@ -343,6 +350,8 @@ jobs:
             release-assets/Mellow-Music-Linux-amd64.deb
             release-assets/Mellow-Music-Linux-x64-Portable.tar.gz
             release-assets/Mellow-Music-Android.apk
+            release-assets/Mellow-Music-Android-arm64.apk
+            release-assets/Mellow-Music-Android-armv7.apk
             release-assets/Mellow-Music-iOS.ipa
             release-assets/Mellow-Music-iOS-App.zip
             release-assets/Mellow-Music-Web.tar.gz
