@@ -116,26 +116,6 @@ class _MobileDiscoverTabState extends State<MobileDiscoverTab> {
                   letterSpacing: -0.5,
                 ),
               ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0284C7).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFF38BDF8).withValues(alpha: 0.4),
-                    width: 0.8,
-                  ),
-                ),
-                child: const Text(
-                  'Mobile',
-                  style: TextStyle(
-                    color: Color(0xFF0284C7),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
             ],
           ),
 
@@ -161,7 +141,7 @@ class _MobileDiscoverTabState extends State<MobileDiscoverTab> {
                     ],
                   ),
                   child: Icon(
-                    isDark ? Icons.light_mode_rounded : Icons.wb_sunny_rounded,
+                    isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
                     color: theme.accentColor,
                     size: 18,
                   ),
@@ -517,7 +497,14 @@ class _MobileDiscoverTabState extends State<MobileDiscoverTab> {
     final theme = context.watch<ThemeProvider>();
     final isDark = theme.isDarkMode;
     final title = track?.title ?? '今日推荐曲目';
-    final subtitle = track != null ? '${track.artist} · ${track.album}' : '智能汇集今日灵感音乐';
+    final String subtitle;
+    if (track == null) {
+      subtitle = '智能汇集今日灵感音乐';
+    } else {
+      final a = track.artist.trim();
+      final alb = track.album.trim();
+      subtitle = (alb.isEmpty || alb == a || alb.contains(a)) ? a : '$a · $alb';
+    }
     final coverUrl = track?.coverUrl ?? '';
 
     return GestureDetector(
@@ -862,7 +849,11 @@ class _MobileDiscoverTabState extends State<MobileDiscoverTab> {
                         ),
                         const SizedBox(height: 1),
                         Text(
-                          '${item.artist} · ${item.album}',
+                          (item.album.trim().isEmpty ||
+                                  item.album.trim() == item.artist.trim() ||
+                                  item.album.contains(item.artist.trim()))
+                              ? item.artist
+                              : '${item.artist} · ${item.album}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -1803,7 +1794,7 @@ class MobileProfileTab extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: SoftButton(
-                      label: '深石墨夜间',
+                      label: '深石墨黑',
                       icon: Icons.dark_mode_rounded,
                       isActive: theme.appThemeMode == AppThemeMode.dark,
                       onTap: () => theme.setThemeMode(AppThemeMode.dark),
@@ -1862,20 +1853,48 @@ class MobileProfileTab extends StatelessWidget {
             children: [
               Text('多端协同与系统', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: theme.textPrimary)),
               const SizedBox(height: 12),
-              SoftButton(
-                icon: Icons.cell_tower_rounded,
-                label: '局域网多端同步中心',
-                isPill: false,
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: () => showDialog(
                   context: context,
                   builder: (_) => const LanPairingModal(),
                 ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: theme.cardColor.withValues(alpha: theme.isDarkMode ? 0.6 : 0.9),
+                    borderRadius: MellowRadii.borderR16,
+                    border: Border.all(color: theme.borderColor.withValues(alpha: 0.5), width: 0.8),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0284C7).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.cell_tower_rounded, color: Color(0xFF0284C7), size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('局域网多端同步中心', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: theme.textPrimary)),
+                            const SizedBox(height: 2),
+                            Text('与 macOS / Windows 桌面端近场直连互传', style: TextStyle(fontSize: 11, color: theme.textMuted)),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded, size: 20, color: theme.textMuted),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 10),
-              SoftButton(
-                icon: Icons.system_update_alt_rounded,
-                label: '检查新版本更新',
-                isPill: false,
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: () async {
                   final messenger = ScaffoldMessenger.of(context);
                   try {
@@ -1889,17 +1908,56 @@ class MobileProfileTab extends StatelessWidget {
                         SnackBar(
                           content: Text('已是最新版本 (v${service.currentVersionName})'),
                           behavior: SnackBarBehavior.floating,
+                          margin: const EdgeInsets.fromLTRB(16, 0, 16, 85),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         ),
                       );
                     }
                   } catch (e) {
                     if (context.mounted) {
                       messenger.showSnackBar(
-                        SnackBar(content: Text('检查更新失败: $e'), behavior: SnackBarBehavior.floating),
+                        SnackBar(
+                          content: Text('检查更新失败: $e'),
+                          behavior: SnackBarBehavior.floating,
+                          margin: const EdgeInsets.fromLTRB(16, 0, 16, 85),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
                       );
                     }
                   }
                 },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: theme.cardColor.withValues(alpha: theme.isDarkMode ? 0.6 : 0.9),
+                    borderRadius: MellowRadii.borderR16,
+                    border: Border.all(color: theme.borderColor.withValues(alpha: 0.5), width: 0.8),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: theme.accentColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(Icons.system_update_alt_rounded, color: theme.accentColor, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('检查新版本更新', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: theme.textPrimary)),
+                            const SizedBox(height: 2),
+                            Text('检测 GitHub Releases 最新稳定版本', style: TextStyle(fontSize: 11, color: theme.textMuted)),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded, size: 20, color: theme.textMuted),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),

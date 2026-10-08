@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../design_system/tokens.dart';
 import '../design_system/theme_provider.dart';
@@ -92,17 +93,38 @@ class _MobileScaffoldState extends State<MobileScaffold> {
 
     final bool canPop = _subPageId == null;
 
+    final viewPaddingBottom = MediaQuery.viewPaddingOf(context).bottom;
+
+    final overlayStyle = theme.isDarkMode
+        ? const SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.light,
+            statusBarBrightness: Brightness.dark,
+            systemNavigationBarColor: Colors.transparent,
+            systemNavigationBarIconBrightness: Brightness.light,
+          )
+        : const SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.dark,
+            statusBarBrightness: Brightness.light,
+            systemNavigationBarColor: Colors.transparent,
+            systemNavigationBarIconBrightness: Brightness.dark,
+          );
+
     final Widget content = _subPageId != null
         ? Scaffold(
+            resizeToAvoidBottomInset: false,
             backgroundColor: theme.canvasColor,
             body: Stack(
               children: [
                 _buildSubPage(),
-                _buildFloatingMiniPlayer(context, bottom: 16),
+                _buildFloatingMiniPlayer(context, bottom: 16 + viewPaddingBottom),
+                _buildPlaybackNoticeBanner(context),
               ],
             ),
           )
         : Scaffold(
+            resizeToAvoidBottomInset: false,
             backgroundColor: theme.canvasColor,
             body: Stack(
               children: [
@@ -136,23 +158,29 @@ class _MobileScaffoldState extends State<MobileScaffold> {
                 ),
 
                 // 底部悬浮毛玻璃迷你播放条 (嵌 2px 极细实时播放进度条)
-                _buildFloatingMiniPlayer(context),
+                _buildFloatingMiniPlayer(context, bottom: 72 + viewPaddingBottom),
 
                 // 底部原生 4-Tab 毛玻璃导航栏
                 _buildBottomTabBar(context),
+
+                // 全局浮动播放通知胶囊
+                _buildPlaybackNoticeBanner(context),
               ],
             ),
           );
 
-    return PopScope(
-      canPop: canPop,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-        if (_subPageId != null) {
-          _popSubPage();
-        }
-      },
-      child: content,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: overlayStyle,
+      child: PopScope(
+        canPop: canPop,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
+          if (_subPageId != null) {
+            _popSubPage();
+          }
+        },
+        child: content,
+      ),
     );
   }
 
@@ -257,6 +285,10 @@ class _MobileScaffoldState extends State<MobileScaffold> {
 
   /// 底部悬浮毛玻璃胶囊播放条 (带 2px 极细实时进度条与红心收藏)
   Widget _buildFloatingMiniPlayer(BuildContext context, {double bottom = 72}) {
+    // 当软键盘弹起（如在搜索页打字）时，平滑隐藏 MiniPlayer，避免垫高遮挡搜索联想词及历史记录
+    final isKeyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+    if (isKeyboardOpen) return const SizedBox.shrink();
+
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
     final track = player.currentTrack;
@@ -400,25 +432,87 @@ class _MobileScaffoldState extends State<MobileScaffold> {
   Widget _buildBottomTabBar(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final isDark = theme.isDarkMode;
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
 
     return Positioned(
       left: 0,
       right: 0,
       bottom: 0,
       child: Container(
-        height: 64,
+        padding: EdgeInsets.only(bottom: bottomInset),
         decoration: BoxDecoration(
           color: MellowColors.canvas(isDark).withValues(alpha: 0.92),
           border: Border(top: BorderSide(color: theme.borderColor.withValues(alpha: 0.5), width: 0.8)),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildTabButton(0, '发现', Icons.explore_rounded),
-            _buildTabButton(1, '探索', Icons.grid_view_rounded),
-            _buildTabButton(2, '资料库', Icons.library_music_rounded),
-            _buildTabButton(3, '我的', Icons.person_rounded),
-          ],
+        child: SizedBox(
+          height: 64,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildTabButton(0, '发现', Icons.explore_rounded),
+              _buildTabButton(1, '探索', Icons.grid_view_rounded),
+              _buildTabButton(2, '资料库', Icons.library_music_rounded),
+              _buildTabButton(3, '我的', Icons.person_rounded),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 全局悬浮播放通知胶囊 (ISSUE-MOB-04 优雅容错与换源提醒)
+  Widget _buildPlaybackNoticeBanner(BuildContext context) {
+    final player = context.watch<AudioPlayerService>();
+    final notice = player.playbackNotice;
+    if (notice == null || notice.isEmpty) return const SizedBox.shrink();
+
+    final topInset = MediaQuery.viewPaddingOf(context).top;
+
+    return Positioned(
+      top: topInset + 10,
+      left: 16,
+      right: 16,
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E293B).withValues(alpha: 0.95),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.15),
+              width: 0.8,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.info_outline_rounded, color: Colors.white, size: 16),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  notice,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 10),
+              GestureDetector(
+                onTap: () => player.clearPlaybackNotice(),
+                child: const Icon(Icons.close_rounded, color: Colors.white70, size: 16),
+              ),
+            ],
+          ),
         ),
       ),
     );

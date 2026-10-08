@@ -88,17 +88,17 @@ void main() {
       await tester.pumpWidget(buildMobileApp());
       await tester.pump(const Duration(milliseconds: 300));
 
-      // 1. 验证“发现音乐”大粗体与“Mobile”浅蓝胶囊徽章
+      // 1. 验证“发现音乐”大粗体标题
       expect(find.text('发现音乐'), findsOneWidget);
-      expect(find.text('Mobile'), findsOneWidget);
 
-      // 2. 验证白瓷微拟物日夜模式切换按钮
-      expect(find.byIcon(Icons.wb_sunny_rounded), findsOneWidget);
-      await tester.tap(find.byIcon(Icons.wb_sunny_rounded));
+      // 2. 验证白瓷微拟物日夜模式切换按钮 (白天显示月亮暗色模式切换键)
+      expect(find.byIcon(Icons.dark_mode_rounded), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.dark_mode_rounded));
       await tester.pump(const Duration(milliseconds: 300));
       expect(themeProvider.isDarkMode, isTrue);
 
-      // 切回亮色模式
+      // 切回亮色模式 (深色模式显示太阳明亮模式切换键)
+      expect(find.byIcon(Icons.light_mode_rounded), findsOneWidget);
       await tester.tap(find.byIcon(Icons.light_mode_rounded));
       await tester.pump(const Duration(milliseconds: 300));
       expect(themeProvider.isDarkMode, isFalse);

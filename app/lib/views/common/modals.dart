@@ -217,7 +217,7 @@ class EqualizerModal extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 Text(
-                                  '多频段声音动态补偿与偏好调节 · 高级 DSP 音频滤镜扩展中',
+                                  '多频段声音动态补偿与偏好调节',
                                   style: TextStyle(fontSize: 12, color: theme.textMuted),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -237,23 +237,38 @@ class EqualizerModal extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
 
-                // 预设选择胶囊 (在宽屏下完整平铺展开，窄屏下支持平滑水平滚动)
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  child: Row(
-                    children: EqualizerPreset.values.map((preset) {
-                      final isSelected = eq.currentPreset == preset;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: SoftButton(
-                          label: preset.label,
-                          isActive: isSelected,
-                          isPill: true,
-                          onTap: () => eq.applyPreset(preset),
-                        ),
-                      );
-                    }).toList(),
+                // 预设选择胶囊 (在宽屏下完整平铺展开，窄屏下支持平滑水平滚动并带柔和渐隐)
+                ShaderMask(
+                  shaderCallback: (Rect bounds) {
+                    return LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Colors.white,
+                        Colors.white,
+                        Colors.white.withValues(alpha: 0.05),
+                      ],
+                      stops: const [0.0, 0.88, 1.0],
+                    ).createShader(bounds);
+                  },
+                  blendMode: BlendMode.dstIn,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: Row(
+                      children: EqualizerPreset.values.map((preset) {
+                        final isSelected = eq.currentPreset == preset;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: SoftButton(
+                            label: preset.label,
+                            isActive: isSelected,
+                            isPill: true,
+                            onTap: () => eq.applyPreset(preset),
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -398,7 +413,7 @@ class SleepTimerModal extends StatelessWidget {
     final remaining = player.sleepTimerRemainingSeconds;
     final hasActiveTimer = player.sleepTimerMinutes != null;
 
-    final minutesOptions = [15, 30, 45, 60, 90];
+    final minutesOptions = [15, 30, 45, 60, 90, 120];
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -848,7 +863,12 @@ class _CreatePlaylistModalState extends State<CreatePlaylistModal> {
     Navigator.of(context).pop(pl);
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('已创建自建歌单「$title」${widget.initialTrack != null ? '，并收录单曲' : ''}！')),
+      SnackBar(
+        content: Text('已创建自建歌单「$title」${widget.initialTrack != null ? '，并收录单曲' : ''}！'),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 85),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
     );
   }
 
@@ -859,152 +879,157 @@ class _CreatePlaylistModalState extends State<CreatePlaylistModal> {
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 440),
         child: SoftCard(
           padding: const EdgeInsets.all(24),
           borderRadius: MellowRadii.borderR24,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: theme.accentColor.withValues(alpha: 0.15),
+                              borderRadius: MellowRadii.borderR12,
+                            ),
+                            child: Icon(Icons.playlist_add_rounded, color: theme.accentColor, size: 22),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              '新建自建歌单',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close_rounded, color: theme.textMuted),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                if (widget.initialTrack != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
+                      borderRadius: MellowRadii.borderR12,
+                    ),
                     child: Row(
                       children: [
+                        MellowImage(url: widget.initialTrack!.coverUrl, width: 40, height: 40, borderRadius: MellowRadii.borderR8),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.initialTrack!.title,
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: theme.textPrimary),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                widget.initialTrack!.artist,
+                                style: TextStyle(fontSize: 11, color: theme.textMuted),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
                         Container(
-                          padding: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: theme.accentColor.withValues(alpha: 0.15),
-                            borderRadius: MellowRadii.borderR12,
+                            borderRadius: MellowRadii.borderPill,
                           ),
-                          child: Icon(Icons.playlist_add_rounded, color: theme.accentColor, size: 22),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            '新建自建歌单',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textPrimary),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          child: Text('收录首曲', style: TextStyle(fontSize: 10.5, color: theme.accentColor, fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
                   ),
-                  IconButton(
-                    icon: Icon(Icons.close_rounded, color: theme.textMuted),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
+                  const SizedBox(height: 16),
                 ],
-              ),
-              const SizedBox(height: 20),
 
-              if (widget.initialTrack != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
-                    borderRadius: MellowRadii.borderR12,
-                  ),
-                  child: Row(
-                    children: [
-                      MellowImage(url: widget.initialTrack!.coverUrl, width: 40, height: 40, borderRadius: MellowRadii.borderR8),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.initialTrack!.title,
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: theme.textPrimary),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              widget.initialTrack!.artist,
-                              style: TextStyle(fontSize: 11, color: theme.textMuted),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: theme.accentColor.withValues(alpha: 0.15),
-                          borderRadius: MellowRadii.borderPill,
-                        ),
-                        child: Text('收录首曲', style: TextStyle(fontSize: 10.5, color: theme.accentColor, fontWeight: FontWeight.bold)),
-                      ),
-                    ],
+                Text('歌单名称', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: theme.textSecondary)),
+                const SizedBox(height: 6),
+                RecessedWell(
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  borderRadius: MellowRadii.borderR12,
+                  child: TextField(
+                    controller: _titleController,
+                    autofocus: true,
+                    scrollPadding: const EdgeInsets.only(bottom: 90),
+                    style: TextStyle(color: theme.textPrimary, fontSize: 14),
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      hintText: '如：深夜疗愈电台 / 节奏运动精选',
+                      hintStyle: TextStyle(color: theme.textMuted, fontSize: 13),
+                      isDense: true,
+                    ),
+                    onSubmitted: (_) => _submit(),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
+
+                Text('歌单描述 (选填)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: theme.textSecondary)),
+                const SizedBox(height: 6),
+                RecessedWell(
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  borderRadius: MellowRadii.borderR12,
+                  child: TextField(
+                    controller: _descController,
+                    scrollPadding: const EdgeInsets.only(bottom: 90),
+                    style: TextStyle(color: theme.textPrimary, fontSize: 14),
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      hintText: '写一段简短的话记录这份歌单的心情...',
+                      hintStyle: TextStyle(color: theme.textMuted, fontSize: 13),
+                      isDense: true,
+                    ),
+                    onSubmitted: (_) => _submit(),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    SoftButton(
+                      label: '取消',
+                      onTap: () => Navigator.of(context).pop(),
+                    ),
+                    const SizedBox(width: 12),
+                    SoftButton(
+                      label: '立即创建',
+                      icon: Icons.check_rounded,
+                      isActive: true,
+                      onTap: _submit,
+                    ),
+                  ],
+                ),
               ],
-
-              Text('歌单名称', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: theme.textSecondary)),
-              const SizedBox(height: 6),
-              RecessedWell(
-                height: 44,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                borderRadius: MellowRadii.borderR12,
-                child: TextField(
-                  controller: _titleController,
-                  autofocus: true,
-                  style: TextStyle(color: theme.textPrimary, fontSize: 14),
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    hintText: '如：深夜疗愈电台 / 节奏运动精选',
-                    hintStyle: TextStyle(color: theme.textMuted, fontSize: 13),
-                    isDense: true,
-                  ),
-                  onSubmitted: (_) => _submit(),
-                ),
-              ),
-              const SizedBox(height: 14),
-
-              Text('歌单描述 (选填)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: theme.textSecondary)),
-              const SizedBox(height: 6),
-              RecessedWell(
-                height: 44,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                borderRadius: MellowRadii.borderR12,
-                child: TextField(
-                  controller: _descController,
-                  style: TextStyle(color: theme.textPrimary, fontSize: 14),
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    hintText: '写一段简短的话记录这份歌单的心情...',
-                    hintStyle: TextStyle(color: theme.textMuted, fontSize: 13),
-                    isDense: true,
-                  ),
-                  onSubmitted: (_) => _submit(),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  SoftButton(
-                    label: '取消',
-                    onTap: () => Navigator.of(context).pop(),
-                  ),
-                  const SizedBox(width: 12),
-                  SoftButton(
-                    label: '立即创建',
-                    icon: Icons.check_rounded,
-                    isActive: true,
-                    onTap: _submit,
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -2034,6 +2059,9 @@ class _LanPairingModalState extends State<LanPairingModal> {
         SnackBar(
           content: Text('已成功向 $ip:$port 投送 ${snapshot.favorites.length} 首红心、${snapshot.playlists.length} 个歌单！'),
           backgroundColor: Colors.teal.shade700,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 85),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
       );
     }
@@ -2087,9 +2115,9 @@ class _LanPairingModalState extends State<LanPairingModal> {
                                 ),
                                 Text(
                                   '同 Wi-Fi 局域网下秒级 P2P 快照投送与歌单漫游',
-                                  style: TextStyle(fontSize: 12, color: theme.textMuted),
+                                  style: TextStyle(fontSize: 11.5, color: theme.textMuted),
                                   overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
+                                  maxLines: 2,
                                 ),
                               ],
                             ),
@@ -2324,6 +2352,7 @@ class _LanPairingModalState extends State<LanPairingModal> {
                         borderRadius: MellowRadii.borderR12,
                         child: TextField(
                           controller: _targetIpCtrl,
+                          scrollPadding: const EdgeInsets.only(bottom: 120),
                           style: TextStyle(color: theme.textPrimary, fontSize: 13),
                           decoration: const InputDecoration(border: InputBorder.none, isDense: true, hintText: '目标设备 IP (如 192.168.1.100)'),
                         ),
@@ -2338,6 +2367,7 @@ class _LanPairingModalState extends State<LanPairingModal> {
                         borderRadius: MellowRadii.borderR12,
                         child: TextField(
                           controller: _targetPortCtrl,
+                          scrollPadding: const EdgeInsets.only(bottom: 120),
                           style: TextStyle(color: theme.textPrimary, fontSize: 13),
                           decoration: const InputDecoration(border: InputBorder.none, isDense: true, hintText: '23332'),
                         ),
@@ -2352,6 +2382,7 @@ class _LanPairingModalState extends State<LanPairingModal> {
                   borderRadius: MellowRadii.borderR12,
                   child: TextField(
                     controller: _targetKeyCtrl,
+                    scrollPadding: const EdgeInsets.only(bottom: 120),
                     style: TextStyle(color: theme.textPrimary, fontSize: 13),
                     decoration: const InputDecoration(border: InputBorder.none, isDense: true, hintText: '目标配对密钥 (选填)'),
                   ),
@@ -3058,19 +3089,19 @@ class _SourceSwitcherModalState extends State<SourceSwitcherModal> {
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: Center(
         child: Container(
           width: 520,
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.82),
+          constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.76),
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
           decoration: BoxDecoration(
-            color: MellowColors.card(isDark),
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
             borderRadius: MellowRadii.borderR24,
             boxShadow: isDark ? MellowShadows.floatingPillDark : MellowShadows.floatingPillLight,
             border: Border.all(
-              color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
-              width: 0.5,
+              color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08),
+              width: 0.8,
             ),
           ),
           child: Column(

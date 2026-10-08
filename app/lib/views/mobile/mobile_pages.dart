@@ -55,7 +55,7 @@ class MobileDailyRecommendPage extends StatelessWidget {
             ],
           ),
           body: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 130),
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 140 + MediaQuery.viewPaddingOf(context).bottom),
             children: [
           // 拟物日历便签头
           SoftCard(
@@ -561,7 +561,7 @@ class _MobilePlaylistSquarePageState extends State<MobilePlaylistSquarePage> {
           ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
           : ListView(
               controller: _scrollController,
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 130),
+              padding: EdgeInsets.fromLTRB(16, 4, 16, 140 + MediaQuery.viewPaddingOf(context).bottom),
               children: [
                 // 场景歌单推荐横幅
                 if (widget.onOpenScenarios != null) ...[
@@ -841,7 +841,7 @@ class _MobileToplistPageState extends State<MobileToplistPage> {
         centerTitle: true,
       ),
       body: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+        padding: EdgeInsets.fromLTRB(16, 8, 16, 140 + MediaQuery.viewPaddingOf(context).bottom),
         itemCount: charts.length,
         separatorBuilder: (_, __) => const SizedBox(height: 12),
         itemBuilder: (context, idx) {
@@ -1207,7 +1207,7 @@ class _MobileToplistDetailPageState extends State<MobileToplistDetailPage> {
       ),
       body: ListView(
         controller: _scrollController,
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+        padding: EdgeInsets.fromLTRB(16, 8, 16, 140 + MediaQuery.viewPaddingOf(context).bottom),
         children: [
           SoftCard(
             padding: const EdgeInsets.all(18),
@@ -1491,7 +1491,7 @@ class MobileRadioPage extends StatelessWidget {
         ],
       ),
       body: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+        padding: EdgeInsets.fromLTRB(16, 8, 16, 140 + MediaQuery.viewPaddingOf(context).bottom),
         itemCount: radios.length,
         separatorBuilder: (_, __) => const SizedBox(height: 12),
         itemBuilder: (context, idx) {
@@ -1610,7 +1610,7 @@ class _MobileArtistsPageState extends State<MobileArtistsPage> {
       body: _isLoading && _artists.isEmpty
           ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
           : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 140 + MediaQuery.viewPaddingOf(context).bottom),
               itemCount: _artists.length,
               separatorBuilder: (_, __) => const SizedBox(height: 10),
               itemBuilder: (context, idx) {
@@ -1698,7 +1698,7 @@ class _MobileArtistDetailPageState extends State<MobileArtistDetailPage> {
         centerTitle: true,
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+        padding: EdgeInsets.fromLTRB(16, 8, 16, 140 + MediaQuery.viewPaddingOf(context).bottom),
         children: [
           SoftCard(
             padding: const EdgeInsets.all(20),
@@ -1853,12 +1853,21 @@ class _MobileLocalMusicPageState extends State<MobileLocalMusicPage> {
             style: const TextStyle(fontSize: 13),
           ),
           duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 85),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
       );
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('扫描本地音频出错: $e'), duration: const Duration(seconds: 2)),
+        SnackBar(
+          content: Text('扫描本地音频出错: $e'),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 85),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
       );
     } finally {
       if (mounted) setState(() => _isScanning = false);
@@ -1903,7 +1912,7 @@ class _MobileLocalMusicPageState extends State<MobileLocalMusicPage> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+        padding: EdgeInsets.fromLTRB(16, 8, 16, 140 + MediaQuery.viewPaddingOf(context).bottom),
         children: [
           RecessedWell(
             padding: const EdgeInsets.all(20),
@@ -2224,7 +2233,7 @@ class _MobileSearchPageState extends State<MobileSearchPage> {
               ? _buildMobileSuggestions(theme, player)
               : _currentQuery.isNotEmpty && _searchResults.isNotEmpty
                   ? ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+                  padding: EdgeInsets.fromLTRB(16, 12, 16, 140 + MediaQuery.viewPaddingOf(context).bottom),
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2299,7 +2308,7 @@ class _MobileSearchPageState extends State<MobileSearchPage> {
                   ],
                 )
               : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, 140 + MediaQuery.viewPaddingOf(context).bottom),
                   children: [
                     if (_history.isNotEmpty) ...[
                       Row(
@@ -2353,7 +2362,7 @@ class _MobileSearchPageState extends State<MobileSearchPage> {
 
   Widget _buildMobileSuggestions(ThemeProvider theme, AudioPlayerService player) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 140 + MediaQuery.viewPaddingOf(context).bottom),
       children: [
         Row(
           children: [
@@ -2506,7 +2515,7 @@ class MobileFavoritesPage extends StatelessWidget {
               ),
             )
           : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 130),
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 140 + MediaQuery.viewPaddingOf(context).bottom),
               children: [
                 // 顶部心动大卡片 Header
                 Container(
@@ -2740,7 +2749,7 @@ class MobileHistoryPage extends StatelessWidget {
               ),
             )
           : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 130),
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 180 + MediaQuery.viewPaddingOf(context).bottom),
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2760,47 +2769,107 @@ class MobileHistoryPage extends StatelessWidget {
                   final t = history[idx];
                   final isCurrent = player.currentTrack?.id == t.id;
                   final isFav = player.isFavorite(t.id);
-                  return SoftCard(
+                  return Container(
                     margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    onTap: () => player.playPlaylist(history, startIndex: idx),
-                    child: Row(
-                      children: [
-                        MellowImage(url: t.coverUrl, width: 44, height: 44, borderRadius: MellowRadii.borderR8),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                    decoration: BoxDecoration(
+                      borderRadius: MellowRadii.borderR16,
+                      border: isCurrent
+                          ? Border.all(color: theme.accentColor.withValues(alpha: 0.6), width: 1.2)
+                          : null,
+                      boxShadow: isCurrent
+                          ? [
+                              BoxShadow(
+                                color: theme.accentColor.withValues(alpha: 0.15),
+                                blurRadius: 10,
+                                spreadRadius: 1,
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: SoftCard(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      onTap: () => player.playPlaylist(history, startIndex: idx),
+                      child: Row(
+                        children: [
+                          Stack(
+                            alignment: Alignment.center,
                             children: [
-                              Text(
-                                t.title,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13.5,
-                                  color: isCurrent ? theme.accentColor : theme.textPrimary,
+                              MellowImage(url: t.coverUrl, width: 44, height: 44, borderRadius: MellowRadii.borderR8),
+                              if (isCurrent)
+                                Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.45),
+                                    borderRadius: MellowRadii.borderR8,
+                                  ),
+                                  child: Icon(
+                                    player.isPlaying ? Icons.graphic_eq_rounded : Icons.pause_rounded,
+                                    color: theme.accentColor,
+                                    size: 20,
+                                  ),
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${t.artist} · ${t.album}',
-                                style: TextStyle(fontSize: 11.5, color: theme.textMuted),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
                             ],
                           ),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                            color: Colors.pink,
-                            size: 20,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        t.title,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13.5,
+                                          color: isCurrent ? theme.accentColor : theme.textPrimary,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    if (isCurrent) ...[
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: theme.accentColor.withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          player.isPlaying ? '播放中' : '已暂停',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: theme.accentColor,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${t.artist} · ${t.album}',
+                                  style: TextStyle(fontSize: 11.5, color: theme.textMuted),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
                           ),
-                          onPressed: () => player.toggleFavorite(t.id, t),
-                        ),
-                      ],
+                          IconButton(
+                            icon: Icon(
+                              isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                              color: Colors.pink,
+                              size: 20,
+                            ),
+                            onPressed: () => player.toggleFavorite(t.id, t),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 }),
