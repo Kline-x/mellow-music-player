@@ -91,3 +91,14 @@ prototype/package-lock.json
 !app/version_manifest.json
 !version_manifest.json
 !app/pubspec.lock
+
+# ==============================================================================
+# 6. 移动端私有发布证书与密钥配置 (Mobile Private Keystores & Properties)
+# ==============================================================================
+key.properties
+*.keystore
+*.jks
+*.mobileprovision
+*.p12
+*.cer
+

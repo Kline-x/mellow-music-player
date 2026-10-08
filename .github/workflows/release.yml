@@ -197,6 +197,23 @@ jobs:
         working-directory: app
         run: flutter pub get
 
+      - name: Configure Android Release Signing
+        if: env.ANDROID_KEYSTORE_BASE64 != ''
+        working-directory: app/android
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > mellow-release.jks
+          cat <<EOF > key.properties
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyPassword=$ANDROID_KEY_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          storeFile=mellow-release.jks
+          EOF
+
       - name: Build Android APK
         working-directory: app
         run: flutter build apk --release
