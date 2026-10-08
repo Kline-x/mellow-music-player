@@ -20,7 +20,7 @@
     "android": {
       "downloadUrl": "https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.3/Mellow-Music-Android-arm64.apk",
       "backupUrl": "https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.3/Mellow-Music-Android-arm64.apk",
-      "fileSize": 21900000,
+      "fileSize": 20938241,
       "installMode": "in_app_download"
     }
   }

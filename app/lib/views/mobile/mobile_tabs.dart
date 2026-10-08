@@ -1926,6 +1926,16 @@ class MobileProfileTab extends StatelessWidget {
                     }
                   }
                 },
+                onLongPress: () async {
+                  try {
+                    final service = VersionCheckService();
+                    final mockVersion = await service.checkLatestVersion(forceMock: true);
+                    if (!context.mounted) return;
+                    if (mockVersion != null) {
+                      await UpdateDialog.show(context, mockVersion);
+                    }
+                  } catch (_) {}
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(

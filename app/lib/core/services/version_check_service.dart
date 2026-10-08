@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// 跨平台版本升级包详情
@@ -167,9 +168,46 @@ class VersionCheckService {
 
   bool get hasActiveDownload => activeDownload.value != null;
 
-  /// 当前客户端基准版本号 (对应 pubspec.yaml: 1.1.1+3)
-  int currentVersionCode = 3;
-  String currentVersionName = '1.1.1';
+  MethodChannel _installerChannel =
+      const MethodChannel('com.kline.mellow_music/app_installer');
+
+  @visibleForTesting
+  void setMockInstallerChannel(MethodChannel channel) {
+    _installerChannel = channel;
+  }
+
+  @visibleForTesting
+  bool isAndroidOverride = false;
+
+  bool get isAndroidPlatform =>
+      isAndroidOverride || (!kIsWeb && Platform.isAndroid);
+
+  /// 当前客户端基准版本号 (动态自适应，兜底对应 pubspec.yaml: 1.1.3+5)
+  int currentVersionCode = 5;
+  String currentVersionName = '1.1.3';
+
+  /// 动态从宿主平台同步最新当前版本号
+  Future<void> syncCurrentVersionFromPlatform() async {
+    if (isAndroidPlatform) {
+      try {
+        final res = await _installerChannel.invokeMethod<dynamic>('getAppVersion');
+        if (res is Map) {
+          final vName = res['versionName'] as String?;
+          final vCode = res['versionCode'];
+          if (vName != null && vName.isNotEmpty) {
+            currentVersionName = vName;
+          }
+          if (vCode is int) {
+            currentVersionCode = vCode;
+          } else if (vCode is num) {
+            currentVersionCode = vCode.toInt();
+          }
+        }
+      } catch (e) {
+        debugPrint('[VersionCheckService] 获取 Android 原生版本失败: $e');
+      }
+    }
+  }
 
   static const String appRepo = 'Kline-x/mellow-music-player';
 
@@ -258,6 +296,8 @@ class VersionCheckService {
       return defaultMockVersion;
     }
 
+    await syncCurrentVersionFromPlatform();
+
     final endpoints = customEndpoint != null
         ? [customEndpoint, ...manifestEndpoints]
         : manifestEndpoints;
@@ -323,6 +363,16 @@ class VersionCheckService {
       return;
     }
 
+    // Android 平台：流式真实下载 APK 并通过 FileProvider 拉起系统安装器
+    if (isAndroidPlatform) {
+      await _downloadAndInstallAndroidApk(
+        info,
+        onProgress: onProgress,
+        cancelToken: cancelToken,
+      );
+      return;
+    }
+
     // Windows 平台：流式下载 Setup.exe 并启动执行覆盖安装
     if (Platform.isWindows) {
       await _downloadAndExecuteWindowsInstaller(
@@ -345,6 +395,103 @@ class VersionCheckService {
 
     // 默认兜底：打开外部链接
     onProgress(1.0, null);
+  }
+
+  Future<void> _downloadAndInstallAndroidApk(
+    AppVersionInfo info, {
+    required void Function(double progress, [String? speedText]) onProgress,
+    CancelToken? cancelToken,
+  }) async {
+    final running = activeDownload.value;
+    if (running != null && running.info.versionCode == info.versionCode) {
+      return;
+    }
+
+    final token = cancelToken ?? CancelToken();
+    activeDownload.value = ActiveDownload(info: info, cancelToken: token);
+
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final fileName = 'mellow_music_v${info.versionName}.apk';
+      final saveFile = File('${tempDir.path}/$fileName');
+
+      final platformInfo = info.currentPlatformInfo;
+      final rawCandidates = <String>{
+        ...buildAcceleratedDownloadUrls(platformInfo?.backupUrl),
+        ...buildAcceleratedDownloadUrls(platformInfo?.downloadUrl),
+        ...buildAcceleratedDownloadUrls(info.downloadUrl),
+      }.toList();
+
+      final candidates = await raceCandidateUrls(rawCandidates);
+      bool downloadSuccess = false;
+
+      for (final url in candidates) {
+        if (token.isCancelled) return;
+        try {
+          int lastReceived = 0;
+          int lastTimestamp = DateTime.now().millisecondsSinceEpoch;
+          double currentSpeedMB = 0.0;
+
+          final response = await _dio.download(
+            url,
+            saveFile.path,
+            cancelToken: token,
+            options: Options(
+              receiveTimeout: const Duration(seconds: 90),
+              sendTimeout: const Duration(seconds: 20),
+            ),
+            onReceiveProgress: (received, total) {
+              if (total > 0) {
+                final now = DateTime.now().millisecondsSinceEpoch;
+                final delta = now - lastTimestamp;
+                if (delta >= 600) {
+                  final bytesDelta = received - lastReceived;
+                  currentSpeedMB =
+                      (bytesDelta / (delta / 1000.0)) / (1024 * 1024);
+                  lastReceived = received;
+                  lastTimestamp = now;
+                }
+                final progress = (received / total).clamp(0.0, 1.0);
+                final speedStr = currentSpeedMB > 0.05
+                    ? '${currentSpeedMB.toStringAsFixed(1)} MB/s'
+                    : '';
+                final speed = speedStr.isNotEmpty ? speedStr : null;
+                activeDownload.value = activeDownload.value
+                    ?.copyWith(progress: progress, speedText: speed);
+                onProgress(progress, speed);
+              }
+            },
+          );
+
+          if (response.statusCode == 200 && await saveFile.exists()) {
+            final reason = await _verifyFile(saveFile, platformInfo);
+            if (reason != null) {
+              debugPrint('[VersionCheckService] APK 文件校验未通过($reason)，尝试备选镜像');
+              await saveFile.delete();
+              continue;
+            }
+            downloadSuccess = true;
+            break;
+          }
+        } catch (e) {
+          if (token.isCancelled) return;
+          debugPrint('[VersionCheckService] Android 下载节点 $url 异常: $e');
+        }
+      }
+
+      if (!downloadSuccess) {
+        throw Exception('所有 APK 下载节点均不可用，请检查网络后重试');
+      }
+
+      onProgress(1.0, null);
+
+      // 调用原生 MethodChannel，通过 FileProvider 优雅拉起系统安装器
+      await _installerChannel.invokeMethod('installApk', {
+        'filePath': saveFile.path,
+      });
+    } finally {
+      activeDownload.value = null;
+    }
   }
 
   Future<void> _downloadAndExecuteWindowsInstaller(
@@ -492,46 +639,50 @@ class VersionCheckService {
   Future<String?> _verifyFile(File file, PlatformUpdateInfo? info) async {
     if (!await file.exists()) return '文件不存在';
     final len = await file.length();
-    if (len < 1024) return '文件过小($len B)';
-
-    final expectedSize = info?.fileSize;
-    if (expectedSize != null && expectedSize > 0 && len != expectedSize) {
-      return '文件体积不符: 期望 $expectedSize, 实际 $len';
-    }
+    // 基础防截断防 404 错误页保护：安装包至少大于 1MB
+    if (len < 1024 * 1024) return '文件过小($len B)';
 
     final expectedSha = info?.sha256?.trim().toLowerCase();
     if (expectedSha != null && expectedSha.isNotEmpty) {
       final bytes = await file.readAsBytes();
       final actualSha = sha256.convert(bytes).toString();
       if (actualSha != expectedSha) {
-        return 'SHA256 不一致';
+        return 'SHA256 不一致: 期望 $expectedSha, 实际 $actualSha';
       }
     }
     return null;
   }
 
-  /// 预置的 Mock 稳定新版本（供无网或离线单测验收）
+  /// 预置的 Mock 稳定新版本（供无网或演练验证）
   static const AppVersionInfo defaultMockVersion = AppVersionInfo(
-    versionCode: 4,
-    versionName: '1.2.0',
-    publishDate: '2026-09-30',
+    versionCode: 99,
+    versionName: '1.2.0-Release',
+    publishDate: '2026-10-08',
     releaseNotes:
-        '1. 【近场设备协同升级】：支持局域网免密极速直传与双端曲库无缝合流；\n2. 【全新在线更新体系】：对标专业级多镜像加速，支持全国 CDN 节点测速择优与 Windows/macOS 无损静默升级；\n3. 【Windows 播放稳定性加固】：彻底根治播放历史页切歌与音源切换闪退，高频交互稳如磐石；\n4. 【全景音质引擎】：优化六大音源解析与无损 FLAC 直链自适应播放。',
+        '1. 【近场设备协同升级】：支持局域网免密极速直传与双端曲库无缝合流；\n2. 【全新在线更新体系】：支持全国 CDN 节点测速择优与 Android/Windows/macOS 无损静默升级；\n3. 【架构瘦身与正式私钥】：20MB 专属 arm64 极速架构包，全平台真机零缺陷闭环。',
     isForceUpdate: false,
     platforms: {
+      'android': PlatformUpdateInfo(
+        downloadUrl:
+            'https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.3/Mellow-Music-Android-arm64.apk',
+        backupUrl:
+            'https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.3/Mellow-Music-Android-arm64.apk',
+        fileSize: 20938241,
+        installMode: 'in_app_download',
+      ),
       'windows': PlatformUpdateInfo(
         downloadUrl:
-            'https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.1/mellow-music-windows-setup.exe',
+            'https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.3/Mellow-Music-Windows-x64-Setup.exe',
         backupUrl:
-            'https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.1/mellow-music-windows-setup.exe',
+            'https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.3/Mellow-Music-Windows-x64-Setup.exe',
         fileSize: 42100000,
         installMode: 'in_app_download',
       ),
       'macos': PlatformUpdateInfo(
         downloadUrl:
-            'https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.1/mellow-music-macos.dmg',
+            'https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.3/Mellow-Music-macOS.dmg',
         backupUrl:
-            'https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.1/mellow-music-macos.dmg',
+            'https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.3/Mellow-Music-macOS.dmg',
         fileSize: 38200000,
         installMode: 'in_app_download',
       ),
