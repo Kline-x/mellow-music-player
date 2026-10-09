@@ -75,5 +75,50 @@ void main() {
 
       tempDir.deleteSync(recursive: true);
     });
+
+    test('normalizeVersionCode 能够正确过滤 split-per-abi 的 1000*ABI 偏移', () {
+      expect(VersionCheckService.normalizeVersionCode(5), 5);
+      expect(VersionCheckService.normalizeVersionCode(1005), 5); // armeabi-v7a
+      expect(VersionCheckService.normalizeVersionCode(2005), 5); // arm64-v8a
+      expect(VersionCheckService.normalizeVersionCode(3005), 5); // x86_64
+      expect(VersionCheckService.normalizeVersionCode(2006), 6);
+    });
+
+    test('compareVersionStrings 与 isNewerVersion 能够正确识别高版本与防误判', () {
+      expect(VersionCheckService.compareVersionStrings('1.1.4', '1.1.3'), 1);
+      expect(VersionCheckService.compareVersionStrings('1.1.3', '1.1.4'), -1);
+      expect(VersionCheckService.compareVersionStrings('1.1.3', '1.1.3'), 0);
+      expect(VersionCheckService.compareVersionStrings('v1.2.0', '1.1.3'), 1);
+
+      service.currentVersionName = '1.1.3';
+      service.currentVersionCode = 2005; // 模拟真机 arm64 实际读取到的 2005
+
+      // 远程是 1.1.4，必须判定为新版本
+      const remoteNew = AppVersionInfo(
+        versionCode: 6,
+        versionName: '1.1.4',
+        releaseNotes: '新版本',
+        publishDate: '2026-10-09',
+      );
+      expect(service.isNewerVersion(remoteNew), isTrue);
+
+      // 远程是 1.1.3+5，版本相同，必须判定为已是最新版 (false)
+      const remoteSame = AppVersionInfo(
+        versionCode: 5,
+        versionName: '1.1.3',
+        releaseNotes: '同版本',
+        publishDate: '2026-10-09',
+      );
+      expect(service.isNewerVersion(remoteSame), isFalse);
+
+      // 远程是 1.1.2，版本较低，必须判定为 false
+      const remoteOld = AppVersionInfo(
+        versionCode: 4,
+        versionName: '1.1.2',
+        releaseNotes: '旧版本',
+        publishDate: '2026-10-09',
+      );
+      expect(service.isNewerVersion(remoteOld), isFalse);
+    });
   });
 }

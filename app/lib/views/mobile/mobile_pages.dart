@@ -812,7 +812,7 @@ class _MobileToplistPageState extends State<MobileToplistPage> {
   void _loadToplists() async {
     for (final chart in charts) {
       try {
-        final tracks = await OnlineMusicService.fetchToplistTracks(chart, limit: 10);
+        final tracks = await OnlineMusicService.fetchToplistTracks(chart);
         if (mounted && tracks.isNotEmpty) {
           setState(() {
             _liveToplists[chart] = tracks;
@@ -1163,7 +1163,22 @@ class _MobileToplistDetailPageState extends State<MobileToplistDetailPage> {
   void _loadTracks() async {
     setState(() => _isLoading = _tracks.isEmpty);
     try {
-      final fetched = await OnlineMusicService.fetchToplistTracks(_chartTitle, limit: 100);
+      final pl = await OnlineMusicService.fetchToplistPlaylist(_chartTitle);
+      if (pl != null && mounted) {
+        setState(() {
+          _tracks = List.from(pl.tracks);
+          _allTrackIds = List.from(pl.allTrackIds);
+          _totalCount = pl.trackCount > 0
+              ? pl.trackCount
+              : (_allTrackIds.isNotEmpty ? _allTrackIds.length : _tracks.length);
+          if (pl.coverUrl.isNotEmpty) _coverUrl = pl.coverUrl;
+          if (pl.description.isNotEmpty) _playlistDesc = pl.description;
+          _isLoading = false;
+        });
+        _checkAndAutoFillViewport();
+        return;
+      }
+      final fetched = await OnlineMusicService.fetchToplistTracks(_chartTitle);
       if (mounted) {
         setState(() {
           if (fetched.isNotEmpty) {
@@ -1661,21 +1676,108 @@ class _MobileArtistDetailPageState extends State<MobileArtistDetailPage> {
   bool _isFollowing = true;
   List<Track> _tracks = [];
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  int _offset = 0;
+  int _totalSongCount = 0;
+  String _artistAvatar = '';
+  String _artistBio = '';
+  String _artistId = '';
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _loadTracks();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    if (_isLoading || _isLoadingMore || !_hasMore) return;
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 250) {
+      _loadMoreTracks();
+    }
   }
 
   void _loadTracks() async {
     final artist = getArtistProfileByName(widget.artistName);
-    final songs = await OnlineMusicService.fetchArtistTopSongs(artist.id, artistName: artist.name);
-    if (mounted) {
-      setState(() {
-        _tracks = songs.isNotEmpty ? songs : artist.tracks;
-        _isLoading = false;
-      });
+    _artistId = artist.id;
+    _artistAvatar = artist.avatarUrl;
+    _artistBio = artist.bio;
+
+    // 1. 尝试获取真实歌手资料（作品总数与高清头像）
+    OnlineMusicService.fetchArtistDetail(artist.id, artistName: artist.name).then((detail) {
+      if (detail != null && mounted) {
+        setState(() {
+          if (detail['avatarUrl'] != null && (detail['avatarUrl'] as String).isNotEmpty) {
+            _artistAvatar = detail['avatarUrl'] as String;
+          }
+          final mSize = (detail['musicSize'] as num?)?.toInt() ?? 0;
+          if (mSize > 0) _totalSongCount = mSize;
+          final bio = detail['briefDesc']?.toString() ?? '';
+          if (bio.isNotEmpty) _artistBio = bio;
+        });
+      }
+    });
+
+    // 2. 首屏拉取 Top 50 代表作
+    try {
+      final songs = await OnlineMusicService.fetchArtistTopSongs(artist.id, artistName: artist.name);
+      if (mounted) {
+        setState(() {
+          _tracks = songs.isNotEmpty ? songs : List.from(artist.tracks);
+          if (_totalSongCount == 0) _totalSongCount = _tracks.length;
+          _offset = _tracks.length;
+          _isLoading = false;
+          _hasMore = _tracks.length >= 50;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _tracks = List.from(artist.tracks);
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadMoreTracks() async {
+    if (_isLoadingMore || !_hasMore || _artistId.isEmpty) return;
+    setState(() => _isLoadingMore = true);
+
+    try {
+      final res = await OnlineMusicService.fetchArtistAllSongs(
+        _artistId,
+        offset: _offset,
+        limit: 50,
+      );
+      if (mounted) {
+        final newTracks = res['tracks'] as List<Track>? ?? [];
+        final total = (res['total'] as num?)?.toInt() ?? 0;
+        final more = res['more'] == true;
+
+        final existingIds = _tracks.map((t) => t.id).toSet();
+        final uniqueNew = newTracks.where((t) => !existingIds.contains(t.id)).toList();
+
+        setState(() {
+          _tracks.addAll(uniqueNew);
+          if (total > 0) _totalSongCount = total;
+          _offset = _tracks.length;
+          _hasMore = more && uniqueNew.isNotEmpty;
+          _isLoadingMore = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingMore = false);
     }
   }
 
@@ -1684,6 +1786,7 @@ class _MobileArtistDetailPageState extends State<MobileArtistDetailPage> {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
     final artist = getArtistProfileByName(widget.artistName);
+    final avatarToUse = _artistAvatar.isNotEmpty ? _artistAvatar : artist.avatarUrl;
 
     return Scaffold(
       backgroundColor: theme.canvasColor,
@@ -1698,6 +1801,7 @@ class _MobileArtistDetailPageState extends State<MobileArtistDetailPage> {
         centerTitle: true,
       ),
       body: ListView(
+        controller: _scrollController,
         padding: EdgeInsets.fromLTRB(16, 8, 16, 140 + MediaQuery.viewPaddingOf(context).bottom),
         children: [
           SoftCard(
@@ -1706,7 +1810,7 @@ class _MobileArtistDetailPageState extends State<MobileArtistDetailPage> {
               children: [
                 MellowAvatar(
                   radius: 36,
-                  url: artist.avatarUrl,
+                  url: avatarToUse,
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -1722,7 +1826,9 @@ class _MobileArtistDetailPageState extends State<MobileArtistDetailPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _tracks.isNotEmpty ? '热门代表作 ${_tracks.length} 首 · 官方实时榜' : artist.bio,
+                        _tracks.isNotEmpty
+                            ? '已收录 ${_tracks.length} 首${_totalSongCount > _tracks.length ? " · 全量曲库 $_totalSongCount 首" : " · 官方实时榜"}'
+                            : (_artistBio.isNotEmpty ? _artistBio : artist.bio),
                         style: TextStyle(fontSize: 11.5, color: theme.textMuted),
                       ),
                       const SizedBox(height: 10),
@@ -1770,9 +1876,12 @@ class _MobileArtistDetailPageState extends State<MobileArtistDetailPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('代表作清单', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+              Text('全部作品清单', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textPrimary)),
               if (!_isLoading)
-                Text('共 ${_tracks.length} 首', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                Text(
+                  '已呈现 ${_tracks.length} 首${_totalSongCount > _tracks.length ? " / 共 $_totalSongCount 首" : ""}',
+                  style: TextStyle(fontSize: 12, color: theme.textMuted),
+                ),
             ],
           ),
           const SizedBox(height: 10),
@@ -1783,7 +1892,7 @@ class _MobileArtistDetailPageState extends State<MobileArtistDetailPage> {
                 child: CircularProgressIndicator(),
               ),
             )
-          else
+          else ...[
             ...List.generate(_tracks.length, (idx) {
               final t = _tracks[idx];
               return SoftCard(
@@ -1822,6 +1931,28 @@ class _MobileArtistDetailPageState extends State<MobileArtistDetailPage> {
                 ),
               );
             }),
+            if (_isLoadingMore)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                      SizedBox(width: 8),
+                      Text('滑动加载更多歌手曲目...', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    ],
+                  ),
+                ),
+              )
+            else if (!_hasMore && _tracks.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                  child: Text('已加载全部 ${_tracks.length} 首作品', style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                ),
+              ),
+          ],
         ],
       ),
     );

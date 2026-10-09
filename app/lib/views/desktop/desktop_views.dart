@@ -1073,7 +1073,7 @@ class _DesktopToplistViewState extends State<DesktopToplistView> {
     }
 
     setState(() => _loadingChartName = chartName);
-    final tracks = await OnlineMusicService.fetchToplistTracks(chartId.isNotEmpty ? chartId : chartName, limit: 50);
+    final tracks = await OnlineMusicService.fetchToplistTracks(chartId.isNotEmpty ? chartId : chartName);
     if (mounted) {
       setState(() => _loadingChartName = null);
       if (tracks.isNotEmpty) {
@@ -1756,7 +1756,23 @@ class _DesktopToplistDetailViewState extends State<DesktopToplistDetailView> {
   Future<void> _loadTracks() async {
     setState(() => _isLoading = _tracks.isEmpty);
     try {
-      final fetched = await OnlineMusicService.fetchToplistTracks(_chartId.isNotEmpty ? _chartId : _chartTitle, limit: 100);
+      final targetKey = _chartId.isNotEmpty ? _chartId : _chartTitle;
+      final pl = await OnlineMusicService.fetchToplistPlaylist(targetKey);
+      if (pl != null && mounted) {
+        setState(() {
+          _tracks = List.from(pl.tracks);
+          _allTrackIds = List.from(pl.allTrackIds);
+          _totalCount = pl.trackCount > 0
+              ? pl.trackCount
+              : (_allTrackIds.isNotEmpty ? _allTrackIds.length : _tracks.length);
+          if (pl.coverUrl.isNotEmpty) _coverUrl = pl.coverUrl;
+          if (pl.description.isNotEmpty) _playlistDesc = pl.description;
+          _isLoading = false;
+        });
+        _checkAndAutoFillViewport();
+        return;
+      }
+      final fetched = await OnlineMusicService.fetchToplistTracks(targetKey);
       if (mounted) {
         setState(() {
           if (fetched.isNotEmpty) {
@@ -2625,16 +2641,38 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
   int _albumCount = 0;
   bool _isLoadingMore = false;
   bool _hasMoreAllSongs = true;
+  bool _hasMoreTopSongs = true;
   int _allSongsOffset = 0;
   String _artistBio = '';
   String _artistId = '';
   String _artistName = '';
   String _artistAvatar = '';
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _parseParamsAndLoad();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    if (_isLoadingMore) return;
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 300) {
+      if (_selectedTab == 1 && _hasMoreAllSongs) {
+        _loadMoreAllSongs();
+      } else if (_selectedTab == 0 && _hasMoreTopSongs) {
+        _loadMoreTopSongs();
+      }
+    }
   }
 
   @override
@@ -2678,6 +2716,7 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
     _allTracks = [];
     _allSongsOffset = 0;
     _hasMoreAllSongs = true;
+    _hasMoreTopSongs = true;
     _selectedTab = 0;
     _isLoadingTracks = _topTracks.isEmpty;
 
@@ -2716,6 +2755,7 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
           }
           if (_totalSongCount == 0) _totalSongCount = _topTracks.length;
           _isLoadingTracks = false;
+          _hasMoreTopSongs = _totalSongCount > _topTracks.length;
         });
       }
     } catch (_) {
@@ -2727,6 +2767,35 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
           _isLoadingTracks = false;
         });
       }
+    }
+  }
+
+  void _loadMoreTopSongs() async {
+    if (_isLoadingMore || !_hasMoreTopSongs) return;
+    setState(() => _isLoadingMore = true);
+
+    try {
+      final res = await OnlineMusicService.fetchArtistAllSongs(
+        _artistId,
+        offset: _topTracks.length,
+        limit: 50,
+      );
+      if (mounted) {
+        final newTracks = res['tracks'] as List<Track>? ?? [];
+        final total = (res['total'] as num?)?.toInt() ?? 0;
+        final more = res['more'] == true;
+        final existingIds = _topTracks.map((t) => t.id).toSet();
+        final uniqueNew = newTracks.where((t) => !existingIds.contains(t.id)).toList();
+
+        setState(() {
+          _topTracks.addAll(uniqueNew);
+          if (total > 0) _totalSongCount = total;
+          _hasMoreTopSongs = more && uniqueNew.isNotEmpty;
+          _isLoadingMore = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingMore = false);
     }
   }
 
@@ -2744,10 +2813,13 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
         final newTracks = res['tracks'] as List<Track>? ?? [];
         final total = (res['total'] as num?)?.toInt() ?? 0;
         final more = res['more'] == true;
+        final existingIds = _allTracks.map((t) => t.id).toSet();
+        final uniqueNew = newTracks.where((t) => !existingIds.contains(t.id)).toList();
+
         setState(() {
-          _allTracks.addAll(newTracks);
+          _allTracks.addAll(uniqueNew);
           if (total > 0) _totalSongCount = total;
-          _hasMoreAllSongs = more && newTracks.isNotEmpty;
+          _hasMoreAllSongs = more && uniqueNew.isNotEmpty;
           _allSongsOffset = _allTracks.length;
           _isLoadingMore = false;
         });
@@ -2803,6 +2875,7 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
     final currentTracks = _selectedTab == 0 ? _topTracks : _allTracks;
 
     return ListView(
+      controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(32, 24, 32, 128),
       children: [
         InkWell(
@@ -3044,41 +3117,83 @@ class _DesktopArtistDetailViewState extends State<DesktopArtistDetailView> {
             );
           }),
 
-        // 底部引导或分页按钮
-        if (_selectedTab == 0 && _totalSongCount > _topTracks.length)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            child: Center(
-              child: SoftButton(
-                label: '查看该歌手全部 $_totalSongCount 首作品 >',
-                icon: Icons.library_music_rounded,
-                isPill: true,
-                onTap: () => _switchTab(1),
+        // 底部引导或分页展示
+        if (_selectedTab == 0) ...[
+          if (_isLoadingMore)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                    SizedBox(width: 8),
+                    Text('触底自动加载更多作品中...', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  ],
+                ),
+              ),
+            )
+          else if (_hasMoreTopSongs)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: SoftButton(
+                  label: '向下滚动自动加载全量曲库 · 或切换全部作品 ($_totalSongCount 首) >',
+                  icon: Icons.library_music_rounded,
+                  isPill: true,
+                  onTap: () => _switchTab(1),
+                ),
+              ),
+            )
+          else if (_topTracks.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: Text(
+                  '已呈现全部 ${_topTracks.length} 首代表作与作品',
+                  style: TextStyle(fontSize: 12, color: theme.textMuted),
+                ),
               ),
             ),
-          ),
-        if (_selectedTab == 1 && _hasMoreAllSongs)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            child: Center(
-              child: SoftButton(
-                label: _isLoadingMore ? '正在加载更多曲目...' : '加载更多作品 (已载入 ${_allTracks.length} / 共 $_totalSongCount 首)',
-                icon: _isLoadingMore ? null : Icons.arrow_downward_rounded,
-                isPill: true,
-                onTap: _loadMoreAllSongs,
+        ],
+        if (_selectedTab == 1) ...[
+          if (_isLoadingMore)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                    SizedBox(width: 8),
+                    Text('正在自动加载更多曲目...', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  ],
+                ),
+              ),
+            )
+          else if (_hasMoreAllSongs)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: SoftButton(
+                  label: '向下滚动自动加载 · 或点击加载更多 (${_allTracks.length} / $_totalSongCount 首)',
+                  icon: Icons.arrow_downward_rounded,
+                  isPill: true,
+                  onTap: _loadMoreAllSongs,
+                ),
+              ),
+            )
+          else if (_allTracks.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: Text(
+                  '已全部加载完毕 · 共收录 ${_allTracks.length} 首真音源',
+                  style: TextStyle(fontSize: 12, color: theme.textMuted),
+                ),
               ),
             ),
-          )
-        else if (_selectedTab == 1 && _allTracks.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            child: Center(
-              child: Text(
-                '已全部加载完毕 · 共收录 ${_allTracks.length} 首真音源',
-                style: TextStyle(fontSize: 12, color: theme.textMuted),
-              ),
-            ),
-          ),
+        ],
       ],
     );
   }

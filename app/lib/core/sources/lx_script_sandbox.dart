@@ -797,10 +797,8 @@ class LxCustomScriptDriver implements LxSourceDriver {
 
   @override
   Future<LxLyricResult?> getLyric(LxSongInfo song) async {
-    return LxLyricResult(
-      songId: song.id,
-      lyric: '[00:00.00]${song.title} - ${song.artist}\n[00:04.00]由自定义音源脚本 [${metadata.name}] 解析提供',
-    );
+    // 严禁编造任何虚假文案或伪歌词，未解析到时诚实返回 null 触发多源降级
+    return null;
   }
 
   @override
@@ -1075,6 +1073,9 @@ class LxSourceEngine extends ChangeNotifier {
 
   /// 所有音源驱动映射
   Map<String, LxSourceDriver> get drivers => Map.unmodifiable(_drivers);
+
+  /// 是否有任何已启用的音源驱动
+  bool get isAnySourceLoaded => _drivers.values.any((d) => d.metadata.isEnabled);
 
   /// 获取指定音源驱动
   LxSourceDriver? getDriver(String sourceId) => _drivers[sourceId];

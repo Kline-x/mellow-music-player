@@ -33,30 +33,65 @@ class MobileDiscoverTab extends StatefulWidget {
 }
 
 class _MobileDiscoverTabState extends State<MobileDiscoverTab> {
-  List<Track> _newAlbumTracks = [];
-  bool _isLoadingAlbums = true;
+  List<ImportedPlaylist> _curatedPlaylists = [];
+  bool _isLoadingPlaylists = true;
 
   @override
   void initState() {
     super.initState();
-    // 预热今日推荐曲库与真实新碟专栏
+    // 预热今日推荐曲库与甄选歌单推荐
     DailyRecommendService.instance.getDailyRecommendTracksAsync();
-    _initNewAlbums();
+    _initCuratedPlaylists();
   }
 
-  void _initNewAlbums() async {
-    final localFallback = (toplistTracksMap['新歌榜'] ?? getAllKnownTracks()).take(8).toList();
+  void _initCuratedPlaylists() async {
+    final mockFallback = [
+      ImportedPlaylist(
+        id: 'netease_3778678',
+        title: '云音乐热歌榜 · 甄选精选集',
+        coverUrl: 'https://p1.music.126.net/GhhuF6Ep5Tq9IEvLndCN6w==/18708190348409091.jpg',
+        description: '全网超高人气的甄选流行歌曲，随旋律开启沉浸心流',
+        trackCount: 200,
+        tracks: getAllKnownTracks(),
+      ),
+      ImportedPlaylist(
+        id: 'netease_3779629',
+        title: '新歌风向标 · 官方新碟首发',
+        coverUrl: 'https://p1.music.126.net/N2HO5xfYEqyvEiqJvAueQQ==/18740076185638788.jpg',
+        description: '甄选每周最新华语高保真单曲与原创佳作',
+        trackCount: 100,
+        tracks: getAllKnownTracks().reversed.toList(),
+      ),
+      ImportedPlaylist(
+        id: 'netease_2884035',
+        title: '宝藏原创榜 · 独立声学精粹',
+        coverUrl: 'https://p1.music.126.net/sBzD11nforcuh1jdLSgX7g==/18740076185638788.jpg',
+        description: '挖掘极具生命力的小众优质旋律与好声音',
+        trackCount: 100,
+        tracks: getAllKnownTracks(),
+      ),
+      ImportedPlaylist(
+        id: 'netease_19723756',
+        title: '官方飙升榜 · 今日潮流热浪',
+        coverUrl: 'https://p1.music.126.net/DrrB9-Kq-4bKHgU4s_kOyw==/18740076185638788.jpg',
+        description: '100首每日急速上升的潜质金曲与爆款',
+        trackCount: 98,
+        tracks: getAllKnownTracks(),
+      ),
+    ];
+
     if (mounted) {
       setState(() {
-        _newAlbumTracks = localFallback;
-        _isLoadingAlbums = false;
+        _curatedPlaylists = mockFallback;
+        _isLoadingPlaylists = false;
       });
     }
+
     try {
-      final fetched = await OnlineMusicService.fetchToplistTracks('新歌榜', limit: 12);
+      final fetched = await OnlineMusicService.searchOnlinePlaylists('精选', limit: 6);
       if (fetched.isNotEmpty && mounted) {
         setState(() {
-          _newAlbumTracks = fetched;
+          _curatedPlaylists = fetched;
         });
       }
     } catch (_) {}
@@ -86,8 +121,8 @@ class _MobileDiscoverTabState extends State<MobileDiscoverTab> {
             _buildDailyRecommendSection(context),
             const SizedBox(height: 26),
 
-            // 5. 新碟与精选专栏 (真实新碟曲库流，点击播放对应歌曲并推入专栏歌单)
-            _buildNewAlbumsSection(context),
+            // 5. 甄选歌单推荐 (替代原新碟专栏，与PC端完全一致，支持下钻与一键播放)
+            _buildCuratedPlaylistsSection(context),
           ],
         );
       },
@@ -710,11 +745,13 @@ class _MobileDiscoverTabState extends State<MobileDiscoverTab> {
     );
   }
 
-  /// 新碟与精选专栏 (真实新碟曲库流，点击播放对应曲目并全量入队专栏)
-  Widget _buildNewAlbumsSection(BuildContext context) {
+  /// 甄选歌单推荐 (对齐 PC 端设计语言，横滑瀑布流卡片 + 悬浮白瓷播放圆钮 + 下钻全量详情)
+  Widget _buildCuratedPlaylistsSection(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
-    final albums = _newAlbumTracks;
+    final playlists = _curatedPlaylists.isNotEmpty
+        ? _curatedPlaylists
+        : player.importedPlaylists;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -722,67 +759,44 @@ class _MobileDiscoverTabState extends State<MobileDiscoverTab> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              '新碟与精选专栏',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: theme.textPrimary,
-              ),
-            ),
-            Row(
-              children: [
-                if (albums.isNotEmpty)
-                  GestureDetector(
-                    onTap: () {
-                      player.playPlaylist(albums, startIndex: 0);
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: theme.accentColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.play_arrow_rounded, size: 14, color: theme.accentColor),
-                          const SizedBox(width: 2),
-                          Text(
-                            '播放专栏',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: theme.accentColor,
-                            ),
-                          ),
-                        ],
-                      ),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => widget.onNavigatePage('playlists'),
+              child: Row(
+                children: [
+                  Text(
+                    '甄选歌单推荐',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: theme.textPrimary,
                     ),
                   ),
-                GestureDetector(
-                  onTap: () => widget.onNavigatePage('playlists'),
-                  child: Row(
-                    children: [
-                      Text(
-                        '全部 ${albums.length} 专',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: theme.textMuted,
-                        ),
-                      ),
-                      Icon(Icons.chevron_right_rounded, size: 16, color: theme.textMuted),
-                    ],
+                  const SizedBox(width: 4),
+                  Icon(Icons.chevron_right_rounded, size: 18, color: theme.textMuted),
+                ],
+              ),
+            ),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => widget.onNavigatePage('playlists'),
+              child: Row(
+                children: [
+                  Text(
+                    '查看全部 >',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: theme.accentColor,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        if (_isLoadingAlbums && albums.isEmpty)
+        if (_isLoadingPlaylists && playlists.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
             child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
@@ -792,72 +806,95 @@ class _MobileDiscoverTabState extends State<MobileDiscoverTab> {
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             child: Row(
-              children: List.generate(albums.length, (idx) {
-                final item = albums[idx];
+              children: List.generate(playlists.length, (idx) {
+                final item = playlists[idx];
+                final desc = item.description.isNotEmpty
+                    ? item.description
+                    : '甄选推荐歌单 · ${item.trackCount > 0 ? item.trackCount : (item.tracks.isNotEmpty ? item.tracks.length : 30)}首';
+
                 return Container(
-                  width: 124,
+                  width: 136,
                   margin: const EdgeInsets.only(right: 12),
                   child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
                     onTap: () {
-                      // 精准播放所选新碟曲目，并将专栏全部曲目推入队列
-                      player.playPlaylist(albums, startIndex: idx);
+                      // 接入 MobileScaffold 子栈，保持顶部灵动岛与底部 MiniPlayer 持续驻留
+                      widget.onNavigatePage(
+                        'playlist_detail',
+                        'playlist:::${item.id}:::${item.title}:::${item.coverUrl}:::$desc',
+                      );
                     },
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(16),
                           child: Stack(
                             children: [
                               MellowImage(
                                 url: item.coverUrl,
-                                width: 124,
-                                height: 124,
+                                width: 136,
+                                height: 136,
                               ),
+                              // 右下角悬浮白瓷毛玻璃圆形播放按钮
                               Positioned(
                                 right: 8,
                                 bottom: 8,
-                                child: Container(
-                                  width: 28,
-                                  height: 28,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.92),
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.25),
-                                        blurRadius: 4,
-                                      ),
-                                    ],
+                                child: GestureDetector(
+                                  key: Key('curated_playlist_play_$idx'),
+                                  onTap: () async {
+                                    if (item.tracks.isNotEmpty) {
+                                      player.playPlaylist(item.tracks, startIndex: 0);
+                                    } else {
+                                      final detail = await OnlineMusicService.importNeteasePlaylist(item.id);
+                                      if (detail != null && detail.tracks.isNotEmpty) {
+                                        player.playPlaylist(detail.tracks, startIndex: 0);
+                                      }
+                                    }
+                                  },
+                                  child: Container(
+                                    width: 32,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.95),
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.25),
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(
+                                      Icons.play_arrow_rounded,
+                                      color: Color(0xFF0F172A),
+                                      size: 20,
+                                    ),
                                   ),
-                                  child: const Icon(Icons.play_arrow_rounded, color: Colors.black87, size: 18),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 8),
                         Text(
                           item.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 12.5,
                             fontWeight: FontWeight.w700,
                             color: theme.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: 1),
+                        const SizedBox(height: 2),
                         Text(
-                          (item.album.trim().isEmpty ||
-                                  item.album.trim() == item.artist.trim() ||
-                                  item.album.contains(item.artist.trim()))
-                              ? item.artist
-                              : '${item.artist} · ${item.album}',
+                          desc,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 10,
+                            fontSize: 10.5,
                             color: theme.textMuted,
                           ),
                         ),
@@ -1715,8 +1752,15 @@ class MobileLibraryTab extends StatelessWidget {
 }
 
 /// 4. 移动端 Tab 4: 个人与设置中心 (MobileProfileTab)
-class MobileProfileTab extends StatelessWidget {
+class MobileProfileTab extends StatefulWidget {
   const MobileProfileTab({super.key});
+
+  @override
+  State<MobileProfileTab> createState() => _MobileProfileTabState();
+}
+
+class _MobileProfileTabState extends State<MobileProfileTab> {
+  bool _isCheckingUpdateMobile = false;
 
   @override
   Widget build(BuildContext context) {
@@ -1893,81 +1937,108 @@ class MobileProfileTab extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () async {
-                  final messenger = ScaffoldMessenger.of(context);
-                  try {
-                    final service = VersionCheckService();
-                    final newVersion = await service.checkLatestVersion();
-                    if (!context.mounted) return;
-                    if (newVersion != null) {
-                      await UpdateDialog.show(context, newVersion);
-                    } else {
-                      messenger.showSnackBar(
-                        SnackBar(
-                          content: Text('已是最新版本 (v${service.currentVersionName})'),
-                          behavior: SnackBarBehavior.floating,
-                          margin: const EdgeInsets.fromLTRB(16, 0, 16, 85),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      messenger.showSnackBar(
-                        SnackBar(
-                          content: Text('检查更新失败: $e'),
-                          behavior: SnackBarBehavior.floating,
-                          margin: const EdgeInsets.fromLTRB(16, 0, 16, 85),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        ),
-                      );
-                    }
-                  }
-                },
-                onLongPress: () async {
-                  try {
-                    final service = VersionCheckService();
-                    final mockVersion = await service.checkLatestVersion(forceMock: true);
-                    if (!context.mounted) return;
-                    if (mockVersion != null) {
-                      await UpdateDialog.show(context, mockVersion);
-                    }
-                  } catch (_) {}
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: theme.cardColor.withValues(alpha: theme.isDarkMode ? 0.6 : 0.9),
-                    borderRadius: MellowRadii.borderR16,
-                    border: Border.all(color: theme.borderColor.withValues(alpha: 0.5), width: 0.8),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: theme.accentColor.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(Icons.system_update_alt_rounded, color: theme.accentColor, size: 20),
+              StatefulBuilder(
+                builder: (context, setTileState) {
+                  return GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _isCheckingUpdateMobile
+                        ? null
+                        : () async {
+                            final messenger = ScaffoldMessenger.of(context);
+                            setTileState(() => _isCheckingUpdateMobile = true);
+                            try {
+                              final service = VersionCheckService();
+                              final newVersion = await service.checkLatestVersion();
+                              if (!context.mounted) return;
+                              if (newVersion != null) {
+                                await UpdateDialog.show(context, newVersion);
+                              } else {
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text('已是最新版本 (v${service.currentVersionName})'),
+                                    behavior: SnackBarBehavior.floating,
+                                    margin: const EdgeInsets.fromLTRB(16, 0, 16, 85),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text('检查更新失败: $e'),
+                                    behavior: SnackBarBehavior.floating,
+                                    margin: const EdgeInsets.fromLTRB(16, 0, 16, 85),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                  ),
+                                );
+                              }
+                            } finally {
+                              if (context.mounted) {
+                                setTileState(() => _isCheckingUpdateMobile = false);
+                              }
+                            }
+                          },
+                    onLongPress: () async {
+                      try {
+                        final service = VersionCheckService();
+                        final mockVersion = await service.checkLatestVersion(forceMock: true);
+                        if (!context.mounted) return;
+                        if (mockVersion != null) {
+                          await UpdateDialog.show(context, mockVersion);
+                        }
+                      } catch (_) {}
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: theme.cardColor.withValues(alpha: theme.isDarkMode ? 0.6 : 0.9),
+                        borderRadius: MellowRadii.borderR16,
+                        border: Border.all(color: theme.borderColor.withValues(alpha: 0.5), width: 0.8),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('检查新版本更新', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: theme.textPrimary)),
-                            const SizedBox(height: 2),
-                            Text('检测 GitHub Releases 最新稳定版本', style: TextStyle(fontSize: 11, color: theme.textMuted)),
-                          ],
-                        ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: theme.accentColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: _isCheckingUpdateMobile
+                                ? SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.2,
+                                      color: theme.accentColor,
+                                    ),
+                                  )
+                                : Icon(Icons.system_update_alt_rounded, color: theme.accentColor, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _isCheckingUpdateMobile ? '正在检测最新版本...' : '检查新版本更新',
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: theme.textPrimary),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _isCheckingUpdateMobile ? '正在连接高可用镜像源并比对版本...' : '检测 GitHub Releases 最新稳定版本',
+                                  style: TextStyle(fontSize: 11, color: theme.textMuted),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (!_isCheckingUpdateMobile)
+                            Icon(Icons.chevron_right_rounded, size: 20, color: theme.textMuted),
+                        ],
                       ),
-                      Icon(Icons.chevron_right_rounded, size: 20, color: theme.textMuted),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               ),
             ],
           ),

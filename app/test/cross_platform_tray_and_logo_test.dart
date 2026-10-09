@@ -123,7 +123,7 @@ void main() {
   });
 
   group('桌面顶栏组件与交互集成测试', () {
-    testWidgets('桌面顶栏成功渲染 MellowBrandLogo 与托盘最小化按钮', (tester) async {
+    testWidgets('桌面顶栏成功渲染 MellowBrandLogo 且已移除冗余重复按钮', (tester) async {
       tester.view.physicalSize = const Size(1280, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
@@ -148,13 +148,9 @@ void main() {
       // 验证全新品牌 Logo 呈现在顶栏
       expect(find.byType(MellowBrandLogo), findsOneWidget);
 
-      // 验证最小化到托盘按钮存在
-      final minimizeBtn = find.byTooltip('最小化到托盘');
-      expect(minimizeBtn, findsOneWidget);
-
-      // 点击最小化到托盘按钮不发生未捕获异常
-      await tester.tap(minimizeBtn);
-      await tester.pump();
+      // 验证右上角重复按钮已精简移除（最小化到托盘、日夜切换、设置等重复入口不再出现在顶栏）
+      expect(find.byTooltip('最小化到托盘'), findsNothing);
+      expect(find.byTooltip('设置'), findsNothing);
 
       audioService.dispose();
     });

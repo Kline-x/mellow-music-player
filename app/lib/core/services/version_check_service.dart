@@ -280,8 +280,45 @@ class VersionCheckService {
     return sorted;
   }
 
+  /// 将平台 versionCode 规范化为真实基准构建号 (过滤 Android split-per-abi 自动附加的 1000 * ABI)
+  static int normalizeVersionCode(int code) {
+    if (code >= 1000) {
+      return code % 1000;
+    }
+    return code;
+  }
+
+  /// 比较两个语义化版本号，若 v1 > v2 返回 1，v1 < v2 返回 -1，相等返回 0
+  static int compareVersionStrings(String v1, String v2) {
+    final cleanV1 = v1.replaceAll(RegExp(r'^[vV]'), '').split('+')[0].split('-')[0];
+    final cleanV2 = v2.replaceAll(RegExp(r'^[vV]'), '').split('+')[0].split('-')[0];
+    final parts1 = cleanV1.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+    final parts2 = cleanV2.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+    final maxLen = parts1.length > parts2.length ? parts1.length : parts2.length;
+    for (int i = 0; i < maxLen; i++) {
+      final p1 = i < parts1.length ? parts1[i] : 0;
+      final p2 = i < parts2.length ? parts2[i] : 0;
+      if (p1 != p2) return p1.compareTo(p2);
+    }
+    return 0;
+  }
+
+  /// 判断远程版本是否确实新于当前客户端版本
+  bool isNewerVersion(AppVersionInfo remoteInfo) {
+    // 1. 优先通过语义化版本比对 (例如 1.1.4 > 1.1.3, 1.2.0 > 1.1.3)
+    final cmp = compareVersionStrings(remoteInfo.versionName, currentVersionName);
+    if (cmp > 0) return true;
+    if (cmp < 0) return false;
+
+    // 2. 版本名完全相同时，通过归一化构建号比对
+    final remoteNormCode = normalizeVersionCode(remoteInfo.versionCode);
+    final localNormCode = normalizeVersionCode(currentVersionCode);
+    return remoteNormCode > localNormCode;
+  }
+
   /// 远程清单高可用探测地址
   static List<String> get manifestEndpoints => [
+        'https://ghfast.top/https://raw.githubusercontent.com/$appRepo/main/version_manifest.json',
         'https://ghproxy.net/https://raw.githubusercontent.com/$appRepo/main/version_manifest.json',
         'https://cdn.jsdelivr.net/gh/$appRepo@main/version_manifest.json',
         'https://raw.githubusercontent.com/$appRepo/main/version_manifest.json',
@@ -302,6 +339,7 @@ class VersionCheckService {
         ? [customEndpoint, ...manifestEndpoints]
         : manifestEndpoints;
 
+    bool networkSuccess = false;
     for (final endpoint in endpoints) {
       try {
         final uri = Uri.parse(endpoint);
@@ -337,8 +375,9 @@ class VersionCheckService {
           }
 
           if (jsonMap != null) {
+            networkSuccess = true;
             final info = AppVersionInfo.fromJson(jsonMap);
-            if (info.versionCode > currentVersionCode) {
+            if (isNewerVersion(info)) {
               return info;
             } else {
               return null; // 已经是最新版
@@ -348,6 +387,10 @@ class VersionCheckService {
       } catch (e) {
         debugPrint('[VersionCheckService] 节点 $endpoint 探测未响应: $e');
       }
+    }
+
+    if (!networkSuccess) {
+      throw Exception('网络连接超时，无法连接至更新服务器');
     }
 
     return null;

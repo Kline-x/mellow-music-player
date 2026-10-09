@@ -106,7 +106,7 @@ void main() {
       player.pause();
     });
 
-    testWidgets('3. 新碟与精选专栏：包含真实新碟曲库流并支持「播放专栏」整批入队起播', (tester) async {
+    testWidgets('3. 甄选歌单推荐：包含高保真歌单流并支持一键播放入队起播与查看全部', (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -126,10 +126,13 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('新碟与精选专栏'), findsOneWidget);
-      expect(find.text('播放专栏'), findsOneWidget);
+      expect(find.text('甄选歌单推荐'), findsOneWidget);
+      expect(find.text('查看全部 >'), findsOneWidget);
 
-      await tester.tap(find.text('播放专栏'));
+      final playBtn = find.byKey(const Key('curated_playlist_play_0'));
+      expect(playBtn, findsOneWidget);
+
+      await tester.tap(playBtn);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 

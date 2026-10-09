@@ -184,7 +184,7 @@ class _MobileScaffoldState extends State<MobileScaffold> {
     );
   }
 
-  /// 顶部灵动岛状态栏 (Dynamic Island Header)
+  /// 顶部灵动岛状态栏 (Dynamic Island / 原子通知胶囊 - 支持轻扫切歌、长按暂停与点击展开)
   Widget _buildDynamicIslandHeader(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
@@ -198,6 +198,7 @@ class _MobileScaffoldState extends State<MobileScaffold> {
       child: Center(
         child: GestureDetector(
           key: const Key('dynamic_island_capsule'),
+          behavior: HitTestBehavior.opaque,
           onTap: () {
             showModalBottomSheet(
               context: context,
@@ -206,30 +207,53 @@ class _MobileScaffoldState extends State<MobileScaffold> {
               builder: (_) => MobilePlayerBottomSheet(onClose: () => Navigator.of(context).pop()),
             );
           },
-          child: Container(
-            height: 32,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
+          onLongPress: () {
+            player.togglePlay();
+          },
+          onHorizontalDragEnd: (details) {
+            final vx = details.primaryVelocity ?? 0;
+            if (vx < -150) {
+              player.next();
+            } else if (vx > 150) {
+              player.previous();
+            }
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            height: 34,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
               color: const Color(0xFF09090B),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(22),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.35),
+                  color: Colors.black.withValues(alpha: 0.4),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+                BoxShadow(
+                  color: theme.accentColor.withValues(alpha: player.isPlaying ? 0.18 : 0.0),
                   blurRadius: 8,
-                  offset: const Offset(0, 2),
+                  spreadRadius: 0.5,
                 ),
               ],
-              border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 0.6),
+              border: Border.all(
+                color: player.isPlaying
+                    ? theme.accentColor.withValues(alpha: 0.35)
+                    : Colors.white.withValues(alpha: 0.14),
+                width: 0.8,
+              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // 跳动音频频谱 3 根竖线
+                // 呼吸跳动音频频谱 3 根竖线
                 _buildDynamicIslandSpectrum(player.isPlaying, theme.accentColor),
                 const SizedBox(width: 8),
-                // 当前歌曲标题
+                // 当前歌曲标题与微型歌手
                 ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 120),
+                  constraints: const BoxConstraints(maxWidth: 130),
                   child: Text(
                     track.title,
                     maxLines: 1,
@@ -238,15 +262,28 @@ class _MobileScaffoldState extends State<MobileScaffold> {
                       color: Colors.white,
                       fontSize: 11.5,
                       fontWeight: FontWeight.w600,
+                      letterSpacing: -0.2,
                     ),
                   ),
                 ),
                 const SizedBox(width: 6),
-                // 播放小三角
-                Icon(
-                  player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                  color: theme.accentColor,
-                  size: 14,
+                // 播放控制小圆钮 (点触或长按切播)
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => player.togglePlay(),
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                      color: theme.accentColor,
+                      size: 13,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -256,27 +293,30 @@ class _MobileScaffoldState extends State<MobileScaffold> {
     );
   }
 
-  /// 灵动岛频谱律动指示器
+  /// 灵动岛频谱律动指示器 (支持波浪音阶高度平滑律动)
   Widget _buildDynamicIslandSpectrum(bool isPlaying, Color color) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Container(
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
           width: 2.2,
           height: isPlaying ? 12 : 5,
           decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
         ),
         const SizedBox(width: 2.2),
-        Container(
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
           width: 2.2,
           height: isPlaying ? 16 : 8,
           decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
         ),
         const SizedBox(width: 2.2),
-        Container(
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 320),
           width: 2.2,
-          height: isPlaying ? 9 : 4,
+          height: isPlaying ? 10 : 4,
           decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
         ),
       ],
@@ -305,6 +345,7 @@ class _MobileScaffoldState extends State<MobileScaffold> {
       bottom: bottom,
       child: GestureDetector(
         key: const Key('mini_player_pill'),
+        behavior: HitTestBehavior.opaque,
         onTap: () {
           showModalBottomSheet(
             context: context,
@@ -312,6 +353,25 @@ class _MobileScaffoldState extends State<MobileScaffold> {
             backgroundColor: Colors.transparent,
             builder: (_) => MobilePlayerBottomSheet(onClose: () => Navigator.of(context).pop()),
           );
+        },
+        onVerticalDragEnd: (details) {
+          final vy = details.primaryVelocity ?? 0;
+          if (vy < -150) {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => MobilePlayerBottomSheet(onClose: () => Navigator.of(context).pop()),
+            );
+          }
+        },
+        onHorizontalDragEnd: (details) {
+          final vx = details.primaryVelocity ?? 0;
+          if (vx < -150) {
+            player.next();
+          } else if (vx > 150) {
+            player.previous();
+          }
         },
         child: Container(
           clipBehavior: Clip.antiAlias,

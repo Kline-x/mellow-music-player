@@ -1012,16 +1012,62 @@ class OnlineMusicService {
   }
 
   /// 3. 获取单曲真实 LRC 歌词 (聚合 网易云直连 + 网易云搜索匹配 + 酷狗PC官方接口 + 酷我)
+  /// 智能清洗歌曲标题噪音（剔除 Live、伴奏、电视剧片头尾、副标题、feat 等干扰词，提升跨源搜索歌词命中率）
+  static String cleanSongTitle(String title) {
+    var s = title.trim();
+    // 剔除包含 Live、现场、伴奏、原声、纯音、电视剧、电影、网剧、OST、主题曲、片尾曲、翻唱等的括号说明
+    s = s.replaceAll(
+      RegExp(r'\s*[\(（【\[][^\)）】\]]*(Live|现场|伴奏|Inst|Instrumental|Remix|Cover|翻唱|电视剧|电影|网剧|OST|主题曲|片尾曲|插曲|原声|纯音乐|feat\.|ft\.)[^\)）】\]]*[\)）】\]]', caseSensitive: false),
+      ' ',
+    );
+    // 剔除破折号后的电视剧/电影/动画/游戏副标题 (例如 "起风了 - 电视剧《xxx》主题曲" 或 "孤勇者 - 动画《xxx》中文主题曲")
+    s = s.replaceAll(RegExp(r'\s*[-–—]\s*(电视剧|电影|网剧|网综|动漫|动画|游戏|网游|手游|广播剧|《|OST|主题曲|片尾曲|插曲)[^$]*', caseSensitive: false), ' ');
+    // 剔除普通括号中包含的多余副标
+    s = s.replaceAll(RegExp(r'\s*[\(（][^\)）]*[\)）]'), ' ');
+    return s.replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
+  /// 3. 增强型多源梯级歌词检索引擎（集成落雪音源原生歌词驱动、智能歌名清洗与多级容错）
   static Future<List<LyricLine>> fetchTrackLyric(String trackId, {String? title, String? artist}) async {
     final cleanTitle = title?.trim() ?? '';
     final cleanArtist = artist?.trim() ?? '';
     final firstArtist = cleanArtist.split(RegExp(r'[/,&、·]')).first.trim();
+    final simplifiedTitle = cleanSongTitle(cleanTitle);
 
-    // 辅助检查：判断歌词是否真实有效（排除“暂无歌词”等伪占位）
+    // 辅助检查：判断歌词是否真实有效（排除“暂无歌词”、“由自定义音源脚本解析提供”等伪占位）
     bool isValidLyrics(List<LyricLine> list) {
       if (list.isEmpty) return false;
-      if (list.length == 1 && list.first.text.contains('暂无歌词')) return false;
+      if (list.length <= 2) {
+        final combined = list.map((e) => e.text).join(' ');
+        if (combined.contains('暂无歌词') ||
+            combined.contains('暂无滚动歌词') ||
+            combined.contains('纯音乐') ||
+            combined.contains('自定义音源脚本') ||
+            combined.contains('解析提供')) {
+          return false;
+        }
+      }
       return true;
+    }
+
+    // 0. 优先尝试落雪扩展脚本原生歌词引擎 (若用户配置了第三方或官方落雪源)
+    if (LxSourceEngine.instance.isAnySourceLoaded && cleanTitle.isNotEmpty) {
+      try {
+        final lxSong = LxSongInfo(
+          id: trackId,
+          songMid: trackId.contains('_') ? trackId.split('_').sublist(1).join('_') : trackId,
+          title: cleanTitle,
+          artist: cleanArtist,
+          album: '',
+          duration: Duration.zero,
+          source: trackId.contains('_') ? trackId.split('_').first : 'kw',
+        );
+        final lxResult = await LxSourceEngine.instance.getLyricWithFallback(lxSong).timeout(const Duration(seconds: 4));
+        if (lxResult.lyric.isNotEmpty) {
+          final parsed = lxResult.toLyricLines();
+          if (isValidLyrics(parsed)) return parsed;
+        }
+      } catch (_) {}
     }
 
     // 1. 若为 Kuwo 音轨
@@ -1062,10 +1108,17 @@ class OnlineMusicService {
       } catch (_) {}
     }
 
-    // 3. 跨源通过 标题 + 歌手 搜索网易云匹配真实歌词
-    if (cleanTitle.isNotEmpty) {
+    // 3. 跨源通过 标题 + 歌手 搜索网易云匹配真实歌词 (多轮降噪梯级尝试)
+    final searchQueries = <String>[
+      if (cleanTitle.isNotEmpty && firstArtist.isNotEmpty) '$cleanTitle $firstArtist',
+      if (simplifiedTitle.isNotEmpty && simplifiedTitle != cleanTitle && firstArtist.isNotEmpty) '$simplifiedTitle $firstArtist',
+      if (cleanTitle.isNotEmpty) cleanTitle,
+      if (simplifiedTitle.isNotEmpty && simplifiedTitle != cleanTitle) simplifiedTitle,
+    ];
+
+    for (final q in searchQueries.take(2)) {
       try {
-        final neTracks = await neteaseService.search('$cleanTitle $firstArtist', limit: 2);
+        final neTracks = await neteaseService.search(q, limit: 3);
         for (final nt in neTracks) {
           final matchedPureId = NeteaseMusicService.pureSongId(nt.id);
           if (matchedPureId != null && matchedPureId != pureId) {
@@ -1076,31 +1129,30 @@ class OnlineMusicService {
       } catch (_) {}
     }
 
-    // 4. 聚合酷狗官方公开歌词接口 (含 base64 自动解析还原)
-    if (cleanTitle.isNotEmpty) {
-      for (final queryStr in ['$cleanTitle $firstArtist', cleanTitle]) {
-        try {
-          final searchUri = Uri.parse(
-            'http://lyrics.kugou.com/search?ver=1&man=yes&client=pc&keyword=${Uri.encodeComponent(queryStr)}&duration=0&hash=',
-          );
-          final searchResp = await http.get(searchUri, headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          }).timeout(const Duration(seconds: 3));
+    // 4. 聚合酷狗官方公开歌词接口 (多轮降噪梯级尝试与 base64 自动解码)
+    for (final queryStr in searchQueries) {
+      try {
+        final searchUri = Uri.parse(
+          'http://lyrics.kugou.com/search?ver=1&man=yes&client=pc&keyword=${Uri.encodeComponent(queryStr)}&duration=0&hash=',
+        );
+        final searchResp = await http.get(searchUri, headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        }).timeout(const Duration(seconds: 4));
 
-          if (searchResp.statusCode == 200) {
-            final searchData = jsonDecode(utf8.decode(searchResp.bodyBytes));
-            final candidates = searchData['candidates'] as List?;
-            if (candidates != null && candidates.isNotEmpty) {
-              final first = candidates.first;
-              final lyricId = first['id']?.toString() ?? '';
-              final accessKey = first['accesskey']?.toString() ?? '';
+        if (searchResp.statusCode == 200) {
+          final searchData = jsonDecode(utf8.decode(searchResp.bodyBytes));
+          final candidates = searchData['candidates'] as List?;
+          if (candidates != null && candidates.isNotEmpty) {
+            for (final candidate in candidates.take(2)) {
+              final lyricId = candidate['id']?.toString() ?? '';
+              final accessKey = candidate['accesskey']?.toString() ?? '';
               if (lyricId.isNotEmpty && accessKey.isNotEmpty) {
                 final dlUri = Uri.parse(
                   'http://lyrics.kugou.com/download?ver=1&client=pc&id=$lyricId&accesskey=$accessKey&fmt=lrc&charset=utf8',
                 );
                 final dlResp = await http.get(dlUri, headers: {
                   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                }).timeout(const Duration(seconds: 3));
+                }).timeout(const Duration(seconds: 4));
 
                 if (dlResp.statusCode == 200) {
                   final dlData = jsonDecode(utf8.decode(dlResp.bodyBytes));
@@ -1114,15 +1166,15 @@ class OnlineMusicService {
               }
             }
           }
-        } catch (_) {}
-      }
+        }
+      } catch (_) {}
     }
 
     // 5. 兜底尝试通过标题+歌手检索 Kuwo 歌词
-    if (cleanTitle.isNotEmpty) {
+    for (final queryStr in [if (cleanTitle.isNotEmpty && firstArtist.isNotEmpty) '$cleanTitle $firstArtist', if (cleanTitle.isNotEmpty) cleanTitle]) {
       try {
         final kwUri = Uri.parse(
-          'http://search.kuwo.cn/r.s?client=kt&all=${Uri.encodeComponent('$cleanTitle $firstArtist')}&pn=0&rn=1&vipver=1&ft=music&encoding=utf8&rformat=json&mobi=1',
+          'http://search.kuwo.cn/r.s?client=kt&all=${Uri.encodeComponent(queryStr)}&pn=0&rn=1&vipver=1&ft=music&encoding=utf8&rformat=json&mobi=1',
         );
         final kwResp = await http.get(kwUri, headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -1144,8 +1196,8 @@ class OnlineMusicService {
     return const [];
   }
 
-  /// 4. 实时抓取官方巅峰榜单真实曲库（支持名称与真实歌单 ID，剔除无版权 404 死链）
-  static Future<List<Track>> fetchToplistTracks(String chartTitleOrId, {int limit = 50}) async {
+  /// 4. 实时抓取官方巅峰榜单真实曲库（解除数量死锁，支持全量曲目与懒加载）
+  static Future<List<Track>> fetchToplistTracks(String chartTitleOrId, {int? limit}) async {
     const chartMap = {
       '飙升榜': '19723756',
       '热歌榜': '3778678',
@@ -1168,21 +1220,54 @@ class OnlineMusicService {
     if (pid == null) return [];
 
     final playlist = await importNeteasePlaylist(pid);
-    if (playlist != null && playlist.tracks.isNotEmpty) {
-      // 放大候选采样池，过滤掉已明确无版权与网易云官方下架的死链
-      final rawList = playlist.tracks;
-      final filtered = <Track>[];
-      for (final t in rawList) {
-        // 自动剔除网易云端明确标记为无播放版权（pl <= 0）的下架曲目
-        if (t.source == 'netease-unlicensed') {
-          continue;
+    if (playlist != null) {
+      var allTracks = List<Track>.from(playlist.tracks);
+      // 若未指定限制或要求更多，自动分批拉取后续 trackIds
+      if ((limit == null || limit <= 0 || limit > allTracks.length) && playlist.allTrackIds.length > allTracks.length) {
+        final remainingIds = playlist.allTrackIds.skip(allTracks.length);
+        final toFetch = (limit != null && limit > 0)
+            ? remainingIds.take(limit - allTracks.length).toList()
+            : remainingIds.take(200).toList();
+        if (toFetch.isNotEmpty) {
+          final moreTracks = await fetchTracksByIds(toFetch, defaultCover: playlist.coverUrl);
+          allTracks.addAll(moreTracks);
         }
+      }
+
+      final filtered = <Track>[];
+      for (final t in allTracks) {
+        if (t.source == 'netease-unlicensed') continue;
         filtered.add(t);
-        if (filtered.length >= limit) break;
+        if (limit != null && limit > 0 && filtered.length >= limit) break;
       }
       return filtered;
     }
     return [];
+  }
+
+  /// 4.1 抓取官方排行榜对应的完整歌单模型 (包含全量 allTrackIds，支持无限滚动懒加载)
+  static Future<ImportedPlaylist?> fetchToplistPlaylist(String chartTitleOrId) async {
+    const chartMap = {
+      '飙升榜': '19723756',
+      '热歌榜': '3778678',
+      '新歌榜': '3779629',
+      '原创榜': '2884035',
+      '黑胶VIP榜': '71384707',
+      '黑胶VIP爱听榜': '71384707',
+      '电音榜': '1978921795',
+      '华语金曲榜': '4395559',
+      'ACG动漫榜': '71385702',
+      '欧美热歌榜': '28095138',
+      '日本热歌榜': '28095777',
+      '韩国热歌榜': '28095139',
+      '英国UK榜': '180106',
+      'Billboard榜': '60198',
+      '达人榜': '991319590',
+      '实时榜': '18176153161',
+    };
+    final pid = chartMap[chartTitleOrId] ?? (RegExp(r'^\d+$').hasMatch(chartTitleOrId) ? chartTitleOrId : null);
+    if (pid == null) return null;
+    return await importNeteasePlaylist(pid);
   }
 
   /// 5. 抓取所有 60+ 官方真实排行榜单元数据

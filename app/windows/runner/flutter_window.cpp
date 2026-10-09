@@ -233,7 +233,7 @@ void FlutterWindow::ShowTrayContextMenu() {
   AppendMenuW(hMenu, MF_STRING, IDM_TRAY_FLOATING_LYRIC, L"桌面歌词 开/关 (Ctrl+D)");
   AppendMenuW(hMenu, MF_STRING, IDM_TRAY_TOPMOST, is_always_on_top_ ? L"取消窗口置顶" : L"窗口始终置顶");
   AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
-  AppendMenuW(hMenu, MF_STRING, IDM_TRAY_EXIT, L"退出程序");
+  AppendMenuW(hMenu, MF_STRING, IDM_TRAY_EXIT, L"退出 润音");
 
   HWND hwnd = GetHandle();
   SetForegroundWindow(hwnd);
@@ -351,7 +351,9 @@ void FlutterWindow::SetupWindowChannel() {
   window_channel_->SetMethodCallHandler(
       [hwnd](const flutter::MethodCall<flutter::EncodableValue>& call,
              std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
-        if (call.method_name() == "setTheme") {
+        if (call.method_name() == "firstFrameReady") {
+          result->Success(flutter::EncodableValue(true));
+        } else if (call.method_name() == "setTheme") {
           if (const auto* args = std::get_if<flutter::EncodableMap>(call.arguments())) {
             auto it = args->find(flutter::EncodableValue("isDark"));
             if (it != args->end()) {

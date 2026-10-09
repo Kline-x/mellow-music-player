@@ -48,6 +48,15 @@ void main() async {
   // ignore: avoid_print
   print('>>> [STEP 4] runApp called successfully');
 
+  // 首帧渲染就绪回调：通知原生窗口淡入展现，杜绝冷启动黑屏/闪烁
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (Platform.isMacOS || Platform.isWindows) {
+      const MethodChannel('com.kline.mellow_music/window')
+          .invokeMethod('firstFrameReady')
+          .catchError((_) => null);
+    }
+  });
+
   // 首帧立即上屏后，后台异步非阻塞并行初始化非核心重量级服务，根除启动黑屏与卡顿
   Future.microtask(() async {
     try {

@@ -29,7 +29,30 @@ class AppDelegate: FlutterAppDelegate, NSWindowDelegate {
 
     setupTray()
     setupChannels()
+    localizeAppMenu()
     showMainWindow()
+  }
+
+  private func localizeAppMenu() {
+    if let mainMenu = NSApp.mainMenu, let appMenuItem = mainMenu.items.first {
+      appMenuItem.title = "润音"
+      if let submenu = appMenuItem.submenu {
+        submenu.title = "润音"
+        for item in submenu.items {
+          if item.action == #selector(NSApplication.terminate(_:)) || item.keyEquivalent == "q" {
+            item.title = "退出 润音"
+          } else if item.action == #selector(NSApplication.orderFrontStandardAboutPanel(_:)) {
+            item.title = "关于 润音"
+          } else if item.action == #selector(NSApplication.hide(_:)) {
+            item.title = "隐藏 润音"
+          } else if item.action == #selector(NSApplication.unhideAllApplications(_:)) {
+            item.title = "显示全部"
+          } else if item.action == #selector(NSApplication.hideOtherApplications(_:)) {
+            item.title = "隐藏其他"
+          }
+        }
+      }
+    }
   }
 
   // 点击 Dock 栏图标时若窗口隐藏则重新唤醒并居前
@@ -118,6 +141,14 @@ class AppDelegate: FlutterAppDelegate, NSWindowDelegate {
     windowChannel?.setMethodCallHandler { [weak self] (call, result) in
       guard let self = self else { return }
       switch call.method {
+      case "firstFrameReady":
+        if let window = self.targetWindow {
+          NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.12
+            window.animator().alphaValue = 1.0
+          }
+        }
+        result(true)
       case "minimize":
         self.targetWindow?.miniaturize(nil)
         result(true)
@@ -158,7 +189,7 @@ class AppDelegate: FlutterAppDelegate, NSWindowDelegate {
     // 若资产库未就绪，使用 macOS 原生 SF Symbols 权威系统音符图标保底 (macOS 11+)
     if iconImage == nil {
       if #available(macOS 11.0, *) {
-        iconImage = NSImage(systemSymbolName: "music.note", accessibilityDescription: "Mellow Music")
+        iconImage = NSImage(systemSymbolName: "music.note", accessibilityDescription: "润音")
       }
     }
 
@@ -170,7 +201,7 @@ class AppDelegate: FlutterAppDelegate, NSWindowDelegate {
     } else {
       button.title = "♫"
     }
-    button.toolTip = "Mellow Music · 润音"
+    button.toolTip = "润音"
 
     let menu = NSMenu()
     menu.addItem(NSMenuItem(title: "显示主界面", action: #selector(onShowMainWindow), keyEquivalent: "s"))
@@ -180,7 +211,7 @@ class AppDelegate: FlutterAppDelegate, NSWindowDelegate {
     menu.addItem(NSMenuItem(title: "下一首", action: #selector(onNextTrack), keyEquivalent: "]"))
     menu.addItem(NSMenuItem.separator())
     menu.addItem(NSMenuItem(title: "隐藏到托盘", action: #selector(onHideMainWindow), keyEquivalent: "h"))
-    menu.addItem(NSMenuItem(title: "退出 Mellow Music", action: #selector(onQuitApp), keyEquivalent: "q"))
+    menu.addItem(NSMenuItem(title: "退出 润音", action: #selector(onQuitApp), keyEquivalent: "q"))
 
     statusItem?.menu = menu
   }

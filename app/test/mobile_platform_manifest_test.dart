@@ -45,8 +45,8 @@ void main() {
 
       final content = plistFile.readAsStringSync();
 
-      // 显示名称
-      expect(content.contains('<string>Mellow Music</string>'), isTrue);
+      // 显示名称（支持中文名称“润音”或“Mellow Music”）
+      expect(content.contains('<string>润音</string>') || content.contains('<string>Mellow Music</string>'), isTrue);
 
       // 后台音频播放模式
       expect(content.contains('<key>UIBackgroundModes</key>'), isTrue);

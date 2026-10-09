@@ -10,32 +10,58 @@ class LyricLine {
     this.translation,
   });
 
-  /// 解析标准 LRC 歌词行 [00:12.34]歌词内容
-  static LyricLine? parse(String line) {
-    final regExp = RegExp(r'\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)');
-    final match = regExp.firstMatch(line.trim());
-    if (match != null) {
-      final min = int.parse(match.group(1)!);
-      final sec = int.parse(match.group(2)!);
-      final milliStr = match.group(3)!;
-      final milli = int.parse(milliStr.padRight(3, '0').substring(0, 3));
-      final text = match.group(4)!.trim();
-      return LyricLine(
+  /// 解析宽容模式 LRC 歌词行，支持单双位分钟、点号/冒号毫秒，以及单行多时间戳展开
+  static List<LyricLine> parseMultiple(String line) {
+    final trimmed = line.trim();
+    if (trimmed.isEmpty) return const [];
+
+    // 过滤元信息标签：[ti:xxx] [ar:xxx] [al:xxx] [by:xxx] [offset:xxx] [hash:xxx] 等
+    if (RegExp(r'^\[(ti|ar|al|by|offset|hash|sign|qq|total|length):', caseSensitive: false).hasMatch(trimmed)) {
+      return const [];
+    }
+
+    // 正则匹配所有时间戳：[01:23.45]、[1:23:45]、[01:23.456]、[01:23]
+    final timeTagPattern = RegExp(r'\[(\d{1,3}):(\d{2})(?:[\.:](\d{1,3}))?\]');
+    final matches = timeTagPattern.allMatches(trimmed).toList();
+    if (matches.isEmpty) return const [];
+
+    // 提取时间戳之后剩下的真实歌词文本内容
+    final lastMatch = matches.last;
+    final text = trimmed.substring(lastMatch.end).trim();
+    if (text.isEmpty) return const [];
+
+    final result = <LyricLine>[];
+    for (final m in matches) {
+      final min = int.tryParse(m.group(1) ?? '0') ?? 0;
+      final sec = int.tryParse(m.group(2) ?? '0') ?? 0;
+      final milliRaw = m.group(3) ?? '0';
+      // 归一化毫秒：如果是 2 位数 "45" -> 450ms，如果是 3 位数 "456" -> 456ms
+      final milli = int.tryParse(milliRaw.padRight(3, '0').substring(0, 3)) ?? 0;
+      result.add(LyricLine(
         time: Duration(minutes: min, seconds: sec, milliseconds: milli),
         text: text,
-      );
+      ));
     }
-    return null;
+    return result;
   }
 
-  /// 批量解析完整 LRC 歌词文本
+  /// 单行解析向后兼容接口
+  static LyricLine? parse(String line) {
+    final list = parseMultiple(line);
+    return list.isNotEmpty ? list.first : null;
+  }
+
+  /// 批量解析完整 LRC 歌词文本 (支持排序去重与宽容容错)
   static List<LyricLine> parseLrc(String lrcContent) {
-    final lines = lrcContent.split('\n');
+    if (lrcContent.trim().isEmpty) return const [];
+    final lines = lrcContent.split(RegExp(r'\r?\n'));
     final result = <LyricLine>[];
     for (final line in lines) {
-      final parsed = LyricLine.parse(line);
-      if (parsed != null && parsed.text.isNotEmpty) {
-        result.add(parsed);
+      final parsedList = parseMultiple(line);
+      for (final p in parsedList) {
+        if (p.text.isNotEmpty) {
+          result.add(p);
+        }
       }
     }
     result.sort((a, b) => a.time.compareTo(b.time));

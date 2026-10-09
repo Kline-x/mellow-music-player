@@ -12,7 +12,6 @@ import '../design_system/acoustic_mesh_glow.dart';
 import '../design_system/mellow_image.dart';
 import '../design_system/mellow_logo.dart';
 import '../core/audio/audio_player_service.dart';
-import '../core/audio/windows_tray_service.dart';
 import '../core/storage/storage_service.dart';
 import '../core/window/desktop_floating_lyric_service.dart';
 import '../views/desktop/desktop_views.dart';
@@ -598,33 +597,6 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                       ),
                     ),
                   ],
-                  const SizedBox(width: 12),
-
-                  // 3. 主题明暗切换
-                  SoftButton(
-                    icon: isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                    tooltip: isDark ? '切换温润白瓷模式' : '切换深石墨夜间模式',
-                    isCircle: true,
-                    onTap: () => theme.toggleTheme(),
-                  ),
-                  const SizedBox(width: 6),
-
-                  // 4. 设置中心
-                  SoftButton(
-                    icon: Icons.settings_rounded,
-                    tooltip: '设置与多端同步',
-                    isCircle: true,
-                    onTap: () => _navigateTo('settings'),
-                  ),
-                  const SizedBox(width: 6),
-
-                  // 5. 最小化到系统托盘 / 隐藏窗口
-                  SoftButton(
-                    icon: Icons.remove_rounded,
-                    tooltip: '最小化到托盘',
-                    isCircle: true,
-                    onTap: () => DesktopTrayService.instance.hideWindow(),
-                  ),
                 ],
               ),
             ],

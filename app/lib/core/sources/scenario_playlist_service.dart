@@ -201,7 +201,7 @@ class ScenarioPlaylistService extends ChangeNotifier {
     if (cleanId.isEmpty) return null;
 
     if (Platform.environment.containsKey('FLUTTER_TEST')) {
-      final tracks = getAllKnownTracks().take(10).toList();
+      final tracks = getAllKnownTracks();
       return ImportedPlaylist(
         id: 'netease_$cleanId',
         title: '场景精选测试歌单 · $cleanId',
