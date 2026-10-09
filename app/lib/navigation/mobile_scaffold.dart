@@ -190,7 +190,7 @@ class _MobileScaffoldState extends State<MobileScaffold> {
     final player = context.watch<AudioPlayerService>();
     final track = player.currentTrack;
     if (track == null) {
-      return const SizedBox(height: 38);
+      return const SizedBox(height: 6);
     }
 
     return Container(
@@ -203,6 +203,7 @@ class _MobileScaffoldState extends State<MobileScaffold> {
             showModalBottomSheet(
               context: context,
               isScrollControlled: true,
+              useSafeArea: true,
               backgroundColor: Colors.transparent,
               builder: (_) => MobilePlayerBottomSheet(onClose: () => Navigator.of(context).pop()),
             );
@@ -350,6 +351,7 @@ class _MobileScaffoldState extends State<MobileScaffold> {
           showModalBottomSheet(
             context: context,
             isScrollControlled: true,
+            useSafeArea: true,
             backgroundColor: Colors.transparent,
             builder: (_) => MobilePlayerBottomSheet(onClose: () => Navigator.of(context).pop()),
           );
@@ -360,6 +362,7 @@ class _MobileScaffoldState extends State<MobileScaffold> {
             showModalBottomSheet(
               context: context,
               isScrollControlled: true,
+              useSafeArea: true,
               backgroundColor: Colors.transparent,
               builder: (_) => MobilePlayerBottomSheet(onClose: () => Navigator.of(context).pop()),
             );

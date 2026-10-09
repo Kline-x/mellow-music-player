@@ -641,91 +641,53 @@ class AudioPlayerService extends ChangeNotifier {
       } else {
         String? playUrl = track.audioUrl;
 
-        // 1. 若为网易云真实曲目，直接优先提取原生 320k 高品质 HTTPS 直链，秒开播放
-        final pureNeId = NeteaseMusicService.pureSongId(track.id);
-        if (pureNeId != null && (playUrl == null || playUrl.isEmpty || playUrl.contains('music.163.com/song/media/outer/url'))) {
-          final directResolved = await OnlineMusicService.resolvePlayableAudioUrl(
-            track.title,
-            track.artist,
-            trackId: track.id,
-          );
-          if (session != _playSessionId) return;
-          if (directResolved != null && directResolved.isNotEmpty) {
-            playUrl = directResolved;
-          }
-        }
-
-        // 2. 如果包含外链重定向，物理轻量展开并升级为 HTTPS 安全链接
-        if (playUrl != null && playUrl.contains('music.163.com/song/media/outer/url')) {
-          final unwrapped = await OnlineMusicService.unwrapRedirects(playUrl);
-          if (unwrapped.isNotEmpty && !unwrapped.contains('/404')) {
-            playUrl = unwrapped;
-          } else {
-            playUrl = null; // 网易云 404 限制，置空以平滑触发多源 Fallback
-          }
-        }
-
-        // 3. 如果没有有效播放流或为假/受限链接，优先调用当前激活的落雪社区源或全网智能转搜
-        if (playUrl == null ||
+        // 若当前音频流不存在或为受限/失效链接，统一调用高速解析管道
+        final bool isUnusableUrl = playUrl == null ||
             playUrl.isEmpty ||
+            playUrl.contains('music.163.com/song/media/outer/url') ||
             playUrl.contains('soundhelix.com') ||
             playUrl.contains('nxinxz.com') ||
             playUrl.contains('588957081') ||
-            playUrl.contains('/nf/')) {
-          try {
-            final activeDriver = LxSourceEngine.instance.activeDriver;
-            final lxSong = LxSongInfo(
-              id: track.id,
-              songMid: track.id.replaceAll('netease_', '').replaceAll('kuwo_', ''),
-              title: track.title,
-              artist: track.artist,
-              album: track.album,
-              source: track.source,
-              duration: track.duration,
-              coverUrl: track.coverUrl,
-            );
-            final requestedQuality = LxSourceEngine.instance.preferredQuality;
-            final lxUrl = await activeDriver.getMusicUrl(lxSong, requestedQuality)
-                .timeout(const Duration(milliseconds: 1800), onTimeout: () => null);
-            if (session != _playSessionId) return;
-            if (lxUrl != null && lxUrl.isNotEmpty && lxUrl.startsWith('http')) {
-              playUrl = OnlineMusicService.upgradeToSecureUrl(lxUrl);
-              _actualQuality = requestedQuality;
-            }
-          } catch (_) {}
+            playUrl.contains('/nf/');
 
+        if (isUnusableUrl) {
+          final resolved = await OnlineMusicService.resolvePlayableAudioUrl(
+            track.title,
+            track.artist,
+            trackId: track.id,
+            defaultUrl: playUrl,
+          );
           if (session != _playSessionId) return;
-
-          if (playUrl == null || playUrl.isEmpty || !playUrl.startsWith('http')) {
-            final resolved = await OnlineMusicService.resolvePlayableAudioUrl(
-              track.title,
-              track.artist,
-              trackId: track.id,
-              defaultUrl: playUrl,
-            );
-            if (session != _playSessionId) return;
-            if (resolved != null && resolved.isNotEmpty) {
-              playUrl = resolved;
-              // 探测降级后的真实码率
-              if (resolved.contains('flac24bit') || resolved.contains('24bit')) {
-                _actualQuality = AudioQuality.flac24bit;
-              } else if (resolved.contains('flac') || resolved.contains('sq')) {
-                _actualQuality = AudioQuality.flac;
-              } else if (resolved.contains('320k') || resolved.contains('hq')) {
-                _actualQuality = AudioQuality.k320k;
-              } else {
-                _actualQuality = AudioQuality.k128k;
-              }
-            }
-          }
-
-          if (session != _playSessionId) return;
-
-          if (playUrl != null && playUrl.isNotEmpty) {
+          if (resolved != null && resolved.isNotEmpty) {
+            playUrl = resolved;
             final idx = _playlist.indexWhere((t) => t.id == track.id);
             if (idx != -1) {
               final activeSource = _inferSourceFromUrl(playUrl, track.source);
               _playlist[idx] = _playlist[idx].copyWith(audioUrl: playUrl, source: activeSource);
+            }
+          }
+        } else {
+          // 若已有外链，轻量展开校验重定向
+          final unwrapped = await OnlineMusicService.unwrapRedirects(playUrl);
+          if (session != _playSessionId) return;
+          if (unwrapped.isNotEmpty && !unwrapped.contains('/404') && !unwrapped.contains('588957081') && !unwrapped.contains('/nf/')) {
+            playUrl = unwrapped;
+          } else {
+            // 若外链重定向后失效，启动一次快速换源
+            final resolved = await OnlineMusicService.resolvePlayableAudioUrl(
+              track.title,
+              track.artist,
+              trackId: track.id,
+              forceRefresh: true,
+            );
+            if (session != _playSessionId) return;
+            if (resolved != null && resolved.isNotEmpty) {
+              playUrl = resolved;
+              final idx = _playlist.indexWhere((t) => t.id == track.id);
+              if (idx != -1) {
+                final activeSource = _inferSourceFromUrl(playUrl, track.source);
+                _playlist[idx] = _playlist[idx].copyWith(audioUrl: playUrl, source: activeSource);
+              }
             }
           }
         }

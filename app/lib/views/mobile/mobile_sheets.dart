@@ -234,6 +234,12 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
                 Expanded(
                   child: LayoutBuilder(
                     builder: (context, constraints) {
+                      final availH = constraints.maxHeight;
+                      // 根据视口可用高度动态计算黑胶唱片尺寸，紧凑屏幕自动弹性收拢，彻底杜绝内容挤压与顶部顶出
+                      final double discSize = (availH * 0.56).clamp(170.0, 260.0);
+                      final double innerCoverSize = discSize * 0.42;
+                      final double spacingBelowDisc = (availH < 380) ? 14.0 : 28.0;
+
                       if (_currentPage == 1) {
                         WidgetsBinding.instance.addPostFrameCallback((_) {
                           _scrollToActiveLine(activeLineIndex, constraints.maxHeight);
@@ -257,31 +263,31 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
                                 );
                               },
                               child: Container(
-                                width: 260,
-                                height: 260,
+                                width: discSize,
+                                height: discSize,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: const Color(0xFF141414),
                                   boxShadow: [
                                     BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 28, offset: const Offset(0, 10)),
                                   ],
-                                  border: Border.all(color: const Color(0xFF282828), width: 5),
+                                  border: Border.all(color: const Color(0xFF282828), width: max(3.0, discSize * 0.02)),
                                 ),
                                 child: Center(
                                   child: MellowImage(
                                     url: track.coverUrl,
-                                    width: 110,
-                                    height: 110,
+                                    width: innerCoverSize,
+                                    height: innerCoverSize,
                                     borderRadius: MellowRadii.borderPill,
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 36),
-                            Text(track.title, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: theme.textPrimary)),
+                            SizedBox(height: spacingBelowDisc),
+                            Text(track.title, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
                             const SizedBox(height: 4),
-                            Text(track.artist, style: TextStyle(fontSize: 14, color: theme.textSecondary)),
-                            const SizedBox(height: 10),
+                            Text(track.artist, style: TextStyle(fontSize: 13.5, color: theme.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                            const SizedBox(height: 8),
                             GestureDetector(
                               onTap: () => showDialog(
                                 context: context,
@@ -563,13 +569,15 @@ class MobileQueueBottomSheet extends StatelessWidget {
     final theme = context.watch<ThemeProvider>();
     final player = context.watch<AudioPlayerService>();
 
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.65,
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: const BorderRadius.vertical(top: MellowRadii.r28),
       ),
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.fromLTRB(20, 20, 20, 16 + bottomInset),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

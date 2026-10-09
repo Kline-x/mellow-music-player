@@ -71,6 +71,44 @@ class MellowImage extends StatelessWidget {
     return _acousticGradients[hash % _acousticGradients.length];
   }
 
+  /// CDN 图片智能缩略裁剪与 HTTPS 升级（将多兆超大原图压缩至轻量微图，大幅提速秒开）
+  static String optimizeImageUrl(String rawUrl, {double? width, double? height}) {
+    final trimmed = rawUrl.trim();
+    if (trimmed.isEmpty) return trimmed;
+
+    // 统一升级为 HTTPS
+    var secure = trimmed.startsWith('http://')
+        ? trimmed.replaceFirst('http://', 'https://')
+        : trimmed;
+
+    final uri = Uri.tryParse(secure);
+    if (uri == null) return secure;
+
+    final host = uri.host.toLowerCase();
+
+    // 1. 网易云音乐 CDN: 注入 ?param={w}y{h} 缩微参数
+    if (host.contains('music.126.net') || host.contains('163.com')) {
+      final double effectiveDim = (width != null && width.isFinite && width > 0)
+          ? width
+          : ((height != null && height.isFinite && height > 0) ? height : 180);
+      final int size = (effectiveDim * 1.5).round().clamp(80, 600);
+
+      if (!secure.contains('param=')) {
+        final separator = secure.contains('?') ? '&' : '?';
+        return '$secure${separator}param=${size}y$size';
+      }
+    }
+
+    // 2. 酷狗音乐 CDN: 优化默认缩略尺寸段
+    if (host.contains('kugou.com')) {
+      if (secure.contains('/softhead/480/')) {
+        return secure.replaceAll('/softhead/480/', '/softhead/240/');
+      }
+    }
+
+    return secure;
+  }
+
   @override
   Widget build(BuildContext context) {
     final cleanUrl = url.trim();
@@ -132,12 +170,26 @@ class MellowImage extends StatelessWidget {
     if (usePlaceholder) {
       img = acousticPlaceholder;
     } else {
+      final optimized = optimizeImageUrl(cleanUrl, width: width, height: height);
+
+      // 计算硬件解码降采样像素尺寸，严防解码原图撑爆 GPU 与主线程
+      int? cacheW;
+      int? cacheH;
+      if (width != null && width!.isFinite && width! > 0) {
+        cacheW = (width! * 1.5).round().clamp(60, 600);
+      }
+      if (height != null && height!.isFinite && height! > 0) {
+        cacheH = (height! * 1.5).round().clamp(60, 600);
+      }
+
       img = Image.network(
-        cleanUrl,
+        optimized,
         width: width,
         height: height,
         fit: fit,
-        headers: getHeadersFor(cleanUrl),
+        cacheWidth: cacheW,
+        cacheHeight: cacheH,
+        headers: getHeadersFor(optimized),
         frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
           if (wasSynchronouslyLoaded || frame != null) {
             return child;
