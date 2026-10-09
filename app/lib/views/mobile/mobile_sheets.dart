@@ -182,65 +182,8 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
                           onPressed: widget.onClose,
                         ),
 
-                        // 中间极净平滑“唱片 / 歌词”切换胶囊 (移除突兀硬边框与深灰底色)
-                        Container(
-                          padding: const EdgeInsets.all(3.0),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? Colors.white.withValues(alpha: 0.07)
-                                : Colors.black.withValues(alpha: 0.04),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              GestureDetector(
-                                behavior: HitTestBehavior.opaque,
-                                onTap: () => _pageController.animateToPage(0, duration: MellowDurations.normal, curve: MellowDurations.standard),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-                                  decoration: BoxDecoration(
-                                    color: _currentPage == 0
-                                        ? (isDark ? Colors.white.withValues(alpha: 0.18) : theme.accentColor.withValues(alpha: 0.14))
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Text(
-                                    '唱片',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: _currentPage == 0 ? FontWeight.bold : FontWeight.w500,
-                                      color: _currentPage == 0 ? (isDark ? Colors.white : theme.accentColor) : theme.textMuted,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              GestureDetector(
-                                behavior: HitTestBehavior.opaque,
-                                onTap: () => _pageController.animateToPage(1, duration: MellowDurations.normal, curve: MellowDurations.standard),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-                                  decoration: BoxDecoration(
-                                    color: _currentPage == 1
-                                        ? (isDark ? Colors.white.withValues(alpha: 0.18) : theme.accentColor.withValues(alpha: 0.14))
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Text(
-                                    '歌词',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: _currentPage == 1 ? FontWeight.bold : FontWeight.w500,
-                                      color: _currentPage == 1 ? (isDark ? Colors.white : theme.accentColor) : theme.textMuted,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        // 顶栏正中纯净留白：彻底避开居中前摄打孔，消除对撞怪异感，呈现大气质感
+                        const Spacer(),
 
                         // 右侧纯净操作组 (红心喜爱 + 加入歌单，消除补丁式灰圆底)
                         Row(
@@ -295,114 +238,130 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
                         controller: _pageController,
                         onPageChanged: (page) => setState(() => _currentPage = page),
                         children: [
-                      // 页面 1: 黑胶大碟
-                      Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            AnimatedBuilder(
-                              animation: _turntableController,
-                              builder: (context, child) {
-                                return Transform.rotate(
-                                  angle: _turntableController.value * 2 * pi,
-                                  child: child,
-                                );
-                              },
-                              child: Container(
-                                width: discSize,
-                                height: discSize,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: const Color(0xFF141414),
-                                  boxShadow: [
-                                    BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 28, offset: const Offset(0, 10)),
-                                  ],
-                                  border: Border.all(color: const Color(0xFF282828), width: max(3.0, discSize * 0.02)),
-                                ),
-                                child: Center(
-                                  child: MellowImage(
-                                    url: track.coverUrl,
-                                    width: innerCoverSize,
-                                    height: innerCoverSize,
-                                    borderRadius: MellowRadii.borderPill,
+                      // 页面 1: 黑胶大碟 (支持点击翻转至歌词)
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => _pageController.animateToPage(
+                          1,
+                          duration: MellowDurations.normal,
+                          curve: MellowDurations.standard,
+                        ),
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              AnimatedBuilder(
+                                animation: _turntableController,
+                                builder: (context, child) {
+                                  return Transform.rotate(
+                                    angle: _turntableController.value * 2 * pi,
+                                    child: child,
+                                  );
+                                },
+                                child: Container(
+                                  width: discSize,
+                                  height: discSize,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: const Color(0xFF141414),
+                                    boxShadow: [
+                                      BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 28, offset: const Offset(0, 10)),
+                                    ],
+                                    border: Border.all(color: const Color(0xFF282828), width: max(3.0, discSize * 0.02)),
                                   ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: spacingBelowDisc),
-                            Text(track.title, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
-                            const SizedBox(height: 4),
-                            Text(track.artist, style: TextStyle(fontSize: 13.5, color: theme.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
-                            const SizedBox(height: 8),
-                            GestureDetector(
-                              onTap: () => showDialog(
-                                context: context,
-                                builder: (_) => SourceSwitcherModal(track: track),
-                              ),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
-                                decoration: BoxDecoration(
-                                  color: theme.accentColor.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: theme.accentColor.withValues(alpha: 0.3),
-                                    width: 0.8,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.swap_calls_rounded, size: 13, color: theme.accentColor),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${AudioPlayerService.formatSourceDisplayName(track.source)} · 点击换源',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: theme.accentColor,
-                                      ),
+                                  child: Center(
+                                    child: MellowImage(
+                                      url: track.coverUrl,
+                                      width: innerCoverSize,
+                                      height: innerCoverSize,
+                                      borderRadius: MellowRadii.borderPill,
                                     ),
-                                  ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                              SizedBox(height: spacingBelowDisc),
+                              Text(track.title, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                              const SizedBox(height: 4),
+                              Text(track.artist, style: TextStyle(fontSize: 13.5, color: theme.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                              const SizedBox(height: 8),
+                              GestureDetector(
+                                onTap: () => showDialog(
+                                  context: context,
+                                  builder: (_) => SourceSwitcherModal(track: track),
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
+                                  decoration: BoxDecoration(
+                                    color: theme.accentColor.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: theme.accentColor.withValues(alpha: 0.3),
+                                      width: 0.8,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.swap_calls_rounded, size: 13, color: theme.accentColor),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${AudioPlayerService.formatSourceDisplayName(track.source)} · 点击换源',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: theme.accentColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
 
                       // 页面 2: 全屏动效歌词流
                       track.lyrics.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 64,
-                                    height: 64,
-                                    decoration: BoxDecoration(
-                                      color: theme.accentColor.withValues(alpha: 0.12),
-                                      shape: BoxShape.circle,
+                          ? GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => _pageController.animateToPage(
+                                0,
+                                duration: MellowDurations.normal,
+                                curve: MellowDurations.standard,
+                              ),
+                              child: Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 64,
+                                      height: 64,
+                                      decoration: BoxDecoration(
+                                        color: theme.accentColor.withValues(alpha: 0.12),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(Icons.music_note_rounded, size: 32, color: theme.accentColor),
                                     ),
-                                    child: Icon(Icons.music_note_rounded, size: 32, color: theme.accentColor),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    '纯音乐，请欣赏',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: theme.textPrimary,
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      '纯音乐，请欣赏',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: theme.textPrimary,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    '暂无匹配歌词',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: theme.textMuted,
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      '暂无匹配歌词 · 点击返回唱片',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: theme.textMuted,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             )
                           : ListView.builder(
@@ -533,65 +492,108 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
                       ),
                       const SizedBox(height: 8),
 
-                      // EQ、音量与定时器辅助入口
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          TextButton.icon(
-                            icon: const Icon(Icons.tune_rounded, size: 16),
-                            label: const Text('EQ', style: TextStyle(fontSize: 12)),
-                            onPressed: () {
-                              showDialog(context: context, builder: (_) => const EqualizerModal());
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          TextButton.icon(
-                            icon: Icon(
-                              player.volume > 0.5
-                                  ? Icons.volume_up_rounded
-                                  : (player.volume > 0 ? Icons.volume_down_rounded : Icons.volume_off_rounded),
-                              size: 16,
+                      // 歌词/唱片、EQ、音量与定时器辅助入口 (FittedBox 自适应弹性缩放，保证小屏零溢出)
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            TextButton.icon(
+                              style: TextButton.styleFrom(
+                                foregroundColor: _currentPage == 1 ? theme.accentColor : null,
+                                backgroundColor: _currentPage == 1 ? theme.accentColor.withValues(alpha: 0.12) : null,
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                visualDensity: VisualDensity.compact,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              icon: Icon(
+                                _currentPage == 0 ? Icons.lyrics_rounded : Icons.album_rounded,
+                                size: 16,
+                                color: _currentPage == 1 ? theme.accentColor : null,
+                              ),
+                              label: Text(
+                                _currentPage == 0 ? '歌词' : '唱片',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: _currentPage == 1 ? FontWeight.bold : FontWeight.normal,
+                                  color: _currentPage == 1 ? theme.accentColor : null,
+                                ),
+                              ),
+                              onPressed: () {
+                                final targetPage = _currentPage == 0 ? 1 : 0;
+                                _pageController.animateToPage(
+                                  targetPage,
+                                  duration: MellowDurations.normal,
+                                  curve: MellowDurations.standard,
+                                );
+                              },
                             ),
-                            label: Text('音量 ${(player.volume * 100).toInt()}%', style: const TextStyle(fontSize: 12)),
-                            onPressed: () {
-                              showDialog(context: context, builder: (_) => const _MobileVolumeDialog());
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          Builder(
-                            builder: (context) {
-                              final hasTimer = player.sleepTimerMinutes != null;
-                              final remainingSec = player.sleepTimerRemainingSeconds;
-                              final timerText = hasTimer
-                                  ? (player.pauseAfterCurrent ? '播完停' : '${(remainingSec / 60).ceil()}分')
-                                  : '定时';
-                              return TextButton.icon(
-                                style: TextButton.styleFrom(
-                                  foregroundColor: hasTimer ? theme.accentColor : null,
-                                  backgroundColor: hasTimer ? theme.accentColor.withValues(alpha: 0.12) : null,
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                ),
-                                icon: Icon(
-                                  hasTimer ? Icons.hourglass_top_rounded : Icons.bedtime_rounded,
-                                  size: 16,
-                                  color: hasTimer ? theme.accentColor : null,
-                                ),
-                                label: Text(
-                                  timerText,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: hasTimer ? FontWeight.bold : FontWeight.normal,
+                            const SizedBox(width: 6),
+                            TextButton.icon(
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                              icon: const Icon(Icons.tune_rounded, size: 16),
+                              label: const Text('EQ', style: TextStyle(fontSize: 12)),
+                              onPressed: () {
+                                showDialog(context: context, builder: (_) => const EqualizerModal());
+                              },
+                            ),
+                            const SizedBox(width: 6),
+                            TextButton.icon(
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                              icon: Icon(
+                                player.volume > 0.5
+                                    ? Icons.volume_up_rounded
+                                    : (player.volume > 0 ? Icons.volume_down_rounded : Icons.volume_off_rounded),
+                                size: 16,
+                              ),
+                              label: Text('音量 ${(player.volume * 100).toInt()}%', style: const TextStyle(fontSize: 12)),
+                              onPressed: () {
+                                showDialog(context: context, builder: (_) => const _MobileVolumeDialog());
+                              },
+                            ),
+                            const SizedBox(width: 6),
+                            Builder(
+                              builder: (context) {
+                                final hasTimer = player.sleepTimerMinutes != null;
+                                final remainingSec = player.sleepTimerRemainingSeconds;
+                                final timerText = hasTimer
+                                    ? (player.pauseAfterCurrent ? '播完停' : '${(remainingSec / 60).ceil()}分')
+                                    : '定时';
+                                return TextButton.icon(
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: hasTimer ? theme.accentColor : null,
+                                    backgroundColor: hasTimer ? theme.accentColor.withValues(alpha: 0.12) : null,
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    visualDensity: VisualDensity.compact,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                  icon: Icon(
+                                    hasTimer ? Icons.hourglass_top_rounded : Icons.bedtime_rounded,
+                                    size: 16,
                                     color: hasTimer ? theme.accentColor : null,
                                   ),
-                                ),
-                                onPressed: () {
-                                  showDialog(context: context, builder: (_) => const SleepTimerModal());
-                                },
-                              );
-                            },
-                          ),
-                        ],
+                                  label: Text(
+                                    timerText,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: hasTimer ? FontWeight.bold : FontWeight.normal,
+                                      color: hasTimer ? theme.accentColor : null,
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    showDialog(context: context, builder: (_) => const SleepTimerModal());
+                                  },
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),

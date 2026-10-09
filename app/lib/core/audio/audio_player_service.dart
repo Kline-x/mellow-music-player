@@ -881,11 +881,13 @@ class AudioPlayerService extends ChangeNotifier {
       _currentIndex = (_currentIndex + 1) % _playlist.length;
     }
     _position = Duration.zero;
+    _currentLoadedTrackId = null;
     _recordHistory(_playlist[_currentIndex]);
-    if (_isPlaying) {
-      _executeRealPlay(_playlist[_currentIndex]);
-    }
+    _isPlaying = true;
+    WindowsTrayService.instance.updateTooltip(_playlist[_currentIndex]);
+    _executeRealPlay(_playlist[_currentIndex]);
     notifyListeners();
+    _loadLyricIfNeed(_playlist[_currentIndex]);
   }
 
   void previous() {
@@ -901,11 +903,13 @@ class AudioPlayerService extends ChangeNotifier {
       _currentIndex = (_currentIndex - 1 + _playlist.length) % _playlist.length;
     }
     _position = Duration.zero;
+    _currentLoadedTrackId = null;
     _recordHistory(_playlist[_currentIndex]);
-    if (_isPlaying) {
-      _executeRealPlay(_playlist[_currentIndex]);
-    }
+    _isPlaying = true;
+    WindowsTrayService.instance.updateTooltip(_playlist[_currentIndex]);
+    _executeRealPlay(_playlist[_currentIndex]);
     notifyListeners();
+    _loadLyricIfNeed(_playlist[_currentIndex]);
   }
 
   void seek(Duration target) {

@@ -1114,12 +1114,12 @@ class OnlineMusicService {
       } catch (_) {}
     }
 
-    // 3. 跨源通过 标题 + 歌手 搜索网易云匹配真实歌词 (多轮降噪梯级尝试)
+    // 3. 跨源通过 标题 + 歌手 搜索网易云匹配真实歌词 (清洗后纯净标题高优先级，杜绝副标/Live干扰)
     final searchQueries = <String>[
-      if (cleanTitle.isNotEmpty && firstArtist.isNotEmpty) '$cleanTitle $firstArtist',
-      if (simplifiedTitle.isNotEmpty && simplifiedTitle != cleanTitle && firstArtist.isNotEmpty) '$simplifiedTitle $firstArtist',
-      if (cleanTitle.isNotEmpty) cleanTitle,
-      if (simplifiedTitle.isNotEmpty && simplifiedTitle != cleanTitle) simplifiedTitle,
+      if (simplifiedTitle.isNotEmpty && firstArtist.isNotEmpty) '$simplifiedTitle $firstArtist',
+      if (cleanTitle.isNotEmpty && firstArtist.isNotEmpty && cleanTitle != simplifiedTitle) '$cleanTitle $firstArtist',
+      if (simplifiedTitle.isNotEmpty) simplifiedTitle,
+      if (cleanTitle.isNotEmpty && cleanTitle != simplifiedTitle) cleanTitle,
     ];
 
     for (final q in searchQueries.take(2)) {
