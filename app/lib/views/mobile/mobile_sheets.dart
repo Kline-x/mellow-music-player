@@ -117,29 +117,47 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
             systemNavigationBarIconBrightness: Brightness.dark,
           );
 
+    final topPadding = MediaQuery.viewPaddingOf(context).top;
+    final bottomPadding = MediaQuery.viewPaddingOf(context).bottom;
+    final effectiveTop = max(topPadding, 20.0);
+
     return Scaffold(
       backgroundColor: theme.canvasColor,
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: overlayStyle,
         child: Stack(
           children: [
-            // 弥散光晕背景
+            // 全屏声学弥散流光背景 (100% 覆盖状态栏与整个屏幕，彻底消除顶切断层)
             const Positioned.fill(child: AcousticMeshGlow()),
 
-          // 主体内容
-          SafeArea(
-            child: Column(
+            // 主体内容
+            Column(
               children: [
-                // 顶部返回与切换指示条 (加大顶部间隙，避开挖孔屏)
+                // 1. 顶部声学微拟物下拉指示胶囊 (Drag Handle - 指引手势下滑关闭，平滑过渡状态栏)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  padding: EdgeInsets.only(top: effectiveTop + 4, bottom: 6),
+                  child: Center(
+                    child: Container(
+                      width: 36,
+                      height: 4.5,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white.withValues(alpha: 0.28) : Colors.black.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // 2. 沉浸式顶栏操作行 (收起按钮 + 唱片/歌词分段条 + 收藏操作组)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 2),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(
                         style: IconButton.styleFrom(
-                          backgroundColor: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
-                          minimumSize: const Size(42, 42),
+                          backgroundColor: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.04),
+                          minimumSize: const Size(40, 40),
                           padding: EdgeInsets.zero,
                         ),
                         icon: Icon(Icons.keyboard_arrow_down_rounded, size: 28, color: theme.textPrimary),
@@ -149,8 +167,12 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
+                          color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.04),
                           borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04),
+                            width: 0.8,
+                          ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -162,14 +184,14 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                                 decoration: BoxDecoration(
                                   color: _currentPage == 0
-                                      ? (isDark ? Colors.white.withValues(alpha: 0.2) : theme.accentColor.withValues(alpha: 0.15))
+                                      ? (isDark ? Colors.white.withValues(alpha: 0.18) : theme.accentColor.withValues(alpha: 0.14))
                                       : Colors.transparent,
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: Text(
                                   '唱片',
                                   style: TextStyle(
-                                    fontSize: 13.5,
+                                    fontSize: 13,
                                     fontWeight: _currentPage == 0 ? FontWeight.bold : FontWeight.w500,
                                     color: _currentPage == 0 ? (isDark ? Colors.white : theme.accentColor) : theme.textMuted,
                                   ),
@@ -184,14 +206,14 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                                 decoration: BoxDecoration(
                                   color: _currentPage == 1
-                                      ? (isDark ? Colors.white.withValues(alpha: 0.2) : theme.accentColor.withValues(alpha: 0.15))
+                                      ? (isDark ? Colors.white.withValues(alpha: 0.18) : theme.accentColor.withValues(alpha: 0.14))
                                       : Colors.transparent,
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: Text(
                                   '歌词',
                                   style: TextStyle(
-                                    fontSize: 13.5,
+                                    fontSize: 13,
                                     fontWeight: _currentPage == 1 ? FontWeight.bold : FontWeight.w500,
                                     color: _currentPage == 1 ? (isDark ? Colors.white : theme.accentColor) : theme.textMuted,
                                   ),
@@ -205,19 +227,19 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
                         children: [
                           IconButton(
                             style: IconButton.styleFrom(
-                              backgroundColor: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
-                              minimumSize: const Size(40, 40),
+                              backgroundColor: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.04),
+                              minimumSize: const Size(38, 38),
                               padding: EdgeInsets.zero,
                             ),
                             icon: Icon(player.isFavorite(track.id) ? Icons.favorite_rounded : Icons.favorite_border_rounded, color: Colors.pinkAccent, size: 20),
                             tooltip: '红心收藏',
                             onPressed: () => player.toggleFavorite(track.id),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                           IconButton(
                             style: IconButton.styleFrom(
-                              backgroundColor: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
-                              minimumSize: const Size(40, 40),
+                              backgroundColor: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.04),
+                              minimumSize: const Size(38, 38),
                               padding: EdgeInsets.zero,
                             ),
                             icon: Icon(Icons.bookmark_add_outlined, color: theme.textSecondary, size: 20),
@@ -391,7 +413,7 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
 
                 // 底部胶囊进度条与控制台
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+                  padding: EdgeInsets.fromLTRB(24, 0, 24, max(bottomPadding, 16)),
                   child: Column(
                     children: [
                       // 进度条
@@ -552,7 +574,6 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
                 ),
               ],
             ),
-          ),
         ],
       ),
     ),

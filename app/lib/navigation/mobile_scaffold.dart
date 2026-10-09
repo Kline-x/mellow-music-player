@@ -203,7 +203,7 @@ class _MobileScaffoldState extends State<MobileScaffold> {
             showModalBottomSheet(
               context: context,
               isScrollControlled: true,
-              useSafeArea: true,
+              useSafeArea: false,
               backgroundColor: Colors.transparent,
               builder: (_) => MobilePlayerBottomSheet(onClose: () => Navigator.of(context).pop()),
             );
@@ -351,7 +351,7 @@ class _MobileScaffoldState extends State<MobileScaffold> {
           showModalBottomSheet(
             context: context,
             isScrollControlled: true,
-            useSafeArea: true,
+            useSafeArea: false,
             backgroundColor: Colors.transparent,
             builder: (_) => MobilePlayerBottomSheet(onClose: () => Navigator.of(context).pop()),
           );
@@ -362,7 +362,7 @@ class _MobileScaffoldState extends State<MobileScaffold> {
             showModalBottomSheet(
               context: context,
               isScrollControlled: true,
-              useSafeArea: true,
+              useSafeArea: false,
               backgroundColor: Colors.transparent,
               builder: (_) => MobilePlayerBottomSheet(onClose: () => Navigator.of(context).pop()),
             );
