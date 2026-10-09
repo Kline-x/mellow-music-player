@@ -130,125 +130,149 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
             // 全屏声学弥散流光背景 (100% 覆盖状态栏与整个屏幕，彻底消除顶切断层)
             const Positioned.fill(child: AcousticMeshGlow()),
 
-            // 主体内容
-            Column(
-              children: [
-                // 1. 顶部声学微拟物下拉指示胶囊 (Drag Handle - 指引手势下滑关闭，平滑过渡状态栏)
-                Padding(
-                  padding: EdgeInsets.only(top: effectiveTop + 4, bottom: 6),
-                  child: Center(
-                    child: Container(
-                      width: 36,
-                      height: 4.5,
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.white.withValues(alpha: 0.28) : Colors.black.withValues(alpha: 0.16),
-                        borderRadius: BorderRadius.circular(3),
-                      ),
+            // 顶部状态栏与天顶极柔羽化渐变 (无硬切线，保证系统状态栏与播放顶栏天衣无缝、浑然一体)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: effectiveTop + 56.0,
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        (isDark ? Colors.black : Colors.white).withValues(alpha: isDark ? 0.22 : 0.12),
+                        Colors.transparent,
+                      ],
                     ),
                   ),
                 ),
+              ),
+            ),
 
-                // 2. 沉浸式顶栏操作行 (收起按钮 + 唱片/歌词分段条 + 收藏操作组)
+            // 主体内容
+            Column(
+              children: [
+                // 沉浸式一体化顶栏 (纯净无框、温润通透，与声学光晕浑然天成)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 2),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        style: IconButton.styleFrom(
-                          backgroundColor: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.04),
-                          minimumSize: const Size(40, 40),
+                  padding: EdgeInsets.only(
+                    top: effectiveTop + 4.0,
+                    left: 16.0,
+                    right: 16.0,
+                    bottom: 4.0,
+                  ),
+                  child: SizedBox(
+                    height: 44.0,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // 左侧纯净收起手势按钮 (无生硬灰色圆底，轻灵通透)
+                        IconButton(
+                          icon: Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            size: 30,
+                            color: theme.textPrimary.withValues(alpha: 0.9),
+                          ),
+                          tooltip: '收起',
                           padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                          onPressed: widget.onClose,
                         ),
-                        icon: Icon(Icons.keyboard_arrow_down_rounded, size: 28, color: theme.textPrimary),
-                        tooltip: '收起',
-                        onPressed: widget.onClose,
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.04),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04),
-                            width: 0.8,
+
+                        // 中间极净平滑“唱片 / 歌词”切换胶囊 (移除突兀硬边框与深灰底色)
+                        Container(
+                          padding: const EdgeInsets.all(3.0),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.07)
+                                : Colors.black.withValues(alpha: 0.04),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () => _pageController.animateToPage(0, duration: MellowDurations.normal, curve: MellowDurations.standard),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: _currentPage == 0
+                                        ? (isDark ? Colors.white.withValues(alpha: 0.18) : theme.accentColor.withValues(alpha: 0.14))
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Text(
+                                    '唱片',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: _currentPage == 0 ? FontWeight.bold : FontWeight.w500,
+                                      color: _currentPage == 0 ? (isDark ? Colors.white : theme.accentColor) : theme.textMuted,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () => _pageController.animateToPage(1, duration: MellowDurations.normal, curve: MellowDurations.standard),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: _currentPage == 1
+                                        ? (isDark ? Colors.white.withValues(alpha: 0.18) : theme.accentColor.withValues(alpha: 0.14))
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Text(
+                                    '歌词',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: _currentPage == 1 ? FontWeight.bold : FontWeight.w500,
+                                      color: _currentPage == 1 ? (isDark ? Colors.white : theme.accentColor) : theme.textMuted,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        child: Row(
+
+                        // 右侧纯净操作组 (红心喜爱 + 加入歌单，消除补丁式灰圆底)
+                        Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: () => _pageController.animateToPage(0, duration: MellowDurations.normal, curve: MellowDurations.standard),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: _currentPage == 0
-                                      ? (isDark ? Colors.white.withValues(alpha: 0.18) : theme.accentColor.withValues(alpha: 0.14))
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Text(
-                                  '唱片',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: _currentPage == 0 ? FontWeight.bold : FontWeight.w500,
-                                    color: _currentPage == 0 ? (isDark ? Colors.white : theme.accentColor) : theme.textMuted,
-                                  ),
-                                ),
+                            IconButton(
+                              icon: Icon(
+                                player.isFavorite(track.id) ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                                color: player.isFavorite(track.id) ? Colors.pinkAccent : theme.textSecondary.withValues(alpha: 0.85),
+                                size: 22,
                               ),
+                              tooltip: '红心收藏',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                              onPressed: () => player.toggleFavorite(track.id),
                             ),
-                            const SizedBox(width: 3),
-                            GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: () => _pageController.animateToPage(1, duration: MellowDurations.normal, curve: MellowDurations.standard),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: _currentPage == 1
-                                      ? (isDark ? Colors.white.withValues(alpha: 0.18) : theme.accentColor.withValues(alpha: 0.14))
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Text(
-                                  '歌词',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: _currentPage == 1 ? FontWeight.bold : FontWeight.w500,
-                                    color: _currentPage == 1 ? (isDark ? Colors.white : theme.accentColor) : theme.textMuted,
-                                  ),
-                                ),
+                            const SizedBox(width: 4),
+                            IconButton(
+                              icon: Icon(
+                                Icons.bookmark_add_outlined,
+                                color: theme.textSecondary.withValues(alpha: 0.85),
+                                size: 22,
                               ),
+                              tooltip: '收藏至歌单',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                              onPressed: () => showDialog(context: context, builder: (_) => AddToPlaylistModal(track: track)),
                             ),
                           ],
                         ),
-                      ),
-                      Row(
-                        children: [
-                          IconButton(
-                            style: IconButton.styleFrom(
-                              backgroundColor: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.04),
-                              minimumSize: const Size(38, 38),
-                              padding: EdgeInsets.zero,
-                            ),
-                            icon: Icon(player.isFavorite(track.id) ? Icons.favorite_rounded : Icons.favorite_border_rounded, color: Colors.pinkAccent, size: 20),
-                            tooltip: '红心收藏',
-                            onPressed: () => player.toggleFavorite(track.id),
-                          ),
-                          const SizedBox(width: 6),
-                          IconButton(
-                            style: IconButton.styleFrom(
-                              backgroundColor: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.04),
-                              minimumSize: const Size(38, 38),
-                              padding: EdgeInsets.zero,
-                            ),
-                            icon: Icon(Icons.bookmark_add_outlined, color: theme.textSecondary, size: 20),
-                            tooltip: '收藏至歌单',
-                            onPressed: () => showDialog(context: context, builder: (_) => AddToPlaylistModal(track: track)),
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
 
