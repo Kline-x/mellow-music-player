@@ -225,9 +225,9 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
                     builder: (context, constraints) {
                       final availH = constraints.maxHeight;
                       // 根据视口可用高度动态计算黑胶唱片尺寸，紧凑屏幕自动弹性收拢，彻底杜绝内容挤压与顶部顶出
-                      final double discSize = (availH * 0.56).clamp(170.0, 260.0);
+                      final double discSize = (availH * 0.50).clamp(150.0, 250.0);
                       final double innerCoverSize = discSize * 0.42;
-                      final double spacingBelowDisc = (availH < 380) ? 14.0 : 28.0;
+                      final double spacingBelowDisc = (availH < 400) ? 12.0 : 22.0;
 
                       if (_currentPage == 1) {
                         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -316,6 +316,62 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
                                   ),
                                 ),
                               ),
+
+                              // 单行实时歌词预览胶囊 (动态随歌词滚动高亮，提示可点击或滑动展开全屏歌词)
+                              const SizedBox(height: 12),
+                              GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () => _pageController.animateToPage(
+                                  1,
+                                  duration: MellowDurations.normal,
+                                  curve: MellowDurations.standard,
+                                ),
+                                child: Container(
+                                  constraints: BoxConstraints(maxWidth: min(320.0, constraints.maxWidth - 48)),
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                                  decoration: BoxDecoration(
+                                    color: (isDark ? Colors.white : Colors.black).withValues(alpha: isDark ? 0.08 : 0.05),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: (isDark ? Colors.white : Colors.black).withValues(alpha: isDark ? 0.12 : 0.08),
+                                      width: 0.8,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.lyrics_rounded,
+                                        size: 14,
+                                        color: track.lyrics.isNotEmpty ? theme.accentColor : theme.textSecondary,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Flexible(
+                                        child: Text(
+                                          track.lyrics.isNotEmpty
+                                              ? track.lyrics[activeLineIndex].text
+                                              : '轻触唱片或向左滑动查看歌词',
+                                          style: TextStyle(
+                                            fontSize: 12.5,
+                                            fontWeight: track.lyrics.isNotEmpty ? FontWeight.w500 : FontWeight.normal,
+                                            color: track.lyrics.isNotEmpty
+                                                ? theme.textPrimary.withValues(alpha: 0.9)
+                                                : theme.textSecondary,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        Icons.chevron_right_rounded,
+                                        size: 16,
+                                        color: theme.textSecondary.withValues(alpha: 0.7),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -399,6 +455,62 @@ class _MobilePlayerBottomSheetState extends State<MobilePlayerBottomSheet>
                   padding: EdgeInsets.fromLTRB(24, 0, 24, max(bottomPadding, 16)),
                   child: Column(
                     children: [
+                      // 柔性双点分页指示器 (贯通唱片页与歌词页，清晰感知左右滑动状态与当前视图)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => _pageController.animateToPage(
+                                0,
+                                duration: MellowDurations.normal,
+                                curve: MellowDurations.standard,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 250),
+                                  curve: Curves.easeOutCubic,
+                                  width: _currentPage == 0 ? 18.0 : 6.0,
+                                  height: 5.0,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(3.0),
+                                    color: _currentPage == 0
+                                        ? theme.accentColor
+                                        : (isDark ? Colors.white24 : Colors.black26),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => _pageController.animateToPage(
+                                1,
+                                duration: MellowDurations.normal,
+                                curve: MellowDurations.standard,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 250),
+                                  curve: Curves.easeOutCubic,
+                                  width: _currentPage == 1 ? 18.0 : 6.0,
+                                  height: 5.0,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(3.0),
+                                    color: _currentPage == 1
+                                        ? theme.accentColor
+                                        : (isDark ? Colors.white24 : Colors.black26),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
                       // 进度条
                       SliderTheme(
                         data: SliderTheme.of(context).copyWith(
