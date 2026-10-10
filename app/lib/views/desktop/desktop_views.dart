@@ -5065,7 +5065,7 @@ class _DesktopSettingsViewState extends State<DesktopSettingsView> {
                       color: theme.accentColor.withValues(alpha: 0.15),
                       borderRadius: MellowRadii.borderPill,
                     ),
-                    child: Text('v1.1.1 稳定版', style: TextStyle(color: theme.accentColor, fontSize: 11, fontWeight: FontWeight.bold)),
+                    child: Text('v1.1.4 稳定版', style: TextStyle(color: theme.accentColor, fontSize: 11, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),

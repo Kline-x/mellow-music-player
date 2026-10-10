@@ -56,7 +56,7 @@ void main() {
       // 1. 验证设置页中包含软件版本与在线更新卡片
       await tester.scrollUntilVisible(find.text('软件版本与在线更新'), 300);
       expect(find.text('软件版本与在线更新'), findsOneWidget);
-      expect(find.text('v1.1.1 稳定版'), findsOneWidget);
+      expect(find.text('v1.1.4 稳定版'), findsOneWidget);
       expect(find.text('检查新版本'), findsOneWidget);
 
       // 2. 模拟弹出版更弹窗 (UpdateDialog)

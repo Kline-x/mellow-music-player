@@ -182,9 +182,9 @@ class VersionCheckService {
   bool get isAndroidPlatform =>
       isAndroidOverride || (!kIsWeb && Platform.isAndroid);
 
-  /// 当前客户端基准版本号 (动态自适应，兜底对应 pubspec.yaml: 1.1.3+5)
-  int currentVersionCode = 5;
-  String currentVersionName = '1.1.3';
+  /// 当前客户端基准版本号 (动态自适应，兜底对应 pubspec.yaml: 1.1.4+6)
+  int currentVersionCode = 6;
+  String currentVersionName = '1.1.4';
 
   /// 动态从宿主平台同步最新当前版本号
   Future<void> syncCurrentVersionFromPlatform() async {
@@ -700,32 +700,32 @@ class VersionCheckService {
   static const AppVersionInfo defaultMockVersion = AppVersionInfo(
     versionCode: 99,
     versionName: '1.2.0-Release',
-    publishDate: '2026-10-08',
+    publishDate: '2026-10-10',
     releaseNotes:
-        '1. 【近场设备协同升级】：支持局域网免密极速直传与双端曲库无缝合流；\n2. 【全新在线更新体系】：支持全国 CDN 节点测速择优与 Android/Windows/macOS 无损静默升级；\n3. 【架构瘦身与正式私钥】：20MB 专属 arm64 极速架构包，全平台真机零缺陷闭环。',
+        '1. 【切歌无缝自动起播】：重构音频切歌逻辑，彻底解决切歌卡住、延迟或暂停拦截的缺陷；\n2. 【歌词降噪与单行预览】：网易云歌词精准梯级匹配，播放页换源下方新增单行实时歌词随唱高亮胶囊；\n3. 【天顶打孔融合与双点手势】：顶部保留大气呼吸留白，全新柔性双点分页指示器，左右滑动与点击无缝翻转。',
     isForceUpdate: false,
     platforms: {
       'android': PlatformUpdateInfo(
         downloadUrl:
-            'https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.3/Mellow-Music-Android-arm64.apk',
+            'https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.4/Mellow-Music-Android-arm64.apk',
         backupUrl:
-            'https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.3/Mellow-Music-Android-arm64.apk',
+            'https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.4/Mellow-Music-Android-arm64.apk',
         fileSize: 20938241,
         installMode: 'in_app_download',
       ),
       'windows': PlatformUpdateInfo(
         downloadUrl:
-            'https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.3/Mellow-Music-Windows-x64-Setup.exe',
+            'https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.4/Mellow-Music-Windows-x64-Setup.exe',
         backupUrl:
-            'https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.3/Mellow-Music-Windows-x64-Setup.exe',
+            'https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.4/Mellow-Music-Windows-x64-Setup.exe',
         fileSize: 42100000,
         installMode: 'in_app_download',
       ),
       'macos': PlatformUpdateInfo(
         downloadUrl:
-            'https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.3/Mellow-Music-macOS.dmg',
+            'https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.4/Mellow-Music-macOS.dmg',
         backupUrl:
-            'https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.3/Mellow-Music-macOS.dmg',
+            'https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.4/Mellow-Music-macOS.dmg',
         fileSize: 38200000,
         installMode: 'in_app_download',
       ),
