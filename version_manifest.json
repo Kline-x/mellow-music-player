@@ -1,26 +1,32 @@
 {
-  "versionCode": 5,
-  "versionName": "1.1.3",
-  "publishDate": "2026-10-08",
+  "versionCode": 6,
+  "versionName": "1.1.4",
+  "publishDate": "2026-10-10",
   "isForceUpdate": false,
-  "releaseNotes": "1. 【移动端交互深度升级】：全屏播放器唱片/歌词双微晶胶囊热区扩大，左上角42×42微晶圆纽一触即关；\n2. 【全局状态栏智能自适应】：温润白瓷与深石墨黑双模式下，全局、详情页及播放器状态栏图标深浅毫秒级自适应反转；\n3. 【搜索软键盘避让】：搜索输入时底部悬浮MiniPlayer优雅避让隐藏，联想词与打字区域零遮挡；\n4. 【架构分包瘦身与正式签名】：支持20MB超轻量arm64专属安装包，接入正式发布私钥签名，保障平滑在线更新；\n5. 【全端真机零缺陷闭环】：物理真机Redmi K60 Pro等全量E2E闭环验证，277项自动化测试全绿，Flutter Analyze零告警。",
+  "releaseNotes": "1. 【切歌无缝自动起播】：重构音频切歌逻辑，彻底解决连贯切歌静音、延迟或暂停拦截缺陷；\n2. 【歌词降噪与单行预览】：网易云歌词精准梯级匹配，播放页换源下方新增单行实时歌词随唱高亮胶囊；\n3. 【天顶打孔融合与双点手势】：顶部保留大气呼吸留白，全新柔性双点分页指示器，左右滑动与点击无缝翻转；\n4. 【紧凑视口自适应防溢出】：黑胶唱片与垂直间距动态弹性缩放，保障极端小屏窄视口下零 RenderFlex 溢出。",
   "platforms": {
     "windows": {
-      "downloadUrl": "https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.3/Mellow-Music-Windows-x64-Setup.exe",
-      "backupUrl": "https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.3/Mellow-Music-Windows-x64-Setup.exe",
-      "fileSize": 42100000,
+      "downloadUrl": "https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.4/Mellow-Music-Windows-x64-Setup.exe",
+      "backupUrl": "https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.4/Mellow-Music-Windows-x64-Setup.exe",
+      "fileSize": 11961560,
       "installMode": "in_app_download"
     },
     "macos": {
-      "downloadUrl": "https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.3/Mellow-Music-macOS.dmg",
-      "backupUrl": "https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.3/Mellow-Music-macOS.dmg",
-      "fileSize": 38200000,
+      "downloadUrl": "https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.4/Mellow-Music-macOS.dmg",
+      "backupUrl": "https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.4/Mellow-Music-macOS.dmg",
+      "fileSize": 24526339,
       "installMode": "in_app_download"
     },
     "android": {
-      "downloadUrl": "https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.3/Mellow-Music-Android-arm64.apk",
-      "backupUrl": "https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.3/Mellow-Music-Android-arm64.apk",
-      "fileSize": 20938241,
+      "downloadUrl": "https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.4/Mellow-Music-Android-arm64.apk",
+      "backupUrl": "https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.4/Mellow-Music-Android-arm64.apk",
+      "fileSize": 21069705,
+      "installMode": "in_app_download"
+    },
+    "linux": {
+      "downloadUrl": "https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.4/Mellow-Music-Linux-amd64.deb",
+      "backupUrl": "https://ghproxy.net/https://github.com/Kline-x/mellow-music-player/releases/download/v1.1.4/Mellow-Music-Linux-amd64.deb",
+      "fileSize": 9256954,
       "installMode": "in_app_download"
     }
   }
